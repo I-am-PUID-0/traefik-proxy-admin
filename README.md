@@ -95,6 +95,24 @@ pnpm dev
 - Postgres data persists under `.devcontainer/.pgdata/` on your host (gitignored).
 - The container prints helpful URLs and common commands at startup.
 
+### Pre-Push Verification
+
+Before pushing a commit, run the full verification suite from inside the devcontainer:
+
+```bash
+pnpm verify
+```
+
+This runs the dependency audit, lint, unit tests, Playwright end-to-end and functional API tests, and the production build:
+
+```bash
+pnpm audit --audit-level moderate
+pnpm lint
+pnpm test
+pnpm test:e2e
+pnpm build
+```
+
 ## Database Schema
 
 ### Services Table
@@ -250,6 +268,16 @@ SSO settings are managed through the admin panel and stored in the `app_config` 
 
 ## Development
 
+### Verification
+
+Use the devcontainer for local validation before opening or updating a pull request:
+
+```bash
+pnpm verify
+```
+
+The Playwright suite includes functional API coverage for service/domain lifecycle behavior and generated Traefik configuration.
+
 ### Database Commands
 
 ```bash
@@ -293,7 +321,8 @@ src/
 2. Create a feature branch
 3. Make your changes
 4. Add tests if applicable
-5. Submit a pull request
+5. Run `pnpm verify` inside the devcontainer
+6. Submit a pull request
 
 ## Fork Notice
 
