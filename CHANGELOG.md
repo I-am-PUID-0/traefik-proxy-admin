@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.2.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.2.0...v1.2.1) (2026-05-18)
+
+
+### Bug Fixes
+
+* implement legacy schema repair and default domain configuration ([78bc880](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/78bc880b4078d24d25b4f06aeb8d2f6d958ba622))
+
 ## [1.2.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.1.0...v1.2.0) (2026-05-18)
 
 
