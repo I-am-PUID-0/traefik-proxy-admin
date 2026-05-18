@@ -8,9 +8,10 @@ export type ServiceFormData = Omit<Service, "id" | "createdAt" | "updatedAt"> & 
 interface UseServiceFormOptions {
   service: Service | null;
   defaultDuration?: number;
+  initialData?: Partial<ServiceFormData>;
 }
 
-export function useServiceForm({ service, defaultDuration }: UseServiceFormOptions) {
+export function useServiceForm({ service, defaultDuration, initialData }: UseServiceFormOptions) {
   const getDefaultFormData = useCallback((): ServiceFormData => ({
     name: "",
     subdomain: "",
@@ -27,7 +28,8 @@ export function useServiceForm({ service, defaultDuration }: UseServiceFormOptio
     enableDurationMinutes: defaultDuration ?? null,
     middlewares: "",
     requestHeaders: "",
-  }), [defaultDuration]);
+    ...initialData,
+  }), [defaultDuration, initialData]);
 
   const [formData, setFormData] = useState<ServiceFormData>(getDefaultFormData);
   const [originalFormData, setOriginalFormData] = useState<ServiceFormData>(getDefaultFormData);

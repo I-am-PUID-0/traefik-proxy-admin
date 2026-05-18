@@ -71,6 +71,16 @@ export function AppLayout({ children }: AppLayoutProps) {
                   Sessions
                 </NextLink>
                 <NextLink
+                  href="/traefik"
+                  className={
+                    isActive("/traefik")
+                      ? "text-gray-900 dark:text-gray-100 font-medium"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                  }
+                >
+                  Traefik
+                </NextLink>
+                <NextLink
                   href="/config"
                   className={
                     isActive("/config")
@@ -154,6 +164,17 @@ export function AppLayout({ children }: AppLayoutProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Sessions
+              </NextLink>
+              <NextLink
+                href="/traefik"
+                className={`block ${
+                  isActive("/traefik")
+                    ? "text-gray-900 dark:text-gray-100 font-medium"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Traefik
               </NextLink>
               <NextLink
                 href="/config"

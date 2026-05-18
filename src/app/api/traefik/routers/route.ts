@@ -8,6 +8,7 @@ interface TraefikRouterSummary {
   service?: string;
   status?: string;
   entryPoints?: string[];
+  middlewares?: string[];
 }
 
 export async function GET() {
@@ -33,6 +34,7 @@ export async function GET() {
       service: router.service,
       status: router.status,
       entryPoints: router.entryPoints || [],
+      middlewares: router.middlewares || [],
     }))
     .sort((a, b) => String(a.name).localeCompare(String(b.name)));
 

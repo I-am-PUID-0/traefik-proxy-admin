@@ -74,6 +74,10 @@ function hostnamesFor(input: ServicePreviewRequest, domain: Domain): string[] {
   return input.subdomain ? [`${input.subdomain}.${domain.domain}`] : [];
 }
 
+function stableJson(value: unknown): string {
+  return JSON.stringify(value ?? null, null, 2);
+}
+
 function diffLines(previous: unknown, next: unknown): string[] {
   const previousLines = JSON.stringify(previous ?? {}, null, 2).split("\n");
   const nextLines = JSON.stringify(next ?? {}, null, 2).split("\n");
@@ -84,6 +88,29 @@ function diffLines(previous: unknown, next: unknown): string[] {
     ...previousLines.filter((line) => !nextSet.has(line)).map((line) => `- ${line}`),
     ...nextLines.filter((line) => !previousSet.has(line)).map((line) => `+ ${line}`),
   ];
+}
+
+function summarizeChanges(previous: ServiceConfigSlice | null, next: ServiceConfigSlice) {
+  if (!previous) {
+    return {
+      added: ["router", "service", ...Object.keys(next.middlewares).map((name) => `middleware:${name}`), ...(next.serversTransports ? Object.keys(next.serversTransports).map((name) => `transport:${name}`) : [])],
+      changed: [],
+      removed: [],
+    };
+  }
+
+  const checks = [
+    ["router", previous.router, next.router],
+    ["service", previous.service, next.service],
+    ["middlewares", previous.middlewares, next.middlewares],
+    ["serversTransports", previous.serversTransports, next.serversTransports],
+  ] as const;
+
+  return {
+    added: [] as string[],
+    changed: checks.filter(([, before, after]) => stableJson(before) !== stableJson(after)).map(([name]) => name),
+    removed: [] as string[],
+  };
 }
 
 async function buildSlice(input: ServicePreviewRequest): Promise<ServiceConfigSlice> {
@@ -165,5 +192,6 @@ export async function previewServiceConfig(input: ServicePreviewRequest) {
     current,
     proposed,
     diff: diffLines(current, proposed),
+    changes: summarizeChanges(current, proposed),
   };
 }

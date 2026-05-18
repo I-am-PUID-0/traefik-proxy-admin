@@ -25,6 +25,7 @@ interface ServiceFormProps {
   onSubmit: (data: ServiceFormData) => Promise<void>;
   onCancel: () => void;
   submitting?: boolean;
+  initialData?: Partial<ServiceFormData>;
 }
 
 export function ServiceForm({
@@ -33,12 +34,14 @@ export function ServiceForm({
   onSubmit,
   onCancel,
   submitting = false,
+  initialData,
 }: ServiceFormProps) {
 
   // Use custom hooks for form management
   const { formData, updateFormData, hasUnsavedChanges } = useServiceForm({
     service,
     defaultDuration,
+    initialData,
   });
 
   const { middlewareText, setMiddlewareText, hostHeader, setHostHeader } = useServiceHeaders({
@@ -56,6 +59,11 @@ export function ServiceForm({
     current: unknown;
     proposed: unknown;
     diff: string[];
+    changes?: {
+      added: string[];
+      changed: string[];
+      removed: string[];
+    };
     error?: string;
   } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
@@ -109,6 +117,11 @@ export function ServiceForm({
         : availableEntrypoints.length === 0
           ? "No entrypoints found"
           : "Use discovered entrypoint";
+  const canValidateEntrypoints = !loadingEntrypoints && availableEntrypoints.length > 0;
+  const unknownEntrypoint = canValidateEntrypoints && formData.entrypoint
+    && !availableEntrypoints.some((entrypoint) => entrypoint.name === formData.entrypoint)
+    ? formData.entrypoint
+    : null;
   const unknownMiddlewares = canValidateMiddlewares
     ? getUnknownMiddlewareNames(
         middlewareText,
@@ -422,6 +435,11 @@ export function ServiceForm({
                 <p className="text-xs text-gray-500">
                   Override the default entrypoint for this service
                 </p>
+                {unknownEntrypoint && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Entry point not found in currently discovered Traefik entrypoints: {unknownEntrypoint}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -560,7 +578,24 @@ export function ServiceForm({
               )}
 
               {configPreview && !configPreview.error && (
-                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                <div className="mt-4 space-y-4">
+                  {configPreview.changes && (
+                    <div className="grid gap-3 text-sm sm:grid-cols-3">
+                      <div className="rounded-md border p-3">
+                        <p className="font-medium">Added</p>
+                        <p className="mt-1 text-muted-foreground">{configPreview.changes.added.join(", ") || "None"}</p>
+                      </div>
+                      <div className="rounded-md border p-3">
+                        <p className="font-medium">Changed</p>
+                        <p className="mt-1 text-muted-foreground">{configPreview.changes.changed.join(", ") || "None"}</p>
+                      </div>
+                      <div className="rounded-md border p-3">
+                        <p className="font-medium">Removed</p>
+                        <p className="mt-1 text-muted-foreground">{configPreview.changes.removed.join(", ") || "None"}</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid gap-4 lg:grid-cols-2">
                   <div className="space-y-2">
                     <p className="text-sm font-medium">Proposed</p>
                     <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
@@ -572,6 +607,7 @@ export function ServiceForm({
                     <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
                       {configPreview.diff.length > 0 ? configPreview.diff.join("\n") : "No generated config changes"}
                     </pre>
+                  </div>
                   </div>
                 </div>
               )}

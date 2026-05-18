@@ -28,6 +28,11 @@ export function ConfigForm({
     configured: entrypointDiscoveryConfigured,
     error: entrypointDiscoveryError,
   } = useTraefikEntrypoints();
+  const canValidateEntrypoints = !loadingEntrypoints && availableEntrypoints.length > 0;
+  const unknownDefaultEntrypoint = canValidateEntrypoints && config.defaultEntrypoint
+    && !availableEntrypoints.some((entrypoint) => entrypoint.name === config.defaultEntrypoint)
+    ? config.defaultEntrypoint
+    : null;
   const entrypointSelectPlaceholder = loadingEntrypoints
     ? "Loading entrypoints"
     : !entrypointDiscoveryConfigured
@@ -92,6 +97,11 @@ export function ConfigForm({
               <p className="text-xs text-muted-foreground">
                 Default Traefik entrypoint for all services (optional)
               </p>
+              {unknownDefaultEntrypoint && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Entry point not found in currently discovered Traefik entrypoints: {unknownDefaultEntrypoint}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="defaultDuration">Default Service Duration</Label>

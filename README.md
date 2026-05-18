@@ -94,7 +94,7 @@ Optional environment:
 TRAEFIK_API_URL=http://traefik:8080
 ```
 
-`TRAEFIK_API_URL` is used by Traefik discovery endpoints (`/api/traefik/status`, `/api/traefik/entrypoints`, `/api/traefik/middlewares`, `/api/traefik/routers`, and `/api/traefik/services`) to populate selectors, validate entered middleware names, and show live API health. It is not required for `/api/traefik/config`; Traefik can still poll the app-generated dynamic config without it. In production, if `TRAEFIK_API_URL` is unset, middleware discovery is disabled and manual middleware values remain editable. In development, the app falls back to `http://localhost:8080` for the devcontainer Traefik instance.
+`TRAEFIK_API_URL` is used by Traefik discovery endpoints (`/api/traefik/status`, `/api/traefik/entrypoints`, `/api/traefik/middlewares`, `/api/traefik/routers`, and `/api/traefik/services`) to populate selectors, validate entered middleware names, show live API health, inspect live resources, and detect drift from generated config. It is not required for `/api/traefik/config`; Traefik can still poll the app-generated dynamic config without it. In production, if `TRAEFIK_API_URL` is unset, middleware discovery is disabled and manual middleware values remain editable. In development, the app falls back to `http://localhost:8080` for the devcontainer Traefik instance.
 
 For production, point `TRAEFIK_API_URL` at an internal Docker network hostname, VPN-only address, or another protected Traefik API endpoint. Do not expose Traefik's API/dashboard publicly without authentication.
 
@@ -137,6 +137,10 @@ pnpm test:e2e
 pnpm build
 ```
 
+## Traefik Live
+
+The Traefik Live page at `/traefik` uses `TRAEFIK_API_URL` to show API health, live routers/services/middlewares/entrypoints, generated-config drift, and TCP target health checks. Router rows include an Import action that opens the Add Service form with any discovered host, entrypoint, and middleware values prefilled.
+
 ## Database Schema
 
 ### Services Table
@@ -166,6 +170,7 @@ pnpm build
 ### Traefik Configuration
 - `GET /api/traefik/config` - Dynamic Traefik configuration
 - `GET /api/traefik/status` - Traefik API discovery health
+- `GET /api/traefik/drift` - Compare app-generated routers/services with live Traefik resources
 - `GET /api/traefik/entrypoints` - Discovered Traefik entrypoints
 - `GET /api/traefik/middlewares` - Discovered Traefik middlewares
 - `GET /api/traefik/routers` - Discovered Traefik routers
@@ -179,6 +184,7 @@ pnpm build
 - `DELETE /api/services/[id]` - Delete service
 - `POST /api/services/share-link` - Generate shared link
 - `POST /api/services/test-target` - Test TCP reachability for a service target host/port
+- `GET /api/services/health` - Test TCP reachability for configured service targets
 
 ### Authentication
 - `GET /api/auth/verify` - Forward-auth endpoint for Traefik
@@ -307,7 +313,7 @@ Use the devcontainer for local validation before opening or updating a pull requ
 pnpm verify
 ```
 
-The Playwright suite includes functional API coverage for service/domain lifecycle behavior, generated Traefik configuration, target reachability testing, and service config preview behavior.
+The Playwright suite includes functional API coverage for service/domain lifecycle behavior, generated Traefik configuration, target reachability testing, service config preview behavior, and the Traefik Live page.
 
 ### Database Commands
 

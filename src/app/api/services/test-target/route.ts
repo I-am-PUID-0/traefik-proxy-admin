@@ -1,31 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import net from "node:net";
+import { testTcpConnection } from "@/lib/target-test";
 
 interface TargetTestRequest {
   targetIp?: string;
   targetPort?: number;
-}
-
-function testTcpConnection(host: string, port: number, timeoutMs = 3000): Promise<{ reachable: boolean; durationMs: number; error?: string }> {
-  const startedAt = Date.now();
-
-  return new Promise((resolve) => {
-    const socket = new net.Socket();
-    let settled = false;
-
-    const settle = (reachable: boolean, error?: string) => {
-      if (settled) return;
-      settled = true;
-      socket.destroy();
-      resolve({ reachable, durationMs: Date.now() - startedAt, error });
-    };
-
-    socket.setTimeout(timeoutMs);
-    socket.once("connect", () => settle(true));
-    socket.once("timeout", () => settle(false, `Connection timed out after ${timeoutMs}ms`));
-    socket.once("error", (error) => settle(false, error.message));
-    socket.connect(port, host);
-  });
 }
 
 export async function POST(request: NextRequest) {
@@ -41,12 +19,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await testTcpConnection(targetIp, targetPort);
-
-    return NextResponse.json({
-      target: `${targetIp}:${targetPort}`,
-      ...result,
-    });
+    return NextResponse.json(await testTcpConnection(targetIp, targetPort));
   } catch (error) {
     console.error("Error testing service target:", error);
     return NextResponse.json(

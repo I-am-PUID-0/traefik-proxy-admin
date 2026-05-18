@@ -6,13 +6,28 @@ import { ArrowLeft } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
 import { ServiceForm } from "@/components/service-form";
 import { useServices } from "@/hooks/use-services";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ServiceFormData } from "@/hooks/use-service-form";
 
 export default function AddServicePage() {
   const { saveService, defaultDuration } = useServices();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
+
+  const importedHost = searchParams.get("host") || "";
+  const importedEntrypoint = searchParams.get("entrypoint") || null;
+  const importedMiddlewares = searchParams.get("middlewares") || "";
+  const importedName = searchParams.get("name") || "";
+  const importData = importedName || importedHost || importedEntrypoint || importedMiddlewares
+    ? {
+        name: importedName ? importedName.replace(/@.*$/, "") : "",
+        hostnameMode: importedHost ? "custom" as const : "subdomain" as const,
+        customHostnames: importedHost ? JSON.stringify([importedHost]) : null,
+        entrypoint: importedEntrypoint,
+        middlewares: importedMiddlewares,
+      }
+    : undefined;
 
   const handleSubmit = async (serviceData: ServiceFormData) => {
     setSaving(true);
@@ -55,6 +70,7 @@ export default function AddServicePage() {
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           submitting={saving}
+          initialData={importData}
         />
       </div>
     </AppLayout>
