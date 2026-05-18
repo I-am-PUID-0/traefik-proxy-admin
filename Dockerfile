@@ -5,7 +5,7 @@ RUN apk add --update --no-cache git wget \
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm i --frozen-lockfile
+RUN corepack enable && pnpm i --frozen-lockfile
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -16,7 +16,7 @@ COPY . .
 RUN mkdir -p /app/public
 
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm install -g pnpm && \
+RUN corepack enable && \
     pnpm build
 
 # Production image, copy all the files and run next

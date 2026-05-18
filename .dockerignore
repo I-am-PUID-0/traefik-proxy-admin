@@ -5,3 +5,11 @@
 /.gitea
 /public/uploads
 .env
+
+.devcontainer/.pgdata/
+.pnpm-store/
+node_modules/
+.next/
+test-results/
+playwright-report/
+.git/
