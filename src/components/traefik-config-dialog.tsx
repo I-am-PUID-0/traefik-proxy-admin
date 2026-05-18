@@ -56,37 +56,12 @@ export function TraefikConfigDialog({ trigger }: TraefikConfigDialogProps) {
     }
   };
 
-  const traefikYaml = `# Add to traefik.yml or enable in a args
+  const traefikYaml = `# Traefik static config (file or args)
 providers:
   http:
     endpoint: "http://${config.adminPanelDomain}/api/traefik/config"
     pollInterval: "10s"
 `;
-
-  const dockerCompose = `# docker-compose.yml
-services:
-  traefik:
-    image: traefik:v3.0
-    container_name: traefik
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"  # Dashboard port (optional)
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik.yml:/traefik.yml:ro
-      - ./acme.json:/acme.json
-    environment:
-      # Add your DNS provider credentials here
-      - CLOUDFLARE_EMAIL=your-email@example.com
-      - CLOUDFLARE_API_KEY=your-api-key
-    networks:
-      - traefik
-
-networks:
-  traefik:
-    external: true`;
 
   return (
     <Dialog>
@@ -105,9 +80,9 @@ networks:
         <div className="space-y-6">
           {/* Step 1 */}
           <div className="space-y-3">
-            <h3 className="text-lg font-semibold">1. Traefik Configuration (traefik.yml)</h3>
+            <h3 className="text-lg font-semibold">1. Traefik Configuration</h3>
             <p className="text-sm text-muted-foreground">
-              Create or update your traefik.yml file with the following configuration:
+              Add the HTTP provider configuration to Traefik:
             </p>
             <div className="relative">
               <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
@@ -118,27 +93,6 @@ networks:
                 size="sm"
                 className="absolute top-2 right-2"
                 onClick={() => copyToClipboard(traefikYaml)}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Step 2 */}
-          <div className="space-y-3">
-            <h3 className="text-lg font-semibold">2. Docker Compose Setup (Optional)</h3>
-            <p className="text-sm text-muted-foreground">
-              If using Docker Compose, here&apos;s a sample configuration:
-            </p>
-            <div className="relative">
-              <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
-                <code>{dockerCompose}</code>
-              </pre>
-              <Button
-                variant="outline"
-                size="sm"
-                className="absolute top-2 right-2"
-                onClick={() => copyToClipboard(dockerCompose)}
               >
                 <Copy className="h-4 w-4" />
               </Button>

@@ -99,23 +99,23 @@ pnpm lint          # Run linting
 ## Important Files
 
 ### Core Configuration
-- `lib/traefik-config.ts` - Traefik configuration generation logic
-- `lib/app-config.ts` - Global configuration management
-- `lib/session-manager.ts` - Session management with memory caching
-- `db/schema.ts` - Database schema definitions
+- `src/lib/traefik-config.ts` - Traefik configuration generation logic
+- `src/lib/app-config.ts` - Global configuration management
+- `src/lib/session-manager.ts` - Session management with memory caching
+- `src/lib/db/schema.ts` - Database schema definitions
 
 ### API Routes
-- `app/api/traefik/config/route.ts` - Traefik configuration endpoint
-- `app/api/services/` - Service CRUD operations
-- `app/api/auth/verify/route.ts` - Forward-auth validation
-- `app/api/config/route.ts` - Global configuration management
+- `src/app/api/traefik/config/route.ts` - Traefik configuration endpoint
+- `src/app/api/services/` - Service CRUD operations
+- `src/app/api/auth/verify/route.ts` - Forward-auth validation
+- `src/app/api/config/route.ts` - Global configuration management
 
 ### UI Components
-- `app/page.tsx` - Main admin panel with service management
-- `app/config/page.tsx` - Global configuration page
-- `app/sessions/page.tsx` - Session management interface
-- `components/confirm-dialog.tsx` - Reusable confirmation dialogs
-- `components/unsaved-changes-guard.tsx` - Unsaved changes protection
+- `src/app/page.tsx` - Main admin panel with service management
+- `src/app/config/page.tsx` - Global configuration page
+- `src/app/sessions/page.tsx` - Session management interface
+- `src/components/confirm-dialog.tsx` - Reusable confirmation dialogs
+- `src/components/unsaved-changes-guard.tsx` - Unsaved changes protection
 
 ## Security Features
 

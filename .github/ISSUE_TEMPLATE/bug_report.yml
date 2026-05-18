@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a problem to help improve the project.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened and what did you expect?
+      placeholder: Describe the bug clearly and concisely.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide a minimal set of steps.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste logs or add screenshots if helpful.
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Commit SHA or release version.
+      placeholder: e.g. 1.2.3 or abc1234

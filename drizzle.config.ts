@@ -9,7 +9,7 @@ export const dbCredentials = {
 export const migrationsFolder = "./drizzle/migrations";
 
 export default defineConfig({
-  schema: "./lib/db/schema.ts",
+  schema: "./src/lib/db/schema.ts",
   out: migrationsFolder,
   dialect: "postgresql",
   dbCredentials: dbCredentials,

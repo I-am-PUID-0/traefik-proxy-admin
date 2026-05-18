@@ -4,6 +4,7 @@
 /node_modules
 /.pnp
 .pnp.*
+/.pnpm-store
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
@@ -46,3 +47,6 @@ next-env.d.ts
 .claude/*.local.json
 .claude/agents
 mcp.json
+.devcontainer/.pgdata/
+playwright-report/
+test-results/

@@ -1,6 +1,6 @@
 "use client";
 
-import { Github, Heart } from "lucide-react";
+import { Code2, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function AppFooter() {
@@ -26,13 +26,22 @@ export function AppFooter() {
 
           <div className="flex items-center gap-6">
             <a
-              href="https://github.com/Janhouse/traefik-proxy-admin"
+              href="https://github.com/I-am-PUID-0/traefik-proxy-admin"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
             >
-              <Github className="h-4 w-4" />
+              <Code2 className="h-4 w-4" />
               <span>Source Code</span>
+            </a>
+
+            <a
+              href="https://github.com/I-am-PUID-0/traefik-proxy-admin/blob/main/NOTICE"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+            >
+              NOTICE
             </a>
 
             <div className="flex items-center gap-2">

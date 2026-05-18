@@ -76,6 +76,25 @@ pnpm dev
 
 The admin panel will be available at `http://localhost:3000`
 
+## Dev Container
+
+This repo includes a single-container devcontainer that runs PostgreSQL and Traefik inside the container.
+
+### 1. Reopen in Container
+
+In VS Code, run “Dev Containers: Rebuild and Reopen in Container”.
+
+### 2. Start the app
+
+```bash
+pnpm dev
+```
+
+### Notes
+
+- Postgres data persists under `.devcontainer/.pgdata/` on your host (gitignored).
+- The container prints helpful URLs and common commands at startup.
+
 ## Database Schema
 
 ### Services Table
@@ -151,7 +170,7 @@ The admin panel now supports configurable global settings that affect all servic
 Configure Traefik to use this service as a configuration provider:
 
 ```yaml
-# traefik.yml
+# Traefik static configuration (file or args)
 providers:
   http:
     endpoints:
@@ -168,7 +187,7 @@ entryPoints:
   websecure:
     address: ":443"
 
-# Configure your certificate resolver for wildcard certificates
+# Optional: configure your certificate resolver for wildcard certificates
 certificatesResolvers:
   letsencrypt-dns:  # Match this name in admin panel
     acme:
@@ -248,23 +267,16 @@ pnpm db:studio
 
 ```
 src/
-├── components/ui/          # shadcn/ui components
-├── db/                    # Database schema and connection
-├── lib/                   # Utility functions
-│   ├── traefik-config.ts  # Traefik configuration generation
-│   ├── session-manager.ts # Session management with memory cache
-│   ├── shared-links.ts    # Shared link utilities
-│   ├── sso-config.ts      # SSO configuration and handlers
-│   └── utils.ts           # General utilities
-app/
-├── api/                   # API routes
-│   ├── services/          # Service CRUD operations
-│   ├── sessions/          # Session management
-│   ├── traefik/           # Traefik configuration endpoint
-│   └── auth/              # Authentication endpoints
-├── sessions/              # Session management UI
-├── auth/                  # Authentication pages
-└── page.tsx               # Main admin panel
+├── app/                   # App router pages and API routes
+├── components/ui/         # shadcn/ui components
+├── hooks/                 # React hooks
+└── lib/                   # Server/client utilities and services
+    ├── db/                # Database schema and connection
+    ├── traefik-config.ts  # Traefik configuration generation
+    ├── session-manager.ts # Session management with memory cache
+    ├── shared-links.ts    # Shared link utilities
+    ├── sso-config.ts      # SSO configuration and handlers
+    └── utils.ts           # General utilities
 ```
 
 ## Security Considerations
@@ -283,6 +295,12 @@ app/
 4. Add tests if applicable
 5. Submit a pull request
 
+## Fork Notice
+
+This is a community-maintained fork of https://github.com/Janhouse/traefik-proxy-admin.
+
 ## License
 
-[Add your license here]
+Copyright (c) 2025 The Traefik Proxy Admin Contributors
+
+This project is licensed under AGPL-3.0-or-later. See LICENSE and NOTICE.

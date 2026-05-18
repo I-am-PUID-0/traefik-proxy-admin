@@ -1,4 +1,4 @@
-FROM node:23-alpine AS base
+FROM node:22-alpine AS base
 RUN apk add --update --no-cache git wget \
   && rm -rf /var/cache/apk/*
 
@@ -26,9 +26,9 @@ WORKDIR /app
 # Add OCI labels for GitHub Container Registry
 LABEL org.opencontainers.image.title="Traefik Proxy Admin Panel"
 LABEL org.opencontainers.image.description="Web UI admin panel for managing Traefik dynamic configurations with authentication support"
-LABEL org.opencontainers.image.source="https://github.com/Janhouse/traefik-proxy-admin"
+LABEL org.opencontainers.image.source="https://github.com/I-am-PUID-0/traefik-proxy-admin"
 LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later"
-LABEL org.opencontainers.image.vendor="Janhouse"
+LABEL org.opencontainers.image.vendor="The Traefik Proxy Admin Contributors"
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1

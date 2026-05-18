@@ -1,0 +1,46 @@
+{
+  "name": "traefik-proxy-admin",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": [8081, 3000, 5432, 8080],
+  "postCreateCommand": "corepack enable && pnpm install && pnpm exec playwright install --with-deps && git config --global --add safe.directory /workspaces/${localWorkspaceFolderBasename}",
+  "postStartCommand": "/usr/local/bin/start-services.sh",
+  "mounts": [
+    "source=${localWorkspaceFolder}/.devcontainer/.pgdata,target=/var/lib/postgresql/data,type=bind",
+    "source=vscode-server,target=/root/.vscode-server,type=volume"
+  ],
+  "containerEnv": {
+    "DATABASE_URL": "postgresql://admin:password@localhost:5432/traefik_share",
+    "POSTGRES_DB": "traefik_share",
+    "POSTGRES_USER": "admin",
+    "POSTGRES_PASSWORD": "password",
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "WATCHPACK_POLLING": "true",
+    "WORKSPACE_FOLDER": "/workspaces/${localWorkspaceFolderBasename}"
+  },
+  "runArgs": [
+    "--name=traefik-proxy-admin-dev",
+    "--hostname=traefik-proxy-admin-dev",
+    "--dns=8.8.8.8",
+    "--dns=8.8.4.4",
+    "--shm-size=128m"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true,
+        "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"]
+      }
+    }
+  }
+}
