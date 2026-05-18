@@ -59,7 +59,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
         insecureSkipVerify: false,
         enabled: true,
         enableDurationMinutes: null,
-        middlewares: ["compress@file"],
+        middlewares: "compress@file",
         requestHeaders: {
           "X-E2E-Test": suffix,
         },
@@ -90,7 +90,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
         insecureSkipVerify: true,
         enabled: true,
         enableDurationMinutes: null,
-        middlewares: ["compress@file"],
+        middlewares: "compress@file",
         requestHeaders: {
           "X-E2E-Test": `${suffix}-updated`,
         },

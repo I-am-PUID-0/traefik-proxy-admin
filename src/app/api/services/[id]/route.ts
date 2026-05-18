@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ServiceService } from "@/lib/services/service.service";
 import { DomainService } from "@/lib/services/domain.service";
 import type { UpdateServiceData, UpdateServiceRequest } from "@/lib/dto/service.dto";
+import { parseMiddlewareNames } from "@/lib/middleware-utils";
 
 export async function GET(
   request: NextRequest,
@@ -47,6 +48,8 @@ export async function PUT(
       }
     }
 
+    const middlewareNames = parseMiddlewareNames(body.middlewares);
+
     const updateData: UpdateServiceData = {
       name: body.name,
       subdomain: body.subdomain || null,
@@ -59,7 +62,7 @@ export async function PUT(
       isHttps: body.isHttps ?? false,
       insecureSkipVerify: body.insecureSkipVerify ?? false,
       enabled: body.enabled ?? true,
-      middlewares: body.middlewares ? JSON.stringify(body.middlewares) : null,
+      middlewares: middlewareNames.length > 0 ? JSON.stringify(middlewareNames) : null,
       requestHeaders: body.requestHeaders
         ? (typeof body.requestHeaders === 'string' ? body.requestHeaders : JSON.stringify(body.requestHeaders))
         : null,

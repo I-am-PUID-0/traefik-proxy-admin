@@ -83,4 +83,5 @@ Common commands:
 - pnpm db:generate (generate migrations)
 - pnpm db:push (apply schema changes)
 - pnpm up --latest (update dependencies)
+- pnpm verify (run all checks: lint, test, build)
 EOF

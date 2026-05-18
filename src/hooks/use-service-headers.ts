@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { ServiceFormData } from "./use-service-form";
+import { formatMiddlewareNames } from "@/lib/middleware-utils";
 
 interface UseServiceHeadersOptions {
   formData: ServiceFormData;
@@ -12,7 +13,7 @@ export function useServiceHeaders({ formData, updateFormData }: UseServiceHeader
 
   // Initialize middleware text from form data
   useEffect(() => {
-    setMiddlewareText(formData.middlewares || "");
+    setMiddlewareText(formatMiddlewareNames(formData.middlewares));
   }, [formData.middlewares]);
 
   // Initialize host header from form data

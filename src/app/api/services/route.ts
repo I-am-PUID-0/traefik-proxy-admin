@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ServiceService } from "@/lib/services/service.service";
 import { DomainService } from "@/lib/services/domain.service";
 import type { CreateServiceData, CreateServiceRequest } from "@/lib/dto/service.dto";
+import { parseMiddlewareNames } from "@/lib/middleware-utils";
 import "@/lib/startup"; // Initialize background services
 
 export async function GET() {
@@ -43,6 +44,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const middlewareNames = parseMiddlewareNames(body.middlewares);
+
     const newService: CreateServiceData = {
       name: body.name,
       subdomain: body.subdomain || null,
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
       insecureSkipVerify: body.insecureSkipVerify ?? false,
       enabled: body.enabled ?? true,
       enableDurationMinutes: body.enableDurationMinutes ?? null,
-      middlewares: body.middlewares ? JSON.stringify(body.middlewares) : null,
+      middlewares: middlewareNames.length > 0 ? JSON.stringify(middlewareNames) : null,
       requestHeaders: body.requestHeaders
         ? (typeof body.requestHeaders === 'string' ? body.requestHeaders : JSON.stringify(body.requestHeaders))
         : null,

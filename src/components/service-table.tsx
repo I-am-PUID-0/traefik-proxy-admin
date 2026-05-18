@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { ServiceCountdown } from "@/components/service-countdown";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { formatMiddlewareNames } from "@/lib/middleware-utils";
 
 export interface Service {
   id: string;
@@ -86,6 +87,9 @@ export function ServiceTable({
   const [deletingService, setDeletingService] = useState<string | null>(null);
   const [togglingService, setTogglingService] = useState<string | null>(null);
   const router = useRouter();
+
+  const getMiddlewareText = (middlewares: Service["middlewares"]) =>
+    formatMiddlewareNames(middlewares);
 
   const formatDurationForButton = (durationMinutes: number | null | undefined): string => {
     if (!durationMinutes) return "∞";
@@ -355,11 +359,11 @@ export function ServiceTable({
                   </div>
                 </div>
 
-                {service.middlewares && (
+                {getMiddlewareText(service.middlewares) && (
                   <div className="mt-3 pt-3 border-t">
                     <label className="text-gray-500 dark:text-gray-400 text-xs">Middlewares</label>
                     <p className="text-xs font-mono text-gray-600 dark:text-gray-300">
-                      {service.middlewares}
+                      {getMiddlewareText(service.middlewares)}
                     </p>
                   </div>
                 )}

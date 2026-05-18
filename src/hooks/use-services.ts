@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import type { Service } from "@/components/service-table";
 import type { ServiceFormData } from "./use-service-form";
+import { parseMiddlewareNames } from "@/lib/middleware-utils";
 
 export function useServices() {
   const [services, setServices] = useState<Service[]>([]);
@@ -42,13 +43,18 @@ export function useServices() {
   const saveService = useCallback(async (serviceData: ServiceFormData, editingService?: Service | null) => {
     const url = editingService ? `/api/services/${editingService.id}` : "/api/services";
     const method = editingService ? "PUT" : "POST";
+    const middlewareNames = parseMiddlewareNames(serviceData.middlewares);
+    const payload = {
+      ...serviceData,
+      middlewares: middlewareNames.length > 0 ? middlewareNames : undefined,
+    };
 
     const response = await fetch(url, {
       method,
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(serviceData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
