@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.2.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.1.0...v1.2.0) (2026-05-18)
+
+
+### Features
+
+* enhance Docker workflow with QEMU setup and multi-platform support ([9473887](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/94738874ad34da0fa6b650c62f4419c0eb92ea49))
+
 ## [1.1.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.0.0...v1.1.0) (2026-05-18)
 
 
