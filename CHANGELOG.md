@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.1.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.0.0...v1.1.0) (2026-05-18)
+
+
+### Features
+
+* add functional API coverage and pre-push verification ([04a4bd7](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/04a4bd7413996344a2d2c4514e8e886b6ced0f63))
+* add Traefik discovery and service validation tools ([25482c7](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/25482c7a8ae1e71bef53eb6b6fa8f4e99f912332))
+* add Traefik live diagnostics and import tools ([bef5dbe](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/bef5dbee7dee99ded3d7492338b71e3f667a5f3a))
+* discover Traefik middlewares for service configuration ([443e0a6](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/443e0a6e79990c00628aec226d1b704306c486ae))
+* validate configured middlewares against Traefik discovery ([4abdccd](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/4abdccdecda9f6424e2e0fb9a8472a5ddf456405))
+
+
+### Bug Fixes
+
+* normalize service middleware names ([3c3667e](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/3c3667ed09a188011b9d538eb91ff86d9d06ead0))
+
 ## [1.0.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v0.1.0...v1.0.0) (2026-05-18)
 
 
