@@ -68,6 +68,8 @@ cp .env.example .env
 # Edit .env with your configuration
 ```
 
+At minimum, the app needs `DATABASE_URL` so it can connect to PostgreSQL. `TRAEFIK_API_URL` is optional and is only used to discover existing Traefik middlewares for the service form dropdown.
+
 ### 4. Start the Development Server
 
 ```bash
@@ -75,6 +77,26 @@ pnpm dev
 ```
 
 The admin panel will be available at `http://localhost:3000`
+
+## Production Docker Image
+
+The published Docker image contains the built Next.js app only. It does not bundle PostgreSQL or Traefik; those should run as separate services.
+
+Required environment:
+
+```env
+DATABASE_URL=postgresql://user:password@postgres:5432/traefik_share
+```
+
+Optional environment:
+
+```env
+TRAEFIK_API_URL=http://traefik:8080
+```
+
+`TRAEFIK_API_URL` is used only by `/api/traefik/middlewares` to populate the available middleware selector in the service form. It is not required for `/api/traefik/config`; Traefik can still poll the app-generated dynamic config without it. If unset, the app defaults middleware discovery to `http://localhost:8080`, which is usually only useful in the devcontainer.
+
+For production, point `TRAEFIK_API_URL` at an internal Docker network hostname, VPN-only address, or another protected Traefik API endpoint. Do not expose Traefik's API/dashboard publicly without authentication.
 
 ## Dev Container
 
@@ -93,6 +115,8 @@ pnpm dev
 ### Notes
 
 - Postgres data persists under `.devcontainer/.pgdata/` on your host (gitignored).
+- Traefik file-provider config is watched from `.devcontainer/traefik/dynamic/*.yml`. Add local development middlewares there, then reference them as `name@file`.
+- The service form can read available middlewares from Traefik via `/api/traefik/middlewares` when Traefik API is reachable. Set `TRAEFIK_API_URL` in `.env` to point at an external Traefik API; if unset, the app defaults to `http://localhost:8080`.
 - The container prints helpful URLs and common commands at startup.
 
 ### Pre-Push Verification

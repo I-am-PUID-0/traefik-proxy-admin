@@ -65,6 +65,8 @@ if ! pgrep -x traefik >/dev/null 2>&1; then
     --entrypoints.web.address=:8081 \
     --providers.http.endpoint="http://localhost:3000/api/traefik/config" \
     --providers.http.pollInterval=10s \
+    --providers.file.directory="${WORKSPACE_FOLDER}/.devcontainer/traefik/dynamic" \
+    --providers.file.watch=true \
     >/var/log/traefik.log 2>&1 &
 fi
 
@@ -83,5 +85,6 @@ Common commands:
 - pnpm db:generate (generate migrations)
 - pnpm db:push (apply schema changes)
 - pnpm up --latest (update dependencies)
-- pnpm verify (run all checks: lint, test, build)
+- pnpm verify (run all checks: audit, lint, test, e2e, build)
+- Traefik file-provider config: .devcontainer/traefik/dynamic/*.yml
 EOF

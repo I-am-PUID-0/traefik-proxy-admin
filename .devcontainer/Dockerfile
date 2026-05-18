@@ -13,8 +13,14 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 RUN set -e; \
-  arch="amd64"; \
-  if [ "${TARGETARCH:-}" = "arm64" ]; then arch="arm64"; fi; \
+  arch="${TARGETARCH:-}"; \
+  if [ -z "${arch}" ]; then \
+    case "$(dpkg --print-architecture)" in \
+      arm64) arch="arm64" ;; \
+      amd64) arch="amd64" ;; \
+      *) echo "Unsupported architecture: $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac; \
+  fi; \
   curl -fsSL "https://github.com/traefik/traefik/releases/download/v${TRAEFIK_VERSION}/traefik_v${TRAEFIK_VERSION}_linux_${arch}.tar.gz" -o /tmp/traefik.tgz; \
   tar -xzf /tmp/traefik.tgz -C /usr/local/bin traefik; \
   rm /tmp/traefik.tgz

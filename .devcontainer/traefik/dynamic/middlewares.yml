@@ -1,0 +1,11 @@
+http:
+  middlewares:
+    chain-oauth:
+      chain:
+        middlewares:
+          - secure-headers
+    secure-headers:
+      headers:
+        customResponseHeaders:
+          X-Frame-Options: SAMEORIGIN
+          X-Content-Type-Options: nosniff

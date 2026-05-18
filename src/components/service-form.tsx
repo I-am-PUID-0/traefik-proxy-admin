@@ -14,6 +14,8 @@ import { X, Save, AlertCircle } from "lucide-react";
 import { useServiceForm, type ServiceFormData } from "@/hooks/use-service-form";
 import { useServiceHeaders } from "@/hooks/use-service-headers";
 import { useDomains } from "@/lib/hooks/use-domains";
+import { useTraefikMiddlewares } from "@/lib/hooks/use-traefik-middlewares";
+import { parseMiddlewareNames } from "@/lib/middleware-utils";
 import type { Service } from "./service-table";
 
 interface ServiceFormProps {
@@ -44,6 +46,7 @@ export function ServiceForm({
   });
 
   const { domains, fetchDomains } = useDomains();
+  const { middlewares: availableMiddlewares, loading: loadingMiddlewares } = useTraefikMiddlewares();
 
   useEffect(() => {
     fetchDomains();
@@ -66,6 +69,13 @@ export function ServiceForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit(formData);
+  };
+
+  const addMiddleware = (middlewareName: string) => {
+    const middlewareNames = parseMiddlewareNames(middlewareText);
+    if (!middlewareNames.includes(middlewareName)) {
+      setMiddlewareText([...middlewareNames, middlewareName].join(", "));
+    }
   };
 
   const handleCancel = () => {
@@ -316,13 +326,36 @@ export function ServiceForm({
 
               <div className="space-y-2">
                 <Label htmlFor="middlewares">Middlewares (comma-separated)</Label>
-                <Input
-                  id="middlewares"
-                  value={middlewareText}
-                  onChange={(e) => setMiddlewareText(e.target.value)}
-                  placeholder="auth@file, ratelimit@file"
-                  disabled={submitting}
-                />
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="middlewares"
+                    value={middlewareText}
+                    onChange={(e) => setMiddlewareText(e.target.value)}
+                    placeholder="auth@file, ratelimit@file"
+                    disabled={submitting}
+                  />
+                  <Select
+                    value=""
+                    onValueChange={(value) => {
+                      if (value) {
+                        addMiddleware(value);
+                      }
+                    }}
+                    disabled={submitting || loadingMiddlewares || availableMiddlewares.length === 0}
+                  >
+                    <SelectTrigger className="w-full sm:w-64">
+                      <SelectValue placeholder={loadingMiddlewares ? "Loading middlewares" : "Add middleware"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableMiddlewares.map((middleware) => (
+                        <SelectItem key={middleware.name} value={middleware.name}>
+                          {middleware.name}
+                          {middleware.type && ` (${middleware.type})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <p className="text-xs text-gray-500">
                   Optional Traefik middlewares to apply to this service
                 </p>
