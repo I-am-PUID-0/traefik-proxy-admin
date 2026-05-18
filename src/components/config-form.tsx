@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DURATION_PRESETS } from "@/lib/duration-presets";
 import { GlobalConfig } from "@/lib/hooks/use-config";
+import { useTraefikEntrypoints } from "@/lib/hooks/use-traefik-entrypoints";
 
 interface ConfigFormProps {
   config: GlobalConfig;
@@ -21,6 +22,22 @@ export function ConfigForm({
   middlewareText,
   onMiddlewareTextChange
 }: ConfigFormProps) {
+  const {
+    entrypoints: availableEntrypoints,
+    loading: loadingEntrypoints,
+    configured: entrypointDiscoveryConfigured,
+    error: entrypointDiscoveryError,
+  } = useTraefikEntrypoints();
+  const entrypointSelectPlaceholder = loadingEntrypoints
+    ? "Loading entrypoints"
+    : !entrypointDiscoveryConfigured
+      ? "Discovery unavailable"
+      : entrypointDiscoveryError
+        ? "Discovery failed"
+        : availableEntrypoints.length === 0
+          ? "No entrypoints found"
+          : "Use discovered entrypoint";
+
   return (
     <div className="space-y-6">
       {/* Domain & Certificate Settings */}
@@ -41,14 +58,37 @@ export function ConfigForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor="defaultEntrypoint">Default Entrypoint</Label>
-              <Input
-                id="defaultEntrypoint"
-                placeholder="websecure (optional)"
-                value={config.defaultEntrypoint || ""}
-                onChange={(e) =>
-                  onConfigChange({ ...config, defaultEntrypoint: e.target.value })
-                }
-              />
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="defaultEntrypoint"
+                  placeholder="websecure (optional)"
+                  value={config.defaultEntrypoint || ""}
+                  onChange={(e) =>
+                    onConfigChange({ ...config, defaultEntrypoint: e.target.value })
+                  }
+                />
+                <Select
+                  value=""
+                  onValueChange={(value) => {
+                    if (value) {
+                      onConfigChange({ ...config, defaultEntrypoint: value });
+                    }
+                  }}
+                  disabled={loadingEntrypoints || availableEntrypoints.length === 0}
+                >
+                  <SelectTrigger className="w-full sm:w-64">
+                    <SelectValue placeholder={entrypointSelectPlaceholder} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableEntrypoints.map((entrypoint) => (
+                      <SelectItem key={entrypoint.name} value={entrypoint.name}>
+                        {entrypoint.name}
+                        {entrypoint.address && ` (${entrypoint.address})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <p className="text-xs text-muted-foreground">
                 Default Traefik entrypoint for all services (optional)
               </p>

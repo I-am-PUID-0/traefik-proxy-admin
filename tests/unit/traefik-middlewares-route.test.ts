@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GET } from "@/app/api/traefik/middlewares/route";
+vi.mock("server-only", () => ({}));
 
 describe("Traefik middleware discovery route", () => {
   afterEach(() => {
@@ -13,6 +13,7 @@ describe("Traefik middleware discovery route", () => {
     vi.stubEnv("TRAEFIK_API_URL", "");
     vi.stubGlobal("fetch", fetchMock);
 
+    const { GET } = await import("@/app/api/traefik/middlewares/route");
     const response = await GET();
     const body = await response.json();
 

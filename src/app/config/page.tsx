@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Save, RefreshCw } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
 import { ConfigForm } from "@/components/config-form";
+import { TraefikApiStatusCard } from "@/components/traefik-api-status-card";
 import { useConfig } from "@/lib/hooks/use-config";
 
 export default function ConfigPage() {
@@ -52,6 +53,8 @@ export default function ConfigPage() {
             </Button>
           </div>
         </div>
+
+        <TraefikApiStatusCard />
 
         <ConfigForm
           config={config}

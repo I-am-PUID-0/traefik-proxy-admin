@@ -99,6 +99,41 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
 
     expect(updateService.ok()).toBe(true);
 
+    const targetTest = await request.post("/api/services/test-target", {
+      data: {
+        targetIp: "127.0.0.1",
+        targetPort: 3000,
+      },
+    });
+    expect(targetTest.ok()).toBe(true);
+    const targetTestBody = await targetTest.json();
+    expect(targetTestBody.reachable).toBe(true);
+
+    const previewResponse = await request.post("/api/traefik/service-preview", {
+      data: {
+        serviceId,
+        name: `E2E Service ${suffix} Updated`,
+        subdomain,
+        hostnameMode: "subdomain",
+        domainId,
+        targetIp: "127.0.0.1",
+        targetPort: 9090,
+        entrypoint: "websecure",
+        isHttps: true,
+        insecureSkipVerify: true,
+        enabled: true,
+        middlewares: "compress@file",
+        requestHeaders: {
+          "X-E2E-Test": `${suffix}-updated`,
+        },
+      },
+    });
+    expect(previewResponse.ok()).toBe(true);
+    const preview = await previewResponse.json();
+    expect(preview.proposed.routerName).toBe(routerName);
+    expect(preview.proposed.serviceName).toBe(serviceName);
+    expect(preview.proposed.router.middlewares).toContain("compress@file");
+
     const configResponse = await request.get("/api/traefik/config");
     expect(configResponse.ok()).toBe(true);
     const config = await configResponse.json();

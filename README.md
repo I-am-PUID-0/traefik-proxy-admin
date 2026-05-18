@@ -94,7 +94,7 @@ Optional environment:
 TRAEFIK_API_URL=http://traefik:8080
 ```
 
-`TRAEFIK_API_URL` is used only by `/api/traefik/middlewares` to populate the available middleware selector and validate entered middleware names in the service form. It is not required for `/api/traefik/config`; Traefik can still poll the app-generated dynamic config without it. In production, if `TRAEFIK_API_URL` is unset, middleware discovery is disabled and manual middleware values remain editable. In development, the app falls back to `http://localhost:8080` for the devcontainer Traefik instance.
+`TRAEFIK_API_URL` is used by Traefik discovery endpoints (`/api/traefik/status`, `/api/traefik/entrypoints`, `/api/traefik/middlewares`, `/api/traefik/routers`, and `/api/traefik/services`) to populate selectors, validate entered middleware names, and show live API health. It is not required for `/api/traefik/config`; Traefik can still poll the app-generated dynamic config without it. In production, if `TRAEFIK_API_URL` is unset, middleware discovery is disabled and manual middleware values remain editable. In development, the app falls back to `http://localhost:8080` for the devcontainer Traefik instance.
 
 For production, point `TRAEFIK_API_URL` at an internal Docker network hostname, VPN-only address, or another protected Traefik API endpoint. Do not expose Traefik's API/dashboard publicly without authentication.
 
@@ -116,7 +116,7 @@ pnpm dev
 
 - Postgres data persists under `.devcontainer/.pgdata/` on your host (gitignored).
 - Traefik file-provider config is watched from `.devcontainer/traefik/dynamic/*.yml`. Add local development middlewares there, then reference them as `name@file`.
-- The service form can read available middlewares from Traefik via `/api/traefik/middlewares` when Traefik API is reachable. Set `TRAEFIK_API_URL` in `.env` to point at an external Traefik API; if unset during development, the app defaults to `http://localhost:8080`.
+- The app can read Traefik API status, entrypoints, middlewares, routers, and services when Traefik API is reachable. Set `TRAEFIK_API_URL` in `.env` to point at an external Traefik API; if unset during development, the app defaults to `http://localhost:8080`.
 - The container prints helpful URLs and common commands at startup.
 
 ### Pre-Push Verification
@@ -165,6 +165,12 @@ pnpm build
 
 ### Traefik Configuration
 - `GET /api/traefik/config` - Dynamic Traefik configuration
+- `GET /api/traefik/status` - Traefik API discovery health
+- `GET /api/traefik/entrypoints` - Discovered Traefik entrypoints
+- `GET /api/traefik/middlewares` - Discovered Traefik middlewares
+- `GET /api/traefik/routers` - Discovered Traefik routers
+- `GET /api/traefik/services` - Discovered Traefik services
+- `POST /api/traefik/service-preview` - Preview generated Traefik router/service config for unsaved service form data
 
 ### Service Management
 - `GET /api/services` - List all services
@@ -172,6 +178,7 @@ pnpm build
 - `PUT /api/services/[id]` - Update service
 - `DELETE /api/services/[id]` - Delete service
 - `POST /api/services/share-link` - Generate shared link
+- `POST /api/services/test-target` - Test TCP reachability for a service target host/port
 
 ### Authentication
 - `GET /api/auth/verify` - Forward-auth endpoint for Traefik
@@ -300,7 +307,7 @@ Use the devcontainer for local validation before opening or updating a pull requ
 pnpm verify
 ```
 
-The Playwright suite includes functional API coverage for service/domain lifecycle behavior and generated Traefik configuration.
+The Playwright suite includes functional API coverage for service/domain lifecycle behavior, generated Traefik configuration, target reachability testing, and service config preview behavior.
 
 ### Database Commands
 

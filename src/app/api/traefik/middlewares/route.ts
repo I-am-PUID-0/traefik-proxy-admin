@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchTraefikApi } from "@/lib/traefik/api-client";
 
 interface TraefikMiddlewareSummary {
   name?: string;
@@ -31,11 +32,9 @@ function normalizeMiddlewareName(middleware: TraefikMiddlewareSummary): Availabl
 }
 
 export async function GET() {
-  const traefikApiUrl = process.env.TRAEFIK_API_URL || (
-    process.env.NODE_ENV === "production" ? undefined : "http://localhost:8080"
-  );
+  const result = await fetchTraefikApi<TraefikMiddlewareSummary[]>("/api/http/middlewares");
 
-  if (!traefikApiUrl) {
+  if (!result.state.configured) {
     return NextResponse.json({
       configured: false,
       error: "TRAEFIK_API_URL is not configured",
@@ -43,30 +42,17 @@ export async function GET() {
     });
   }
 
-  try {
-    const response = await fetch(`${traefikApiUrl}/api/http/middlewares`, {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { configured: true, error: "Failed to fetch Traefik middlewares", middlewares: [] },
-        { status: 502 },
-      );
-    }
-
-    const middlewares = await response.json() as TraefikMiddlewareSummary[];
-    const normalized = middlewares
-      .map(normalizeMiddlewareName)
-      .filter((middleware): middleware is AvailableMiddleware => middleware !== null)
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    return NextResponse.json({ configured: true, middlewares: normalized });
-  } catch (error) {
-    console.error("Error fetching Traefik middlewares:", error);
+  if (!result.response?.ok || !Array.isArray(result.data)) {
     return NextResponse.json(
-      { configured: true, error: "Failed to connect to Traefik API", middlewares: [] },
+      { configured: true, error: result.error || "Failed to fetch Traefik middlewares", middlewares: [] },
       { status: 502 },
     );
   }
+
+  const normalized = result.data
+    .map(normalizeMiddlewareName)
+    .filter((middleware): middleware is AvailableMiddleware => middleware !== null)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return NextResponse.json({ configured: true, middlewares: normalized });
 }

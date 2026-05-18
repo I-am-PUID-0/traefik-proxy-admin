@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,10 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { DurationSelect } from "@/components/duration-select";
-import { X, Save, AlertCircle } from "lucide-react";
+import { X, Save, AlertCircle, PlugZap, FileText } from "lucide-react";
 import { useServiceForm, type ServiceFormData } from "@/hooks/use-service-form";
 import { useServiceHeaders } from "@/hooks/use-service-headers";
 import { useDomains } from "@/lib/hooks/use-domains";
+import { useTraefikEntrypoints } from "@/lib/hooks/use-traefik-entrypoints";
 import { useTraefikMiddlewares } from "@/lib/hooks/use-traefik-middlewares";
 import { getUnknownMiddlewareNames, parseMiddlewareNames } from "@/lib/middleware-utils";
 import type { Service } from "./service-table";
@@ -44,6 +45,20 @@ export function ServiceForm({
     formData,
     updateFormData,
   });
+  const [targetTest, setTargetTest] = useState<{
+    reachable: boolean;
+    durationMs?: number;
+    error?: string;
+    target?: string;
+  } | null>(null);
+  const [testingTarget, setTestingTarget] = useState(false);
+  const [configPreview, setConfigPreview] = useState<{
+    current: unknown;
+    proposed: unknown;
+    diff: string[];
+    error?: string;
+  } | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   const { domains, fetchDomains } = useDomains();
   const {
@@ -52,6 +67,12 @@ export function ServiceForm({
     configured: middlewareDiscoveryConfigured,
     error: middlewareDiscoveryError,
   } = useTraefikMiddlewares();
+  const {
+    entrypoints: availableEntrypoints,
+    loading: loadingEntrypoints,
+    configured: entrypointDiscoveryConfigured,
+    error: entrypointDiscoveryError,
+  } = useTraefikEntrypoints();
 
   useEffect(() => {
     fetchDomains();
@@ -79,6 +100,15 @@ export function ServiceForm({
         : availableMiddlewares.length === 0
           ? "No middlewares found"
           : "Add middleware";
+  const entrypointSelectPlaceholder = loadingEntrypoints
+    ? "Loading entrypoints"
+    : !entrypointDiscoveryConfigured
+      ? "Discovery unavailable"
+      : entrypointDiscoveryError
+        ? "Discovery failed"
+        : availableEntrypoints.length === 0
+          ? "No entrypoints found"
+          : "Use discovered entrypoint";
   const unknownMiddlewares = canValidateMiddlewares
     ? getUnknownMiddlewareNames(
         middlewareText,
@@ -90,6 +120,52 @@ export function ServiceForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit(formData);
+  };
+
+  const testTarget = async () => {
+    setTestingTarget(true);
+    setTargetTest(null);
+
+    try {
+      const response = await fetch("/api/services/test-target", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetIp: formData.targetIp,
+          targetPort: formData.targetPort,
+        }),
+      });
+      const data = await response.json().catch(() => ({ reachable: false, error: "Invalid response" }));
+      setTargetTest(data);
+    } catch (error) {
+      console.error("Error testing target:", error);
+      setTargetTest({ reachable: false, error: "Failed to test target" });
+    } finally {
+      setTestingTarget(false);
+    }
+  };
+
+  const loadConfigPreview = async () => {
+    setLoadingPreview(true);
+    setConfigPreview(null);
+
+    try {
+      const response = await fetch("/api/traefik/service-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          serviceId: service?.id,
+        }),
+      });
+      const data = await response.json().catch(() => ({ error: "Invalid response" }));
+      setConfigPreview(response.ok ? data : { current: null, proposed: null, diff: [], error: data.error });
+    } catch (error) {
+      console.error("Error loading config preview:", error);
+      setConfigPreview({ current: null, proposed: null, diff: [], error: "Failed to load config preview" });
+    } finally {
+      setLoadingPreview(false);
+    }
   };
 
   const addMiddleware = (middlewareName: string) => {
@@ -266,7 +342,10 @@ export function ServiceForm({
                 <Input
                   id="targetIp"
                   value={formData.targetIp}
-                  onChange={(e) => updateFormData({ targetIp: e.target.value })}
+                  onChange={(e) => {
+                    updateFormData({ targetIp: e.target.value });
+                    setTargetTest(null);
+                  }}
                   placeholder="192.168.1.100"
                   required
                   disabled={submitting}
@@ -275,26 +354,71 @@ export function ServiceForm({
 
               <div className="space-y-2">
                 <Label htmlFor="targetPort">Target Port</Label>
-                <Input
-                  id="targetPort"
-                  type="number"
-                  value={formData.targetPort}
-                  onChange={(e) => updateFormData({ targetPort: parseInt(e.target.value) || 80 })}
-                  placeholder="80"
-                  required
-                  disabled={submitting}
-                />
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="targetPort"
+                    type="number"
+                    value={formData.targetPort}
+                    onChange={(e) => {
+                      updateFormData({ targetPort: parseInt(e.target.value) || 80 });
+                      setTargetTest(null);
+                    }}
+                    placeholder="80"
+                    required
+                    disabled={submitting}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={testTarget}
+                    disabled={submitting || testingTarget || !formData.targetIp || !formData.targetPort}
+                    className="shrink-0"
+                  >
+                    <PlugZap className="mr-2 h-4 w-4" />
+                    {testingTarget ? "Testing" : "Test"}
+                  </Button>
+                </div>
+                {targetTest && (
+                  <p className={targetTest.reachable ? "text-xs text-green-600" : "text-xs text-amber-700 dark:text-amber-300"}>
+                    {targetTest.reachable
+                      ? `Reachable in ${targetTest.durationMs ?? 0}ms`
+                      : targetTest.error || "Target is unreachable"}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="entrypoint">Entrypoint (optional)</Label>
-                <Input
-                  id="entrypoint"
-                  value={formData.entrypoint || ""}
-                  onChange={(e) => updateFormData({ entrypoint: e.target.value || null })}
-                  placeholder="websecure"
-                  disabled={submitting}
-                />
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    id="entrypoint"
+                    value={formData.entrypoint || ""}
+                    onChange={(e) => updateFormData({ entrypoint: e.target.value || null })}
+                    placeholder="websecure"
+                    disabled={submitting}
+                  />
+                  <Select
+                    value=""
+                    onValueChange={(value) => {
+                      if (value) {
+                        updateFormData({ entrypoint: value });
+                      }
+                    }}
+                    disabled={submitting || loadingEntrypoints || availableEntrypoints.length === 0}
+                  >
+                    <SelectTrigger className="w-full sm:w-64">
+                      <SelectValue placeholder={entrypointSelectPlaceholder} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableEntrypoints.map((entrypoint) => (
+                        <SelectItem key={entrypoint.name} value={entrypoint.name}>
+                          {entrypoint.name}
+                          {entrypoint.address && ` (${entrypoint.address})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <p className="text-xs text-gray-500">
                   Override the default entrypoint for this service
                 </p>
@@ -410,6 +534,47 @@ export function ServiceForm({
                   Override the Host header sent to the target service
                 </p>
               </div>
+            </div>
+
+            <div className="rounded-lg border bg-card p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="font-medium">Generated Config Preview</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Preview the router, service, middleware, and transport slice for this form.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={loadConfigPreview}
+                  disabled={submitting || loadingPreview || !formData.domainId || !formData.targetIp || !formData.targetPort}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
+                  {loadingPreview ? "Loading" : "Preview"}
+                </Button>
+              </div>
+
+              {configPreview?.error && (
+                <p className="mt-3 text-sm text-amber-700 dark:text-amber-300">{configPreview.error}</p>
+              )}
+
+              {configPreview && !configPreview.error && (
+                <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Proposed</p>
+                    <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
+                      {JSON.stringify(configPreview.proposed, null, 2)}
+                    </pre>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Diff</p>
+                    <pre className="max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
+                      {configPreview.diff.length > 0 ? configPreview.diff.join("\n") : "No generated config changes"}
+                    </pre>
+                  </div>
+                </div>
+              )}
             </div>
 
             {hasUnsavedChanges && (
