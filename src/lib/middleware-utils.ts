@@ -37,3 +37,9 @@ export function parseMiddlewareNames(value: unknown): string[] {
 export function formatMiddlewareNames(value: unknown): string {
   return parseMiddlewareNames(value).join(", ");
 }
+
+export function getUnknownMiddlewareNames(value: unknown, availableNames: Iterable<string>): string[] {
+  const available = new Set(availableNames);
+
+  return parseMiddlewareNames(value).filter((name) => !available.has(name));
+}

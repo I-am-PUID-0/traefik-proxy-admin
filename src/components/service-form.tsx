@@ -15,7 +15,7 @@ import { useServiceForm, type ServiceFormData } from "@/hooks/use-service-form";
 import { useServiceHeaders } from "@/hooks/use-service-headers";
 import { useDomains } from "@/lib/hooks/use-domains";
 import { useTraefikMiddlewares } from "@/lib/hooks/use-traefik-middlewares";
-import { parseMiddlewareNames } from "@/lib/middleware-utils";
+import { getUnknownMiddlewareNames, parseMiddlewareNames } from "@/lib/middleware-utils";
 import type { Service } from "./service-table";
 
 interface ServiceFormProps {
@@ -46,7 +46,12 @@ export function ServiceForm({
   });
 
   const { domains, fetchDomains } = useDomains();
-  const { middlewares: availableMiddlewares, loading: loadingMiddlewares } = useTraefikMiddlewares();
+  const {
+    middlewares: availableMiddlewares,
+    loading: loadingMiddlewares,
+    configured: middlewareDiscoveryConfigured,
+    error: middlewareDiscoveryError,
+  } = useTraefikMiddlewares();
 
   useEffect(() => {
     fetchDomains();
@@ -64,6 +69,22 @@ export function ServiceForm({
 
   // Get the currently selected domain for display
   const selectedDomain = domains.find(d => d.id === formData.domainId);
+  const canValidateMiddlewares = !loadingMiddlewares && availableMiddlewares.length > 0;
+  const middlewareSelectPlaceholder = loadingMiddlewares
+    ? "Loading middlewares"
+    : !middlewareDiscoveryConfigured
+      ? "Discovery unavailable"
+      : middlewareDiscoveryError
+        ? "Discovery failed"
+        : availableMiddlewares.length === 0
+          ? "No middlewares found"
+          : "Add middleware";
+  const unknownMiddlewares = canValidateMiddlewares
+    ? getUnknownMiddlewareNames(
+        middlewareText,
+        availableMiddlewares.map((middleware) => middleware.name),
+      )
+    : [];
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -344,7 +365,7 @@ export function ServiceForm({
                     disabled={submitting || loadingMiddlewares || availableMiddlewares.length === 0}
                   >
                     <SelectTrigger className="w-full sm:w-64">
-                      <SelectValue placeholder={loadingMiddlewares ? "Loading middlewares" : "Add middleware"} />
+                      <SelectValue placeholder={middlewareSelectPlaceholder} />
                     </SelectTrigger>
                     <SelectContent>
                       {availableMiddlewares.map((middleware) => (
@@ -359,6 +380,21 @@ export function ServiceForm({
                 <p className="text-xs text-gray-500">
                   Optional Traefik middlewares to apply to this service
                 </p>
+                {!loadingMiddlewares && !middlewareDiscoveryConfigured && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Set TRAEFIK_API_URL to enable middleware discovery. Manual values are still allowed.
+                  </p>
+                )}
+                {unknownMiddlewares.length > 0 && (
+                  <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div>
+                      <p className="font-medium">Not found in the currently discovered Traefik middlewares:</p>
+                      <p className="mt-1 font-mono text-xs">{unknownMiddlewares.join(", ")}</p>
+                      <p className="mt-1 text-xs">You can still save manual provider values.</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMiddlewareNames, parseMiddlewareNames } from "@/lib/middleware-utils";
+import { formatMiddlewareNames, getUnknownMiddlewareNames, parseMiddlewareNames } from "@/lib/middleware-utils";
 
 describe("middleware name normalization", () => {
   it("parses comma-separated middleware text", () => {
@@ -21,5 +21,14 @@ describe("middleware name normalization", () => {
 
     expect(parseMiddlewareNames(oldStoredValue)).toEqual(["chain-oauth@file"]);
     expect(formatMiddlewareNames(oldStoredValue)).toBe("chain-oauth@file");
+  });
+
+  it("identifies middleware names that are not in the discovered Traefik list", () => {
+    expect(
+      getUnknownMiddlewareNames("chain-oauth@file, missing@file", [
+        "chain-oauth@file",
+        "secure-headers@file",
+      ]),
+    ).toEqual(["missing@file"]);
   });
 });

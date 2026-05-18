@@ -94,7 +94,7 @@ Optional environment:
 TRAEFIK_API_URL=http://traefik:8080
 ```
 
-`TRAEFIK_API_URL` is used only by `/api/traefik/middlewares` to populate the available middleware selector in the service form. It is not required for `/api/traefik/config`; Traefik can still poll the app-generated dynamic config without it. If unset, the app defaults middleware discovery to `http://localhost:8080`, which is usually only useful in the devcontainer.
+`TRAEFIK_API_URL` is used only by `/api/traefik/middlewares` to populate the available middleware selector and validate entered middleware names in the service form. It is not required for `/api/traefik/config`; Traefik can still poll the app-generated dynamic config without it. In production, if `TRAEFIK_API_URL` is unset, middleware discovery is disabled and manual middleware values remain editable. In development, the app falls back to `http://localhost:8080` for the devcontainer Traefik instance.
 
 For production, point `TRAEFIK_API_URL` at an internal Docker network hostname, VPN-only address, or another protected Traefik API endpoint. Do not expose Traefik's API/dashboard publicly without authentication.
 
@@ -116,7 +116,7 @@ pnpm dev
 
 - Postgres data persists under `.devcontainer/.pgdata/` on your host (gitignored).
 - Traefik file-provider config is watched from `.devcontainer/traefik/dynamic/*.yml`. Add local development middlewares there, then reference them as `name@file`.
-- The service form can read available middlewares from Traefik via `/api/traefik/middlewares` when Traefik API is reachable. Set `TRAEFIK_API_URL` in `.env` to point at an external Traefik API; if unset, the app defaults to `http://localhost:8080`.
+- The service form can read available middlewares from Traefik via `/api/traefik/middlewares` when Traefik API is reachable. Set `TRAEFIK_API_URL` in `.env` to point at an external Traefik API; if unset during development, the app defaults to `http://localhost:8080`.
 - The container prints helpful URLs and common commands at startup.
 
 ### Pre-Push Verification

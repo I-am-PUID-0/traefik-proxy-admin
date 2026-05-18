@@ -31,7 +31,17 @@ function normalizeMiddlewareName(middleware: TraefikMiddlewareSummary): Availabl
 }
 
 export async function GET() {
-  const traefikApiUrl = process.env.TRAEFIK_API_URL || "http://localhost:8080";
+  const traefikApiUrl = process.env.TRAEFIK_API_URL || (
+    process.env.NODE_ENV === "production" ? undefined : "http://localhost:8080"
+  );
+
+  if (!traefikApiUrl) {
+    return NextResponse.json({
+      configured: false,
+      error: "TRAEFIK_API_URL is not configured",
+      middlewares: [],
+    });
+  }
 
   try {
     const response = await fetch(`${traefikApiUrl}/api/http/middlewares`, {
@@ -40,7 +50,7 @@ export async function GET() {
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: "Failed to fetch Traefik middlewares", middlewares: [] },
+        { configured: true, error: "Failed to fetch Traefik middlewares", middlewares: [] },
         { status: 502 },
       );
     }
@@ -51,11 +61,11 @@ export async function GET() {
       .filter((middleware): middleware is AvailableMiddleware => middleware !== null)
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    return NextResponse.json({ middlewares: normalized });
+    return NextResponse.json({ configured: true, middlewares: normalized });
   } catch (error) {
     console.error("Error fetching Traefik middlewares:", error);
     return NextResponse.json(
-      { error: "Failed to connect to Traefik API", middlewares: [] },
+      { configured: true, error: "Failed to connect to Traefik API", middlewares: [] },
       { status: 502 },
     );
   }
