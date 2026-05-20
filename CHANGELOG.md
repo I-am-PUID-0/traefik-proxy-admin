@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.3.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.2.1...v1.3.0) (2026-05-20)
+
+
+### Features
+
+* add advanced Traefik service rules ([34550b6](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/34550b6cfb04350cb35585070967609e36d39150))
+
+
+### Bug Fixes
+
+* clarify DNS resolution and CIDR validation in TCP connection handling ([c0ea24a](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/c0ea24ab6f589f56436f732dcc691d76ba18babc))
+* preserve service middlewares and guard target probes ([2d54e62](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/2d54e621eb4c07bd0da73debb1e53dfd466359ac))
+
 ## [1.2.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.2.0...v1.2.1) (2026-05-18)
 
 
