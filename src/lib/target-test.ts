@@ -183,6 +183,8 @@ export async function testTcpConnection(host: string, port: number, timeoutMs = 
     socket.once("connect", () => settle(true));
     socket.once("timeout", () => settle(false, `Connection timed out after ${timeoutMs}ms`));
     socket.once("error", (error) => settle(false, error.message));
+    // resolvedTarget.address is selected only after DNS resolution and TARGET_TEST_ALLOW_CIDRS validation.
+    // codeql[js/request-forgery]
     socket.connect(port, resolvedTarget.address);
   });
 }
