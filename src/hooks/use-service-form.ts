@@ -23,11 +23,14 @@ export function useServiceForm({ service, defaultDuration, initialData }: UseSer
     entrypoint: null,
     isHttps: true,
     insecureSkipVerify: false,
+    passHostHeader: true,
     enabled: true,
     enabledAt: null,
     enableDurationMinutes: defaultDuration ?? null,
     middlewares: "",
     requestHeaders: "",
+    managedMiddlewares: "",
+    advancedRouters: "",
     ...initialData,
   }), [defaultDuration, initialData]);
 
@@ -48,11 +51,14 @@ export function useServiceForm({ service, defaultDuration, initialData }: UseSer
         entrypoint: service.entrypoint || null,
         isHttps: service.isHttps,
         insecureSkipVerify: service.insecureSkipVerify,
+        passHostHeader: service.passHostHeader ?? true,
         enabled: service.enabled,
         enabledAt: service.enabledAt,
         enableDurationMinutes: service.enableDurationMinutes,
         middlewares: service.middlewares || "",
         requestHeaders: service.requestHeaders || "",
+        managedMiddlewares: service.managedMiddlewares || "",
+        advancedRouters: service.advancedRouters || "",
       };
       setFormData(serviceData);
       setOriginalFormData(serviceData);

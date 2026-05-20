@@ -223,6 +223,43 @@ The admin panel now supports configurable global settings that affect all servic
 - **Per-Service Middlewares**: Additional middlewares per service
 - Order: Global → Auth (if enabled) → HTTPS redirect → Service-specific
 
+### Advanced Service Rules
+
+Each service can also define advanced Traefik JSON when the basic form is not enough:
+
+- **Pass Host header** controls Traefik load balancer `passHostHeader`. Disable it when the upstream must receive the target host instead of the public hostname.
+- **Managed Middlewares JSON** creates app-managed middleware definitions under `http.middlewares`, such as `redirectRegex` for redirecting a service root to an admin path.
+- **Additional Routers JSON** creates extra routers that point at the same generated backend service. Use this for bypass rules, alternate match rules, router priority, entrypoint overrides, and cert resolver overrides. Set `middlewares: []` on an extra router when it should intentionally bypass the service/global middleware chain.
+
+Example managed middleware:
+
+```json
+{
+  "redirect-to-admin": {
+    "redirectRegex": {
+      "regex": "^https?://pihole.example.com/$",
+      "replacement": "https://pihole.example.com/admin",
+      "permanent": true
+    }
+  }
+}
+```
+
+Example additional router:
+
+```json
+[
+  {
+    "name": "api-bypass",
+    "rule": "Host(`tautulli.example.com`) && (Header(`X-Api-Key`,`REDACTED`) || Query(`apikey`,`REDACTED`))",
+    "entrypoint": "websecure",
+    "middlewares": [],
+    "certResolver": "cloudflare",
+    "priority": 100
+  }
+]
+```
+
 ## Traefik Configuration
 
 Configure Traefik to use this service as a configuration provider:

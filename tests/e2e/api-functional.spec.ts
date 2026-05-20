@@ -18,9 +18,28 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
   const routerName = `router-${subdomain}`;
   const serviceName = `service-${subdomain}`;
   const headerMiddlewareName = `headers-${subdomain}`;
+  const bypassRouterName = `${routerName}-api-bypass`;
 
   let domainId: string | undefined;
   let serviceId: string | undefined;
+
+  const advancedRule = `Host(\`${subdomain}.${domainName}\`) && Query(\`apikey\`,\`REDACTED\`)`;
+  const redirectRegex = `^https?://${subdomain}\\.${domainName}/$`;
+  const redirectMiddleware = {
+    redirectRegex: {
+      regex: redirectRegex,
+      replacement: `https://${subdomain}.${domainName}/admin`,
+      permanent: true,
+    },
+  };
+  const advancedRouter = {
+    name: "api-bypass",
+    rule: advancedRule,
+    entrypoint: "websecure",
+    middlewares: [],
+    certResolver: "letsencrypt",
+    priority: 100,
+  };
 
   try {
     const createDomain = await request.post("/api/domains", {
@@ -77,24 +96,31 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     const serviceBody = await serviceDetail.json();
     expect(serviceBody.domain.domain).toBe(domainName);
 
-    const updateService = await request.put(`/api/services/${serviceId}`, {
-      data: {
-        name: `E2E Service ${suffix} Updated`,
-        subdomain,
-        hostnameMode: "subdomain",
-        domainId,
-        targetIp: "127.0.0.1",
-        targetPort: 9090,
-        entrypoint: "websecure",
-        isHttps: true,
-        insecureSkipVerify: true,
-        enabled: true,
-        enableDurationMinutes: null,
-        middlewares: "compress@file",
-        requestHeaders: {
-          "X-E2E-Test": `${suffix}-updated`,
-        },
+    const updateData = {
+      name: `E2E Service ${suffix} Updated`,
+      subdomain,
+      hostnameMode: "subdomain",
+      domainId,
+      targetIp: "127.0.0.1",
+      targetPort: 9090,
+      entrypoint: "websecure",
+      isHttps: true,
+      insecureSkipVerify: true,
+      enabled: true,
+      enableDurationMinutes: null,
+      middlewares: "compress@file",
+      requestHeaders: {
+        "X-E2E-Test": `${suffix}-updated`,
       },
+      passHostHeader: false,
+      managedMiddlewares: {
+        "redirect-to-admin": redirectMiddleware,
+      },
+      advancedRouters: [advancedRouter],
+    };
+
+    const updateService = await request.put(`/api/services/${serviceId}`, {
+      data: updateData,
     });
 
     expect(updateService.ok()).toBe(true);
@@ -112,20 +138,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     const previewResponse = await request.post("/api/traefik/service-preview", {
       data: {
         serviceId,
-        name: `E2E Service ${suffix} Updated`,
-        subdomain,
-        hostnameMode: "subdomain",
-        domainId,
-        targetIp: "127.0.0.1",
-        targetPort: 9090,
-        entrypoint: "websecure",
-        isHttps: true,
-        insecureSkipVerify: true,
-        enabled: true,
-        middlewares: "compress@file",
-        requestHeaders: {
-          "X-E2E-Test": `${suffix}-updated`,
-        },
+        ...updateData,
       },
     });
     expect(previewResponse.ok()).toBe(true);
@@ -133,6 +146,17 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     expect(preview.proposed.routerName).toBe(routerName);
     expect(preview.proposed.serviceName).toBe(serviceName);
     expect(preview.proposed.router.middlewares).toContain("compress@file");
+    expect(preview.proposed.routers[bypassRouterName]).toMatchObject({
+      rule: advancedRule,
+      service: serviceName,
+      entryPoints: ["websecure"],
+      priority: 100,
+      tls: {
+        certResolver: "letsencrypt",
+      },
+    });
+    expect(preview.proposed.routers[bypassRouterName].middlewares).toBeUndefined();
+    expect(preview.proposed.middlewares["redirect-to-admin"]).toEqual(redirectMiddleware);
 
     const configResponse = await request.get("/api/traefik/config");
     expect(configResponse.ok()).toBe(true);
@@ -141,6 +165,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     expect(config.http.services[serviceName].loadBalancer.servers).toEqual([
       { url: "https://127.0.0.1:9090" },
     ]);
+    expect(config.http.services[serviceName].loadBalancer.passHostHeader).toBe(false);
     expect(config.http.services[serviceName].loadBalancer.serversTransport).toBe(
       `insecure-transport-${subdomain}`,
     );
@@ -165,6 +190,16 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
       headerMiddlewareName,
       "compress@file",
     ]);
+    expect(config.http.routers[bypassRouterName]).toMatchObject({
+      rule: advancedRule,
+      service: serviceName,
+      entryPoints: ["websecure"],
+      priority: 100,
+      tls: {
+        certResolver: "letsencrypt",
+      },
+    });
+    expect(config.http.routers[bypassRouterName].middlewares).toBeUndefined();
     expect(config.http.middlewares[headerMiddlewareName]).toEqual({
       headers: {
         customRequestHeaders: {
@@ -172,24 +207,24 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
         },
       },
     });
+    expect(config.http.middlewares["redirect-to-admin"]).toEqual(redirectMiddleware);
 
-    const toggleService = await request.post(`/api/services/${serviceId}/toggle`, {
-      data: {},
-    });
-    expect(toggleService.ok()).toBe(true);
-    const toggled = await toggleService.json();
-    expect(toggled.enabled).toBe(false);
+    const domainWithServices = await request.get(`/api/domains/${domainId}`);
+    expect(domainWithServices.ok()).toBe(true);
+    const domainWithServicesBody = await domainWithServices.json();
+    expect(domainWithServicesBody.serviceCount).toBe(1);
 
-    const disabledConfigResponse = await request.get("/api/traefik/config");
-    expect(disabledConfigResponse.ok()).toBe(true);
-    const disabledConfig = await disabledConfigResponse.json();
-    expect(disabledConfig.http.routers[routerName]).toBeUndefined();
-    expect(disabledConfig.http.services[serviceName]).toBeUndefined();
+    const deleteService = await request.delete(`/api/services/${serviceId}`);
+    expect(deleteService.ok()).toBe(true);
+    serviceId = undefined;
+
+    const deleteDomain = await request.delete(`/api/domains/${domainId}`);
+    expect(deleteDomain.ok()).toBe(true);
+    domainId = undefined;
   } finally {
     if (serviceId) {
       await request.delete(`/api/services/${serviceId}`);
     }
-
     if (domainId) {
       await request.delete(`/api/domains/${domainId}`);
     }

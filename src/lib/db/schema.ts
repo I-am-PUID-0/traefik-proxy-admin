@@ -42,11 +42,14 @@ export const services = pgTable("services", {
   entrypoint: varchar("entrypoint", { length: 255 }), // Optional per-service entrypoint override
   isHttps: boolean("is_https").default(false).notNull(),
   insecureSkipVerify: boolean("insecure_skip_verify").default(false).notNull(), // Skip TLS certificate validation for target service
+  passHostHeader: boolean("pass_host_header").default(true).notNull(),
   enabled: boolean("enabled").default(true).notNull(),
   enabledAt: timestamp("enabled_at").defaultNow(),
   enableDurationMinutes: integer("enable_duration_minutes"), // null = forever, number = minutes until auto-disable
   middlewares: text("middlewares"), // JSON array of additional middlewares for this service
   requestHeaders: text("request_headers"), // JSON object of custom request headers to add/modify
+  managedMiddlewares: text("managed_middlewares"), // JSON object of app-managed Traefik middleware definitions
+  advancedRouters: text("advanced_routers"), // JSON array of additional router definitions for this service
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -3,7 +3,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { dbCredentials, migrationsFolder } from "../drizzle.config";
 import postgres from "postgres";
 
-const LATEST_MIGRATION_CREATED_AT = 1759183047180;
+const LATEST_MIGRATION_CREATED_AT = 1779300000000;
 
 function getBuildId() {
   try {
@@ -114,10 +114,13 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
       add column if not exists enable_duration_minutes integer,
       add column if not exists request_headers text,
       add column if not exists insecure_skip_verify boolean default false not null,
+      add column if not exists pass_host_header boolean default true not null,
       add column if not exists domain_id uuid,
       add column if not exists hostname_mode varchar(20) default 'subdomain' not null,
       add column if not exists custom_hostnames text,
-      add column if not exists entrypoint varchar(255)
+      add column if not exists entrypoint varchar(255),
+      add column if not exists managed_middlewares text,
+      add column if not exists advanced_routers text
   `;
   await migrationClient`alter table services alter column subdomain drop not null`;
   await migrationClient`alter table domains add column if not exists certificate_configs text`;
@@ -232,7 +235,7 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
   `;
   await migrationClient`
     insert into drizzle.__drizzle_migrations (hash, created_at)
-    select 'legacy-schema-repair-0008', ${LATEST_MIGRATION_CREATED_AT}
+    select 'legacy-schema-repair-0009', ${LATEST_MIGRATION_CREATED_AT}
     where not exists (select 1 from drizzle.__drizzle_migrations)
   `;
 }
@@ -241,8 +244,9 @@ async function runMigrations() {
   console.log("Running database migrations");
   try {
     const migrationClient = postgres(dbCredentials.url, { max: 1 });
-    const [{ hasMigrations, hasSchema }] = await migrationClient<{
-      hasMigrations: boolean;
+    const [{ hasMigrationTable, migrationCount, hasSchema }] = await migrationClient<{
+      hasMigrationTable: boolean;
+      migrationCount: number;
       hasSchema: boolean;
     }[]>`
       select
@@ -251,7 +255,16 @@ async function runMigrations() {
           from information_schema.tables
           where table_schema = 'drizzle'
             and table_name = '__drizzle_migrations'
-        ) as "hasMigrations",
+        ) as "hasMigrationTable",
+        case
+          when exists (
+            select 1
+            from information_schema.tables
+            where table_schema = 'drizzle'
+              and table_name = '__drizzle_migrations'
+          ) then (select count(*)::int from drizzle.__drizzle_migrations)
+          else 0
+        end as "migrationCount",
         exists (
           select 1
           from information_schema.tables
@@ -260,7 +273,7 @@ async function runMigrations() {
         ) as "hasSchema"
     `;
 
-    if (!hasMigrations && hasSchema) {
+    if (hasSchema && (!hasMigrationTable || migrationCount === 0)) {
       await repairLegacySchema(migrationClient);
       await migrationClient.end();
       return;

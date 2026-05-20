@@ -4,6 +4,12 @@ import { DomainService } from "@/lib/services/domain.service";
 import type { UpdateServiceData, UpdateServiceRequest } from "@/lib/dto/service.dto";
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
 
+function jsonFieldOrNull(value: unknown): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value === "string") return value.trim() ? value : null;
+  return JSON.stringify(value);
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -62,13 +68,14 @@ export async function PUT(
       entrypoint: body.entrypoint || null,
       isHttps: body.isHttps ?? false,
       insecureSkipVerify: body.insecureSkipVerify ?? false,
+      passHostHeader: body.passHostHeader ?? true,
       enabled: body.enabled ?? true,
       ...(shouldUpdateMiddlewares && {
         middlewares: middlewareNames.length > 0 ? JSON.stringify(middlewareNames) : null,
       }),
-      requestHeaders: body.requestHeaders
-        ? (typeof body.requestHeaders === 'string' ? body.requestHeaders : JSON.stringify(body.requestHeaders))
-        : null,
+      requestHeaders: jsonFieldOrNull(body.requestHeaders),
+      managedMiddlewares: jsonFieldOrNull(body.managedMiddlewares),
+      advancedRouters: jsonFieldOrNull(body.advancedRouters),
       enableDurationMinutes: body.enableDurationMinutes ?? null,
     };
 

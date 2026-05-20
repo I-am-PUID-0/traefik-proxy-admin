@@ -5,7 +5,7 @@ import { getGlobalConfig } from "@/lib/app-config";
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
 import type { Domain } from "@/lib/db/schema";
 import type { HostnameMode } from "@/lib/dto/service.dto";
-import type { TraefikMiddleware, TraefikRouter, TraefikService } from "@/lib/traefik-config";
+import type { AdvancedRouterConfig, TraefikMiddleware, TraefikRouter, TraefikService } from "@/lib/traefik-config";
 
 export interface ServicePreviewRequest {
   serviceId?: string;
@@ -19,15 +19,19 @@ export interface ServicePreviewRequest {
   entrypoint?: string | null;
   isHttps?: boolean;
   insecureSkipVerify?: boolean;
+  passHostHeader?: boolean;
   enabled?: boolean;
   middlewares?: unknown;
   requestHeaders?: Record<string, string> | string | null;
+  managedMiddlewares?: Record<string, TraefikMiddleware> | string | null;
+  advancedRouters?: AdvancedRouterConfig[] | string | null;
 }
 
 export interface ServiceConfigSlice {
   routerName: string;
   serviceName: string;
   middlewares: Record<string, TraefikMiddleware>;
+  routers: Record<string, TraefikRouter>;
   router: TraefikRouter;
   service: TraefikService;
   serversTransports?: Record<string, { insecureSkipVerify?: boolean }>;
@@ -58,6 +62,39 @@ function parseRequestHeaders(value: ServicePreviewRequest["requestHeaders"]): Re
   }
 }
 
+function safeName(value: string): string {
+  return value.trim().replace(/[^a-zA-Z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "custom";
+}
+
+function parseManagedMiddlewares(value: ServicePreviewRequest["managedMiddlewares"]): Record<string, TraefikMiddleware> {
+  if (!value) return {};
+  if (typeof value === "object" && !Array.isArray(value)) return value;
+  if (typeof value !== "string") return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function parseAdvancedRouters(value: ServicePreviewRequest["advancedRouters"]): AdvancedRouterConfig[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function routerMiddlewares(value: AdvancedRouterConfig["middlewares"], fallback: string[]): string[] {
+  if (value === undefined) return fallback;
+  if (Array.isArray(value)) return value.map((middleware) => String(middleware).trim()).filter(Boolean);
+  return parseMiddlewareNames(value);
+}
 function serviceIdentifier(input: ServicePreviewRequest, domain: Domain): string {
   if (input.hostnameMode === "apex") return domain.domain.replace(/\./g, "-");
   if (input.hostnameMode === "custom") {
@@ -131,9 +168,12 @@ async function buildSlice(input: ServicePreviewRequest): Promise<ServiceConfigSl
   const service: TraefikService = {
     loadBalancer: {
       servers: [{ url: `${protocol}://${input.targetIp}:${input.targetPort}` }],
+      passHostHeader: input.passHostHeader ?? true,
     },
   };
-  const middlewares: Record<string, TraefikMiddleware> = {};
+  const middlewares: Record<string, TraefikMiddleware> = {
+    ...parseManagedMiddlewares(input.managedMiddlewares),
+  };
   const middlewareNames = [...globalConfig.globalMiddlewares, ...parseMiddlewareNames(input.middlewares)];
   const requestHeaders = parseRequestHeaders(input.requestHeaders);
 
@@ -160,11 +200,33 @@ async function buildSlice(input: ServicePreviewRequest): Promise<ServiceConfigSl
     ...(entrypoint && { entryPoints: [entrypoint] }),
     tls: { certResolver: domain.certResolver },
   };
+  const routers: Record<string, TraefikRouter> = { [routerName]: router };
+
+  for (const advancedRouter of parseAdvancedRouters(input.advancedRouters)) {
+    if (!advancedRouter?.name || !advancedRouter.rule || advancedRouter.enabled === false) continue;
+    const advancedMiddlewares = routerMiddlewares(advancedRouter.middlewares, middlewareNames);
+    const advancedEntryPoints = advancedRouter.entryPoints || (advancedRouter.entrypoint ? [advancedRouter.entrypoint] : entrypoint ? [entrypoint] : undefined);
+    const advancedTls = advancedRouter.tls === false
+      ? undefined
+      : advancedRouter.certResolver
+        ? { certResolver: advancedRouter.certResolver }
+        : { certResolver: domain.certResolver };
+
+    routers[`${routerName}-${safeName(advancedRouter.name)}`] = {
+      rule: advancedRouter.rule,
+      service: serviceName,
+      ...(advancedMiddlewares.length > 0 && { middlewares: advancedMiddlewares }),
+      ...(advancedEntryPoints && advancedEntryPoints.length > 0 && { entryPoints: advancedEntryPoints }),
+      ...(typeof advancedRouter.priority === "number" && { priority: advancedRouter.priority }),
+      ...(advancedTls && { tls: advancedTls }),
+    };
+  }
 
   return {
     routerName,
     serviceName,
     middlewares,
+    routers,
     router,
     service,
     ...(Object.keys(serversTransports).length > 0 && { serversTransports }),
@@ -184,6 +246,9 @@ export async function previewServiceConfig(input: ServicePreviewRequest) {
         hostnameMode: existing.hostnameMode as HostnameMode,
         customHostnames: existing.customHostnames,
         requestHeaders: existing.requestHeaders,
+        managedMiddlewares: existing.managedMiddlewares,
+        advancedRouters: existing.advancedRouters,
+        passHostHeader: existing.passHostHeader,
       });
     }
   }

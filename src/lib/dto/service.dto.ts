@@ -15,10 +15,13 @@ export interface CreateServiceRequest {
   entrypoint?: string;
   isHttps?: boolean;
   insecureSkipVerify?: boolean;
+  passHostHeader?: boolean;
   enabled?: boolean;
   enableDurationMinutes?: number | null;
   middlewares?: string[];
-  requestHeaders?: Record<string, string>;
+  requestHeaders?: Record<string, string> | string | null;
+  managedMiddlewares?: Record<string, unknown> | string | null;
+  advancedRouters?: unknown[] | string | null;
 }
 
 export interface UpdateServiceRequest {
@@ -32,10 +35,13 @@ export interface UpdateServiceRequest {
   entrypoint?: string;
   isHttps?: boolean;
   insecureSkipVerify?: boolean;
+  passHostHeader?: boolean;
   enabled?: boolean;
   enableDurationMinutes?: number | null;
   middlewares?: string[];
-  requestHeaders?: Record<string, string>;
+  requestHeaders?: Record<string, string> | string | null;
+  managedMiddlewares?: Record<string, unknown> | string | null;
+  advancedRouters?: unknown[] | string | null;
 }
 
 // Response DTOs
@@ -57,10 +63,13 @@ export interface CreateServiceData {
   entrypoint?: string | null;
   isHttps: boolean;
   insecureSkipVerify: boolean;
+  passHostHeader: boolean;
   enabled: boolean;
   enableDurationMinutes?: number | null;
   middlewares?: string | null; // JSON string
   requestHeaders?: string | null; // JSON string
+  managedMiddlewares?: string | null; // JSON string
+  advancedRouters?: string | null; // JSON string
 }
 
 export interface UpdateServiceData {
@@ -74,8 +83,11 @@ export interface UpdateServiceData {
   entrypoint?: string | null;
   isHttps: boolean;
   insecureSkipVerify: boolean;
+  passHostHeader: boolean;
   enabled: boolean;
   enableDurationMinutes?: number | null;
   middlewares?: string | null; // JSON string
   requestHeaders?: string | null; // JSON string
+  managedMiddlewares?: string | null; // JSON string
+  advancedRouters?: string | null; // JSON string
 }

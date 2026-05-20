@@ -64,6 +64,13 @@
       "when": 1759183047180,
       "tag": "0008_daffy_jetstream",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779300000000,
+      "tag": "0009_advanced_service_rules",
+      "breakpoints": true
     }
   ]
 }

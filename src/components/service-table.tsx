@@ -36,11 +36,14 @@ export interface Service {
   entrypoint?: string | null;
   isHttps: boolean;
   insecureSkipVerify: boolean;
+  passHostHeader: boolean;
   enabled: boolean;
   enabledAt?: string | null;
   enableDurationMinutes?: number | null;
   middlewares?: string;
   requestHeaders?: string;
+  managedMiddlewares?: string | null;
+  advancedRouters?: string | null;
   createdAt: string;
   updatedAt: string;
   // Domain information

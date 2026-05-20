@@ -14,6 +14,7 @@ export interface TraefikService {
       url: string;
     }>;
     serversTransport?: string;
+    passHostHeader?: boolean;
   };
 }
 
@@ -22,6 +23,7 @@ export interface TraefikRouter {
   service: string;
   middlewares?: string[];
   entryPoints?: string[];
+  priority?: number;
   tls?: {
     certResolver?: string;
     domains?: Array<{
@@ -117,6 +119,72 @@ function parseCustomHostnames(customHostnames: string | null): string[] {
     console.warn("Failed to parse custom hostnames:", error);
     return [];
   }
+}
+
+export interface AdvancedRouterConfig {
+  name: string;
+  rule: string;
+  entrypoint?: string;
+  entryPoints?: string[];
+  middlewares?: string[] | string;
+  tls?: boolean;
+  certResolver?: string;
+  priority?: number;
+  enabled?: boolean;
+}
+
+function safeName(value: string): string {
+  return value.trim().replace(/[^a-zA-Z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "custom";
+}
+
+function parseManagedMiddlewares(value: string | null): Record<string, TraefikMiddleware> {
+  if (!value) return {};
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+
+    const middlewares: Record<string, TraefikMiddleware> = {};
+    for (const [name, config] of Object.entries(parsed)) {
+      if (typeof name === "string" && name.trim() && config && typeof config === "object" && !Array.isArray(config)) {
+        middlewares[safeName(name)] = config as TraefikMiddleware;
+      }
+    }
+    return middlewares;
+  } catch (error) {
+    console.warn("Failed to parse managed middlewares:", error);
+    return {};
+  }
+}
+
+function parseAdvancedRouters(value: string | null): AdvancedRouterConfig[] {
+  if (!value) return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter((router): router is AdvancedRouterConfig => {
+      return Boolean(
+        router &&
+        typeof router === "object" &&
+        typeof router.name === "string" &&
+        router.name.trim() &&
+        typeof router.rule === "string" &&
+        router.rule.trim() &&
+        router.enabled !== false,
+      );
+    });
+  } catch (error) {
+    console.warn("Failed to parse advanced routers:", error);
+    return [];
+  }
+}
+
+function routerMiddlewares(value: AdvancedRouterConfig["middlewares"], fallback: string[]): string[] {
+  if (value === undefined) return fallback;
+  if (Array.isArray(value)) return value.map((middleware) => String(middleware).trim()).filter(Boolean);
+  return parseServiceMiddlewares(value);
 }
 
 /**
@@ -285,6 +353,7 @@ async function createTraefikService(
           url: `${protocol}://${service.targetIp}:${service.targetPort}`,
         },
       ],
+      passHostHeader: service.passHostHeader,
     },
   };
 
@@ -305,6 +374,9 @@ async function createTraefikService(
   }
 
   config.http.services[serviceName] = serviceConfig;
+
+  // Add app-managed middleware definitions before routers reference them
+  Object.assign(config.http.middlewares!, parseManagedMiddlewares(service.managedMiddlewares));
 
   // Build middlewares
   const middlewares = await buildServiceMiddlewares(service, domain, globalConfig, config);
@@ -327,6 +399,25 @@ async function createTraefikService(
     tls: tlsConfig,
   };
   config.http.routers[routerName] = router;
+
+  for (const advancedRouter of parseAdvancedRouters(service.advancedRouters)) {
+    const advancedMiddlewares = routerMiddlewares(advancedRouter.middlewares, middlewares);
+    const advancedEntryPoints = advancedRouter.entryPoints || (advancedRouter.entrypoint ? [advancedRouter.entrypoint] : entrypoint ? [entrypoint] : undefined);
+    const advancedTls = advancedRouter.tls === false
+      ? undefined
+      : advancedRouter.certResolver
+        ? { certResolver: advancedRouter.certResolver }
+        : tlsConfig;
+
+    config.http.routers[`${routerName}-${safeName(advancedRouter.name)}`] = {
+      rule: advancedRouter.rule,
+      service: serviceName,
+      ...(advancedMiddlewares.length > 0 && { middlewares: advancedMiddlewares }),
+      ...(advancedEntryPoints && advancedEntryPoints.length > 0 && { entryPoints: advancedEntryPoints }),
+      ...(typeof advancedRouter.priority === "number" && { priority: advancedRouter.priority }),
+      ...(advancedTls && { tls: advancedTls }),
+    };
+  }
 }
 
 /**
