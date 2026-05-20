@@ -46,7 +46,7 @@ export function useServices() {
     const middlewareNames = parseMiddlewareNames(serviceData.middlewares);
     const payload = {
       ...serviceData,
-      middlewares: middlewareNames.length > 0 ? middlewareNames : undefined,
+      middlewares: middlewareNames,
     };
 
     const response = await fetch(url, {

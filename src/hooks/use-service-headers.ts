@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ServiceFormData } from "./use-service-form";
-import { formatMiddlewareNames } from "@/lib/middleware-utils";
+import { formatMiddlewareNames, parseMiddlewareNames } from "@/lib/middleware-utils";
 
 interface UseServiceHeadersOptions {
   formData: ServiceFormData;
@@ -44,16 +44,10 @@ export function useServiceHeaders({ formData, updateFormData }: UseServiceHeader
     setHostHeader(existingHostHeader);
   }, [formData.requestHeaders]);
 
-  // Update middlewares when text changes
-  useEffect(() => {
-    const processedMiddlewares = middlewareText
-      .split(",")
-      .map(m => m.trim())
-      .filter(m => m.length > 0)
-      .join(",");
-
-    updateFormData({ middlewares: processedMiddlewares });
-  }, [middlewareText, updateFormData]);
+  const setMiddlewareTextValue = useCallback((value: string) => {
+    setMiddlewareText(value);
+    updateFormData({ middlewares: parseMiddlewareNames(value).join(",") });
+  }, [updateFormData]);
 
   // Update request headers when Host header changes (user input only)
   const updateRequestHeaders = (newHostHeader: string) => {
@@ -78,7 +72,7 @@ export function useServiceHeaders({ formData, updateFormData }: UseServiceHeader
 
   return {
     middlewareText,
-    setMiddlewareText,
+    setMiddlewareText: setMiddlewareTextValue,
     hostHeader,
     setHostHeader: setHostHeaderValue,
   };

@@ -92,11 +92,14 @@ Optional environment:
 
 ```env
 TRAEFIK_API_URL=http://traefik:8080
+TARGET_TEST_ALLOW_CIDRS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 ```
 
 `TRAEFIK_API_URL` is used by Traefik discovery endpoints (`/api/traefik/status`, `/api/traefik/entrypoints`, `/api/traefik/middlewares`, `/api/traefik/routers`, and `/api/traefik/services`) to populate selectors, validate entered middleware names, show live API health, inspect live resources, and detect drift from generated config. It is not required for `/api/traefik/config`; Traefik can still poll the app-generated dynamic config without it. In production, if `TRAEFIK_API_URL` is unset, middleware discovery is disabled and manual middleware values remain editable. In development, the app falls back to `http://localhost:8080` for the devcontainer Traefik instance.
 
 For production, point `TRAEFIK_API_URL` at an internal Docker network hostname, VPN-only address, or another protected Traefik API endpoint. Do not expose Traefik's API/dashboard publicly without authentication.
+
+`TARGET_TEST_ALLOW_CIDRS` controls TCP reachability tests used by the service form Test button, service health endpoint, and Traefik Live target health checks. In production these checks are disabled unless this allowlist is set. Use only the private Docker, VPN, or LAN ranges that Traefik Proxy Admin should be allowed to probe. Development defaults to loopback and private ranges for devcontainer convenience.
 
 ## Dev Container
 
