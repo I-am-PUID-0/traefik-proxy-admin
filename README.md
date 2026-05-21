@@ -260,6 +260,12 @@ Example additional router:
 ]
 ```
 
+### Service Import and Export
+
+Services can be exported individually from a service row or all at once from the Services header. The exported JSON uses a portable format that omits database IDs and timestamps, includes the referenced domain by domain name, and preserves service routing settings, middleware names, request headers, managed middleware JSON, and additional router JSON.
+
+Import accepts the same JSON format through the Services header. If an imported service conflicts with an existing service name or subdomain, choose whether to rename conflicting services or skip them. Security configuration such as shared links, SSO rules, and basic-auth users is intentionally not included in service exports.
+
 ## Traefik Configuration
 
 Configure Traefik to use this service as a configuration provider:

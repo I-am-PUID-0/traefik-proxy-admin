@@ -22,6 +22,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
 
   let domainId: string | undefined;
   let serviceId: string | undefined;
+  let importedServiceId: string | undefined;
 
   const advancedRule = `Host(\`${subdomain}.${domainName}\`) && Query(\`apikey\`,\`REDACTED\`)`;
   const redirectRegex = `^https?://${subdomain}\\.${domainName}/$`;
@@ -209,6 +210,64 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     });
     expect(config.http.middlewares["redirect-to-admin"]).toEqual(redirectMiddleware);
 
+    const exportServiceResponse = await request.get(`/api/services/${serviceId}/export`);
+    expect(exportServiceResponse.ok()).toBe(true);
+    const serviceExport = await exportServiceResponse.json();
+    expect(serviceExport).toMatchObject({
+      format: "traefik-proxy-admin.services",
+      version: 1,
+    });
+    expect(serviceExport.services).toHaveLength(1);
+    expect(serviceExport.services[0]).toMatchObject({
+      name: updateData.name,
+      subdomain,
+      targetIp: "127.0.0.1",
+      targetPort: 9090,
+      passHostHeader: false,
+      domain: { domain: domainName },
+    });
+    expect(serviceExport.services[0].middlewares).toEqual(["compress@file"]);
+    expect(serviceExport.services[0].managedMiddlewares["redirect-to-admin"]).toEqual(redirectMiddleware);
+    expect(serviceExport.services[0].advancedRouters).toEqual([advancedRouter]);
+
+    const exportAllResponse = await request.get("/api/services/export");
+    expect(exportAllResponse.ok()).toBe(true);
+    const allExport = await exportAllResponse.json();
+    expect(allExport.services.some((exportedService: { name: string }) => exportedService.name === updateData.name)).toBe(true);
+
+    const skippedImportResponse = await request.post("/api/services/import", {
+      data: {
+        payload: serviceExport,
+        conflictStrategy: "skip",
+      },
+    });
+    expect(skippedImportResponse.ok()).toBe(true);
+    const skippedImport = await skippedImportResponse.json();
+    expect(skippedImport.imported).toBe(0);
+    expect(skippedImport.skipped).toBe(1);
+
+    const renamedImportResponse = await request.post("/api/services/import", {
+      data: {
+        payload: serviceExport,
+        conflictStrategy: "rename",
+      },
+    });
+    expect(renamedImportResponse.ok()).toBe(true);
+    const renamedImport = await renamedImportResponse.json();
+    expect(renamedImport.imported).toBe(1);
+    importedServiceId = renamedImport.services[0].serviceId;
+    expect(renamedImport.services[0].name).toContain("imported");
+
+    const importedServiceResponse = await request.get(`/api/services/${importedServiceId}`);
+    expect(importedServiceResponse.ok()).toBe(true);
+    const importedService = await importedServiceResponse.json();
+    expect(importedService.name).toContain("imported");
+    expect(importedService.subdomain).toContain("imported");
+
+    const deleteImportedService = await request.delete(`/api/services/${importedServiceId}`);
+    expect(deleteImportedService.ok()).toBe(true);
+    importedServiceId = undefined;
+
     const domainWithServices = await request.get(`/api/domains/${domainId}`);
     expect(domainWithServices.ok()).toBe(true);
     const domainWithServicesBody = await domainWithServices.json();
@@ -222,6 +281,9 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     expect(deleteDomain.ok()).toBe(true);
     domainId = undefined;
   } finally {
+    if (importedServiceId) {
+      await request.delete(`/api/services/${importedServiceId}`);
+    }
     if (serviceId) {
       await request.delete(`/api/services/${serviceId}`);
     }

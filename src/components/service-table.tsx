@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,8 @@ import {
   Link,
   Users,
   Key,
+  Download,
+  Upload,
 } from "lucide-react";
 import { ServiceCountdown } from "@/components/service-countdown";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -54,6 +56,8 @@ export interface Service {
     useWildcardCert: boolean;
     certResolver: string;
     isDefault: boolean;
+    description?: string | null;
+    certificateConfigs?: string | null;
   };
   // Security configuration indicators
   hasSharedLink?: boolean;
@@ -89,6 +93,8 @@ export function ServiceTable({
 }: ServiceTableProps) {
   const [deletingService, setDeletingService] = useState<string | null>(null);
   const [togglingService, setTogglingService] = useState<string | null>(null);
+  const [importingServices, setImportingServices] = useState(false);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
 
   const getMiddlewareText = (middlewares: Service["middlewares"]) =>
@@ -134,6 +140,78 @@ export function ServiceTable({
     }
   };
 
+  const downloadJson = async (url: string, fallbackFilename: string) => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+
+    const blob = await response.blob();
+    const disposition = response.headers.get("Content-Disposition") || "";
+    const filename = disposition.match(/filename="([^"]+)"/)?.[1] || fallbackFilename;
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  };
+
+  const handleExportAll = async () => {
+    try {
+      await downloadJson("/api/services/export", "traefik-proxy-admin-services.json");
+    } catch (error) {
+      console.error("Failed to export services:", error);
+      alert("Failed to export services.");
+    }
+  };
+
+  const handleExportService = async (service: Service) => {
+    try {
+      await downloadJson(`/api/services/${service.id}/export`, `traefik-proxy-admin-${service.name}.json`);
+    } catch (error) {
+      console.error("Failed to export service:", error);
+      alert(`Failed to export ${service.name}.`);
+    }
+  };
+
+  const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setImportingServices(true);
+    try {
+      const payload = JSON.parse(await file.text());
+      const renameConflicts = window.confirm(
+        "Rename imported services when a name or subdomain already exists? Choose Cancel to skip conflicting services.",
+      );
+      const response = await fetch("/api/services/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payload,
+          conflictStrategy: renameConflicts ? "rename" : "skip",
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Import failed");
+      }
+
+      await onRefresh();
+      alert(`Imported ${result.imported} service(s). Skipped ${result.skipped} service(s).`);
+    } catch (error) {
+      console.error("Failed to import services:", error);
+      alert(error instanceof Error ? error.message : "Failed to import services.");
+    } finally {
+      setImportingServices(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -161,13 +239,30 @@ export function ServiceTable({
               Manage your Traefik proxy services
             </CardDescription>
           </div>
-          <Button onClick={useRouterNavigation ? () => router.push('/services/add') : onAddNew}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Service
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Button variant="outline" onClick={handleExportAll} disabled={services.length === 0}>
+              <Download className="mr-2 h-4 w-4" />
+              Export All
+            </Button>
+            <Button variant="outline" onClick={() => importInputRef.current?.click()} disabled={importingServices}>
+              <Upload className="mr-2 h-4 w-4" />
+              Import
+            </Button>
+            <Button onClick={useRouterNavigation ? () => router.push('/services/add') : onAddNew}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Service
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={handleImportFile}
+        />
         {services.length === 0 ? (
           <div className="text-center py-8">
             <Settings className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -264,6 +359,14 @@ export function ServiceTable({
                     >
                       <Shield className="h-4 w-4 mr-1" />
                       Security
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExportService(service)}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Export
                     </Button>
                     <Button
                       variant="outline"
