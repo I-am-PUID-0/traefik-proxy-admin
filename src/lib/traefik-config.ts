@@ -73,6 +73,15 @@ export interface TraefikConfig {
   };
 }
 
+function getAdminPanelBaseUrl(globalConfig: GlobalTraefikConfig) {
+  const configuredUrl = globalConfig.adminPanelDomain.trim();
+  const baseUrl = configuredUrl.startsWith("http://") || configuredUrl.startsWith("https://")
+    ? configuredUrl
+    : `http://${configuredUrl}`;
+
+  return baseUrl.replace(/\/+$/, "");
+}
+
 /**
  * Parse service-specific middlewares from string format
  */
@@ -258,7 +267,7 @@ async function buildServiceMiddlewares(
         const authMiddlewareName = `auth-${securityConfig.securityType}-${serviceIdentifier}`;
         config.http.middlewares![authMiddlewareName] = {
           forwardAuth: {
-            address: `http://${globalConfig.adminPanelDomain}/api/auth/verify?serviceId=${service.id}&configId=${securityConfig.id}`,
+            address: `${getAdminPanelBaseUrl(globalConfig)}/api/auth/verify?serviceId=${service.id}&configId=${securityConfig.id}`,
             trustForwardHeader: true,
             addAuthCookiesToResponse: [TRAEFIK_SESSION_COOKIE],
             authRequestHeaders: ["Accept", "Cookie", "X-Forwarded-Proto", "X-Forwarded-Host", "X-Forwarded-Uri"],
@@ -491,7 +500,7 @@ function createWildcardCertTrigger(
     loadBalancer: {
       servers: [
         {
-          url: `http://${globalConfig.adminPanelDomain}`,
+          url: getAdminPanelBaseUrl(globalConfig),
         },
       ],
     },
@@ -556,7 +565,7 @@ function createCertificateConfigTriggers(
       loadBalancer: {
         servers: [
           {
-            url: `http://${globalConfig.adminPanelDomain}`,
+            url: getAdminPanelBaseUrl(globalConfig),
           },
         ],
       },

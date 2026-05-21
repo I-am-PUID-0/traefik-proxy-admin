@@ -24,6 +24,15 @@ interface GlobalConfig {
   defaultEntrypoint?: string;
 }
 
+function normalizeAdminPanelBaseUrl(value: string) {
+  const trimmed = value.trim();
+  const baseUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://")
+    ? trimmed
+    : `http://${trimmed}`;
+
+  return baseUrl.replace(/\/+$/, "");
+}
+
 export function TraefikConfigDialog({ trigger }: TraefikConfigDialogProps) {
   const [config, setConfig] = useState<GlobalConfig>({
     sampleDomain: "example.com",
@@ -56,10 +65,12 @@ export function TraefikConfigDialog({ trigger }: TraefikConfigDialogProps) {
     }
   };
 
+  const adminPanelBaseUrl = normalizeAdminPanelBaseUrl(config.adminPanelDomain);
+
   const traefikYaml = `# Traefik static config (file or args)
 providers:
   http:
-    endpoint: "http://${config.adminPanelDomain}/api/traefik/config"
+    endpoint: "${adminPanelBaseUrl}/api/traefik/config"
     pollInterval: "10s"
 `;
 
@@ -109,7 +120,7 @@ providers:
                   <span>
                     <strong>HTTP Provider URL:</strong> Ensure Traefik can reach{" "}
                     <code className="bg-muted px-1 py-0.5 rounded">
-                      http://{config.adminPanelDomain}/api/traefik/config
+                      {adminPanelBaseUrl}/api/traefik/config
                     </code>
                   </span>
                 </li>

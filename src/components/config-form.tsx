@@ -128,17 +128,17 @@ export function ConfigForm({
               </p>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="adminPanelDomain">Admin Panel Domain</Label>
+              <Label htmlFor="adminPanelDomain">Admin Panel Base URL</Label>
               <Input
                 id="adminPanelDomain"
-                placeholder="admin.example.com or localhost:3000"
+                placeholder="http://tpa:3000 or https://admin.example.com"
                 value={config.adminPanelDomain}
                 onChange={(e) =>
                   onConfigChange({ ...config, adminPanelDomain: e.target.value })
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Domain where this admin panel is accessible (used in Traefik configuration examples)
+                Reachable base URL for Traefik HTTP provider and forwardAuth calls. Use an address Traefik can reach, not browser-only localhost.
               </p>
             </div>
           </div>
