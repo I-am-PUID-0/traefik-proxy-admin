@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { AdminRole } from "@/lib/admin-auth-shared";
+import { SSO_PROVIDER_PRESETS, getSsoProviderPreset, type SsoProviderPresetId } from "@/lib/sso-provider-presets";
 
 type AdminAuthProvider = "local" | "sso";
 
@@ -74,6 +75,7 @@ export function AdminAuthPanel() {
   const [checkingGlobalSso, setCheckingGlobalSso] = useState(false);
   const [startingGlobalSsoTest, setStartingGlobalSsoTest] = useState(false);
   const [globalSsoCheckResult, setGlobalSsoCheckResult] = useState<SsoCheckResult | null>(null);
+  const [globalSsoPreset, setGlobalSsoPreset] = useState<SsoProviderPresetId>("custom");
 
   useEffect(() => {
     fetchConfig();
@@ -104,6 +106,7 @@ export function AdminAuthPanel() {
       setConfig(normalizeConfig(payload));
       setGlobalSso(normalizeGlobalSso(ssoPayload));
       setShowGlobalSsoSecret(false);
+      setGlobalSsoPreset("custom");
       setGlobalSsoCheckResult(null);
       setUserEdits(
         Object.fromEntries(
@@ -145,6 +148,23 @@ export function AdminAuthPanel() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function applyGlobalSsoPreset(presetId: SsoProviderPresetId) {
+    if (!globalSso) return;
+    setGlobalSsoPreset(presetId);
+    const preset = getSsoProviderPreset(presetId);
+    if (presetId === "custom") return;
+    setGlobalSso({
+      ...globalSso,
+      idpUrl: preset.values.idpUrl ?? globalSso.idpUrl,
+      authorizationUrl: preset.values.authorizationUrl ?? globalSso.authorizationUrl,
+      tokenUrl: preset.values.tokenUrl ?? globalSso.tokenUrl,
+      userinfoUrl: preset.values.userinfoUrl ?? globalSso.userinfoUrl,
+      scopes: preset.values.scopes ?? globalSso.scopes,
+    });
+    setGlobalSsoCheckResult(null);
+    setError(null);
   }
 
   async function revealGlobalSsoSecret() {
@@ -467,10 +487,21 @@ export function AdminAuthPanel() {
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100">Global Admin SSO Provider</h3>
                   <p className="text-sm text-muted-foreground">Used for TPA admin SSO login and as the legacy fallback for service SSO rules without a selected provider.</p>
                   <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-                    <p className="font-medium text-foreground">What to enter</p>
-                    <p><span className="font-medium">Google:</span> authorization <code>https://accounts.google.com/o/oauth2/v2/auth</code>, token <code>https://oauth2.googleapis.com/token</code>, userinfo <code>https://openidconnect.googleapis.com/v1/userinfo</code>, scopes <code>openid profile email</code>.</p>
-                    <p><span className="font-medium">Generic OIDC:</span> use the provider&apos;s client ID/secret, this app&apos;s callback URL, and either the three explicit endpoint URLs or an IdP base URL if your provider exposes <code>/auth</code>, <code>/token</code>, and <code>/userinfo</code>.</p>
+                    <p className="font-medium text-foreground">Provider preset</p>
+                    <p>Select a preset to fill known provider endpoints. Client ID, client secret, and redirect URI still come from your OAuth app registration.</p>
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Provider preset</Label>
+                  <Select value={globalSsoPreset} onValueChange={(value) => applyGlobalSsoPreset(value as SsoProviderPresetId)}>
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SSO_PROVIDER_PRESETS.map((preset) => (
+                        <SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">{getSsoProviderPreset(globalSsoPreset).description}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch checked={globalSso.enabled} onCheckedChange={(enabled) => setGlobalSso({ ...globalSso, enabled })} />

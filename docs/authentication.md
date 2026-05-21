@@ -21,6 +21,14 @@ Production deployments should set a strong signing secret:
 ADMIN_AUTH_SECRET=<long-random-secret>
 ```
 
+Generate it with a cryptographically random value and store it as a secret, not in source control:
+
+```bash
+openssl rand -base64 48
+# or
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
 TPA supports selectable admin auth providers:
 
 ```env
@@ -29,13 +37,15 @@ ADMIN_AUTH_PROVIDER=local
 ADMIN_AUTH_PROVIDER=sso
 ```
 
-If `ADMIN_AUTH_PROVIDER` is omitted, TPA defaults to `local`. When SSO is selected, enable `allowLocalFallback` from **Security -> Admin Authentication** to keep local account sign-in available as a break-glass path.
+If `ADMIN_AUTH_PROVIDER` is omitted, TPA defaults to `local`. When SSO is selected, enable **Allow local account sign-in** from **Security -> Admin Authentication** to keep local account sign-in available as a break-glass path.
 
 ### Local Provider
 
-Local auth is the DUMB-style path. On first start, open `/auth/login` and create the first local admin account. The first account is assigned the `admin` role and is stored in the app config as a bcrypt password hash.
+Local auth is the built-in username/password path. On first start, open `/auth/login` and create the first local admin account. The first account is assigned the `admin` role and is stored in the app config as a bcrypt password hash.
 
 Use local auth when you want TPA to be self-contained or you do not want admin access coupled to an external identity provider. After the first account exists, manage local users from **Security -> Admin Authentication**. The panel can add users, change roles, disable users, reset passwords, and delete users while preventing removal of the last enabled local admin.
+
+When SSO is selected and local account sign-in is allowed, the login page is SSO-first. The local username and password fields stay hidden until the user selects **Use local account**.
 
 Local auth endpoints:
 
@@ -58,7 +68,7 @@ ADMIN_AUTH_PROVIDER=sso
 ADMIN_AUTH_SECRET=<long-random-secret>
 ```
 
-Then configure the global SSO provider from **Security -> Admin Authentication -> Global Admin SSO Provider**. It is stored in app config key `sso_config`. Stored client secrets are redacted by default; use the editor's **Reveal** button when an admin needs to inspect or rotate an existing secret. Use **Check configuration** to validate endpoint shape/reachability, and **Test login** to run an interactive OAuth flow from the unsaved values on the form. The callback URL must point back to TPA:
+Then configure the global SSO provider from **Security -> Admin Authentication -> Global Admin SSO Provider**. It is stored in app config key `sso_config`. Stored client secrets are redacted by default; use the editor's **Reveal** button when an admin needs to inspect or rotate an existing secret. Use **Check configuration** to validate endpoint shape/reachability, and **Test login** to run an interactive OAuth flow from the unsaved values on the form. **Test login does not save or enable the provider.** After a successful test, select **Provider enabled** and click **Save global SSO provider**. The callback URL must point back to TPA:
 
 ```text
 https://<tpa-host>/api/auth/sso/callback
@@ -69,7 +79,7 @@ The provider config shape is:
 ```json
 {
   "enabled": true,
-  "idpUrl": "https://accounts.google.com/o/oauth2/v2",
+  "idpUrl": "",
   "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
   "tokenUrl": "https://oauth2.googleapis.com/token",
   "userinfoUrl": "https://openidconnect.googleapis.com/v1/userinfo",
@@ -82,6 +92,8 @@ The provider config shape is:
 
 For providers that expose groups, include the group scope required by that provider and map those group names into admin roles. Manage the global provider, selected admin auth provider, session duration, and SSO role mappings from **Security -> Admin Authentication**.
 
+Use the **Provider preset** selector for known providers such as Google. A preset fills endpoint URLs and default scopes only; client ID, client secret, and redirect URI still come from your OAuth app registration. Choose **Custom / Generic OIDC** when entering every endpoint manually.
+
 Field guide:
 
 - **Client ID**: OAuth/OIDC application ID from the identity provider.
@@ -91,7 +103,7 @@ Field guide:
 - **IdP base URL**: optional shortcut used only when the provider exposes `/auth`, `/token`, and `/userinfo` below the same base URL.
 - **Authorization URL**, **Token URL**, **Userinfo URL**: explicit OIDC endpoints. Prefer these for Google.
 
-Google endpoint example:
+Google preset values. Leave **IdP base URL** blank for Google and use explicit endpoints:
 
 ```text
 Authorization URL: https://accounts.google.com/o/oauth2/v2/auth
@@ -128,6 +140,16 @@ Example SSO role mapping:
 ```
 
 If SSO is selected and no role mappings are configured, any successfully authenticated SSO user receives `admin`. That makes first setup possible, but you should add explicit user/group role rules immediately.
+
+## Lockout Recovery
+
+If SSO is selected but the saved global SSO provider is missing, disabled, or misconfigured, temporarily force local auth with an environment override:
+
+```env
+ADMIN_AUTH_PROVIDER=local
+```
+
+Restart the app, open `/auth/login`, and sign in with a local admin account. Then go to **Security -> Admin Authentication** and either fix SSO or enable **Allow local account sign-in** before switching back to SSO. Remove the temporary environment override after recovery; while it is set, it overrides the provider stored in app config.
 
 ## Service Authentication
 

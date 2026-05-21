@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { SsoProviderConfig } from "@/components/sso-config-table";
 import type { SsoProviderFormData } from "@/hooks/use-sso-configs";
+import { SSO_PROVIDER_PRESETS, getSsoProviderPreset, type SsoProviderPresetId } from "@/lib/sso-provider-presets";
 
 interface SsoConfigDialogProps {
   open: boolean;
@@ -54,6 +56,7 @@ export function SsoConfigDialog({ open, onOpenChange, editingConfig, onSubmit }:
   const [checkingProvider, setCheckingProvider] = useState(false);
   const [startingLoginTest, setStartingLoginTest] = useState(false);
   const [checkResult, setCheckResult] = useState<SsoCheckResult | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<SsoProviderPresetId>("custom");
 
   useEffect(() => {
     if (!open) return;
@@ -75,9 +78,27 @@ export function SsoConfigDialog({ open, onOpenChange, editingConfig, onSubmit }:
       setFormData(emptyForm);
     }
     setShowClientSecret(false);
+    setSelectedPreset("custom");
     setCheckResult(null);
     setFormErrors({});
   }, [open, editingConfig]);
+
+  const applyProviderPreset = (presetId: SsoProviderPresetId) => {
+    setSelectedPreset(presetId);
+    const preset = getSsoProviderPreset(presetId);
+    if (presetId === "custom") return;
+    setFormData((current) => ({
+      ...current,
+      name: current.name || preset.name,
+      idpUrl: preset.values.idpUrl ?? current.idpUrl,
+      authorizationUrl: preset.values.authorizationUrl ?? current.authorizationUrl,
+      tokenUrl: preset.values.tokenUrl ?? current.tokenUrl,
+      userinfoUrl: preset.values.userinfoUrl ?? current.userinfoUrl,
+      scopes: preset.values.scopes ?? current.scopes,
+    }));
+    setFormErrors({});
+    setCheckResult(null);
+  };
 
   const validateForm = () => {
     const errors: FormErrors = {};
@@ -180,13 +201,25 @@ export function SsoConfigDialog({ open, onOpenChange, editingConfig, onSubmit }:
               Create a reusable OAuth/OIDC provider for service-level SSO. Leave the client secret blank when editing to keep the current secret.
             </DialogDescription>
             <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">Common values</p>
-              <p><span className="font-medium">Google:</span> authorization <code>https://accounts.google.com/o/oauth2/v2/auth</code>, token <code>https://oauth2.googleapis.com/token</code>, userinfo <code>https://openidconnect.googleapis.com/v1/userinfo</code>, scopes <code>openid profile email</code>.</p>
-              <p><span className="font-medium">Generic OIDC:</span> enter the client ID/secret, this app&apos;s callback URL, and either explicit endpoint URLs or an IdP base URL only if your provider exposes <code>/auth</code>, <code>/token</code>, and <code>/userinfo</code>.</p>
+              <p className="font-medium text-foreground">Provider preset</p>
+              <p>Select a preset to fill known provider endpoints. Client ID, client secret, and redirect URI still come from your OAuth app registration.</p>
             </div>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="sso-provider-preset">Provider preset</Label>
+              <Select value={selectedPreset} onValueChange={(value) => applyProviderPreset(value as SsoProviderPresetId)} disabled={submitting}>
+                <SelectTrigger id="sso-provider-preset"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SSO_PROVIDER_PRESETS.map((preset) => (
+                    <SelectItem key={preset.id} value={preset.id}>{preset.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{getSsoProviderPreset(selectedPreset).description}</p>
+            </div>
+
             <div className="flex items-center gap-2">
               <Switch
                 id="sso-enabled"

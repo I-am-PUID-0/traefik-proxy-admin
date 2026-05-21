@@ -30,7 +30,7 @@ function getAllowedDevOrigins() {
     .map((origin) => origin.trim())
     .filter(Boolean) ?? [];
 
-  return Array.from(new Set(["tpa-dev.jberts.world", ...configured]));
+  return Array.from(new Set(configured));
 }
 
 const nextConfig: NextConfig = {
