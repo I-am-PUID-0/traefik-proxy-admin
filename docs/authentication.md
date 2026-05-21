@@ -200,6 +200,8 @@ Admin cookies can use their own parent domain when needed:
 ADMIN_COOKIE_DOMAIN=.example.com
 ```
 
+When service SSO runs behind Traefik, configure **Browser Public Admin URL** on the Config page to TPA's public HTTPS hostname. The generated forwardAuth address can use the internal Traefik-reachable URL, but browser redirects for `/api/auth/sso/login` must use the public URL.
+
 ## Public Endpoints
 
 Admin auth intentionally does not protect every route. These endpoints remain public by design:

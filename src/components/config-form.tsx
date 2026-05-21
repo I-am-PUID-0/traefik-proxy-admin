@@ -128,7 +128,7 @@ export function ConfigForm({
               </p>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="adminPanelDomain">Admin Panel Base URL</Label>
+              <Label htmlFor="adminPanelDomain">Traefik-Reachable Admin URL</Label>
               <Input
                 id="adminPanelDomain"
                 placeholder="http://tpa:3000 or https://admin.example.com"
@@ -138,7 +138,21 @@ export function ConfigForm({
                 }
               />
               <p className="text-xs text-muted-foreground">
-                Reachable base URL for Traefik HTTP provider and forwardAuth calls. Use an address Traefik can reach, not browser-only localhost.
+                Internal base URL Traefik uses for the HTTP provider and forwardAuth calls. This must be reachable from the Traefik process.
+              </p>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="adminPanelPublicUrl">Browser Public Admin URL</Label>
+              <Input
+                id="adminPanelPublicUrl"
+                placeholder="https://admin.example.com"
+                value={config.adminPanelPublicUrl || ""}
+                onChange={(e) =>
+                  onConfigChange({ ...config, adminPanelPublicUrl: e.target.value })
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                Public browser-facing URL for TPA auth redirects and OAuth callbacks. Leave blank only when the Traefik-reachable URL is also browser-accessible.
               </p>
             </div>
           </div>

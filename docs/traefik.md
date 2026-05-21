@@ -27,6 +27,13 @@ Service shared links and service SSO use Traefik forwardAuth through:
 /api/auth/verify
 ```
 
+TPA has two admin URL settings for this path:
+
+- **Traefik-Reachable Admin URL**: internal URL Traefik uses for the HTTP provider and forwardAuth calls, such as `http://traefik-proxy-admin:3000`.
+- **Browser Public Admin URL**: public HTTPS URL TPA uses when redirecting a user's browser into SSO, such as `https://tpa.example.com`.
+
+Set both when Traefik reaches TPA through an internal container address. If the browser public URL is missing, service SSO redirects can leak the internal address to the browser.
+
 Admin login for the TPA web UI is separate from service forwardAuth. See [Authentication](authentication.md) for the distinction.
 
 ## Static Traefik Example

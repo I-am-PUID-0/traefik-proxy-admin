@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 export interface GlobalConfig {
   globalMiddlewares: string[];
   adminPanelDomain: string;
+  adminPanelPublicUrl?: string;
   defaultEntrypoint?: string;
   defaultEnableDurationMinutes?: number | null;
 }
@@ -12,6 +13,7 @@ export interface GlobalConfig {
 const defaultConfig: GlobalConfig = {
   globalMiddlewares: [],
   adminPanelDomain: "localhost:3000",
+  adminPanelPublicUrl: "",
   defaultEnableDurationMinutes: 720,
 };
 
@@ -33,6 +35,7 @@ export function useConfig() {
         const fullConfig = {
           globalMiddlewares: Array.isArray(data.globalMiddlewares) ? data.globalMiddlewares : [],
           adminPanelDomain: data.adminPanelDomain || "localhost:3000",
+          adminPanelPublicUrl: data.adminPanelPublicUrl || "",
           defaultEntrypoint: data.defaultEntrypoint || "",
           defaultEnableDurationMinutes: Object.prototype.hasOwnProperty.call(data, "defaultEnableDurationMinutes") ? data.defaultEnableDurationMinutes : 720,
         };
@@ -76,6 +79,7 @@ export function useConfig() {
         const safeConfig = {
           globalMiddlewares: Array.isArray(updatedConfig.globalMiddlewares) ? updatedConfig.globalMiddlewares : [],
           adminPanelDomain: updatedConfig.adminPanelDomain || "localhost:3000",
+          adminPanelPublicUrl: updatedConfig.adminPanelPublicUrl || "",
           defaultEntrypoint: updatedConfig.defaultEntrypoint || "",
           defaultEnableDurationMinutes: Object.prototype.hasOwnProperty.call(updatedConfig, "defaultEnableDurationMinutes") ? updatedConfig.defaultEnableDurationMinutes : 720,
         };

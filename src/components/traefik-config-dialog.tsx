@@ -21,6 +21,7 @@ interface GlobalConfig {
   certResolver: string;
   globalMiddlewares: string[];
   adminPanelDomain: string;
+  adminPanelPublicUrl?: string;
   defaultEntrypoint?: string;
 }
 
@@ -164,7 +165,7 @@ providers:
                   <strong>Cert Resolver:</strong> {config.certResolver}
                 </div>
                 <div>
-                  <strong>Admin Panel:</strong> {config.adminPanelDomain}
+                  <strong>Traefik-Reachable Admin URL:</strong> {config.adminPanelDomain}
                 </div>
                 <div>
                   <strong>Default Entrypoint:</strong> {config.defaultEntrypoint || "Not set"}

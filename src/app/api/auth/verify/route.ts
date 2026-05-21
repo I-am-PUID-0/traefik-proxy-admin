@@ -6,6 +6,7 @@ import { eq, and, gt } from "drizzle-orm";
 import { TRAEFIK_SESSION_COOKIE, COOKIE_DEFAULTS } from "@/lib/constants";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
 import type { Domain, Service } from "@/lib/db/schema";
+import { getGlobalConfig } from "@/lib/app-config";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -53,13 +54,13 @@ export async function GET(request: NextRequest) {
     const ssoConfig = securityConfigs.find((config) => config.securityType === "sso");
 
     if (!sessionToken) {
-      return ssoConfig ? redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized();
+      return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized();
     }
 
     const session = await sessionManager.getSession(sessionToken);
 
     if (!session || session.serviceId !== serviceId) {
-      return ssoConfig ? redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized();
+      return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized();
     }
 
     if (isDirectVerifierRequest(originalUri)) {
@@ -134,17 +135,42 @@ function getServiceSessionExpiry(service: Service) {
   return new Date(service.enabledAt.getTime() + service.enableDurationMinutes * 60 * 1000);
 }
 
-function redirectToSSOLogin(
+async function redirectToSSOLogin(
   request: NextRequest,
   serviceId: string,
   originalUri: string,
   service: Service,
   domain: Domain,
 ) {
-  const loginUrl = new URL("/api/auth/sso/login", request.nextUrl.origin);
+  const loginUrl = new URL("/api/auth/sso/login", await getAdminPublicBaseUrl(request));
   loginUrl.searchParams.set("serviceId", serviceId);
   loginUrl.searchParams.set("returnTo", getOriginalRequestUrl(request, originalUri, service, domain));
   return NextResponse.redirect(loginUrl, { status: 302 });
+}
+
+async function getAdminPublicBaseUrl(request: NextRequest) {
+  const globalConfig = await getGlobalConfig();
+  const configuredPublicUrl = globalConfig.adminPanelPublicUrl?.trim() || "";
+
+  if (configuredPublicUrl) {
+    return normalizeBaseUrl(configuredPublicUrl);
+  }
+
+  return normalizeBaseUrl(request.nextUrl.origin);
+}
+
+function normalizeBaseUrl(value: string) {
+  let baseUrl = value.trim();
+
+  if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
+    baseUrl = "https://" + baseUrl;
+  }
+
+  while (baseUrl.endsWith("/")) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
+
+  return baseUrl;
 }
 
 function getOriginalRequestUrl(

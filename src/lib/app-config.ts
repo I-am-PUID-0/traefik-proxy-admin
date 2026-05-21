@@ -6,6 +6,7 @@ import { DURATION_PRESETS } from "./duration-presets";
 export interface GlobalTraefikConfig {
   globalMiddlewares: string[];
   adminPanelDomain: string;
+  adminPanelPublicUrl?: string;
   defaultEntrypoint?: string;
   defaultEnableDurationMinutes?: number | null; // null = forever, undefined = use default, number = minutes
 }
@@ -13,6 +14,7 @@ export interface GlobalTraefikConfig {
 export const DEFAULT_CONFIG: GlobalTraefikConfig = {
   globalMiddlewares: [],
   adminPanelDomain: "localhost:3000",
+  adminPanelPublicUrl: "",
   defaultEnableDurationMinutes: 720, // Default to 12 hours (720 minutes)
 };
 
