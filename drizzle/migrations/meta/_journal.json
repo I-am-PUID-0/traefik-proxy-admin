@@ -71,6 +71,13 @@
       "when": 1779300000000,
       "tag": "0009_advanced_service_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779386400000,
+      "tag": "0010_service_sso_configs",
+      "breakpoints": true
     }
   ]
 }

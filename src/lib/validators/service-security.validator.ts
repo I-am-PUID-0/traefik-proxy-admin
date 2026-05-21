@@ -87,6 +87,13 @@ function validateSecurityTypeConfig(securityType: SecurityType, config: Record<s
       break;
 
     case 'sso':
+      if (config.ssoConfigId !== undefined && config.ssoConfigId !== "") {
+        if (typeof config.ssoConfigId !== "string") {
+          errors.push("ssoConfigId must be a string");
+        } else if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(config.ssoConfigId)) {
+          errors.push("ssoConfigId must be a valid UUID");
+        }
+      }
       if (config.groups !== undefined) {
         if (!Array.isArray(config.groups)) {
           errors.push("groups must be an array");

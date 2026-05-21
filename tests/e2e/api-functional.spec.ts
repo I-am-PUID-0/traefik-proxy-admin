@@ -12,6 +12,7 @@ test("health endpoint reports an operational app", async ({ request }) => {
 });
 
 test("service lifecycle updates the generated Traefik config", async ({ request }) => {
+  const appPort = Number(new URL(test.info().project.use.baseURL ?? "http://localhost:3100").port);
   const suffix = `e2e-${Date.now().toString(36)}`;
   const domainName = `${suffix}.example.test`;
   const subdomain = `app-${suffix}`;
@@ -129,7 +130,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     const targetTest = await request.post("/api/services/test-target", {
       data: {
         targetIp: "127.0.0.1",
-        targetPort: 3000,
+        targetPort: appPort,
       },
     });
     expect(targetTest.ok()).toBe(true);

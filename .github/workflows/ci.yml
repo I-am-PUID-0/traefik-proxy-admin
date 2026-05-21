@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: "1"
+      ADMIN_AUTH_ENABLED: "false"
       DATABASE_URL: postgresql://admin:password@localhost:5432/traefik_share
     services:
       postgres:

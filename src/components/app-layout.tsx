@@ -2,9 +2,9 @@
 
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Settings, Menu, X } from "lucide-react";
+import { LogOut, Settings, Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TraefikConfigDialog } from "@/components/traefik-config-dialog";
 import { AppFooter } from "@/components/app-footer";
@@ -16,6 +16,19 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminSession, setAdminSession] = useState<{ name?: string; role: string } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/admin/me")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => setAdminSession(payload?.session || null))
+      .catch(() => setAdminSession(null));
+  }, []);
+
+  async function logout() {
+    await fetch("/api/auth/admin/logout", { method: "POST" });
+    window.location.href = "/auth/login";
+  }
 
   const isActive = (path: string) => pathname === path;
 
@@ -103,6 +116,12 @@ export function AppLayout({ children }: AppLayoutProps) {
                   }
                 />
                 <ThemeToggle />
+                {adminSession && (
+                  <Button variant="outline" size="sm" onClick={logout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    {adminSession.name || adminSession.role}
+                  </Button>
+                )}
               </div>
               {/* Mobile menu button */}
               <Button
@@ -197,6 +216,12 @@ export function AppLayout({ children }: AppLayoutProps) {
                   }
                 />
                 <ThemeToggle />
+                {adminSession && (
+                  <Button variant="outline" size="sm" onClick={logout}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign out
+                  </Button>
+                )}
               </div>
             </div>
           </div>

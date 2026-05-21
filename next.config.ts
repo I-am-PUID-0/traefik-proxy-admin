@@ -25,9 +25,18 @@ function getBuildId() {
   }
 }
 
+function getAllowedDevOrigins() {
+  const configured = process.env.NEXT_ALLOWED_DEV_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? [];
+
+  return Array.from(new Set(["tpa-dev.jberts.world", ...configured]));
+}
+
 const nextConfig: NextConfig = {
   output: "standalone",
   generateBuildId: async () => getBuildId(),
+  allowedDevOrigins: getAllowedDevOrigins(),
 };
 
 export default nextConfig;

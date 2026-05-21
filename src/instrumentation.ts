@@ -3,7 +3,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { dbCredentials, migrationsFolder } from "../drizzle.config";
 import postgres from "postgres";
 
-const LATEST_MIGRATION_CREATED_AT = 1779300000000;
+const LATEST_MIGRATION_CREATED_AT = 1779386400000;
 
 function getBuildId() {
   try {
@@ -91,6 +91,24 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
       config_id uuid not null,
       username varchar(255) not null,
       password_hash varchar(255) not null,
+      created_at timestamp default now() not null,
+      updated_at timestamp default now() not null
+    )
+  `;
+  await migrationClient`
+    create table if not exists sso_configs (
+      id uuid primary key default gen_random_uuid() not null,
+      name varchar(255) not null,
+      description text,
+      enabled boolean default true not null,
+      idp_url text,
+      authorization_url text,
+      token_url text,
+      userinfo_url text,
+      client_id varchar(255) not null,
+      client_secret text not null,
+      redirect_uri text not null,
+      scopes text not null,
       created_at timestamp default now() not null,
       updated_at timestamp default now() not null
     )
@@ -203,6 +221,12 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
       end if;
 
       if not exists (
+        select 1 from pg_constraint where conname = 'sso_configs_name_unique'
+      ) then
+        alter table sso_configs add constraint sso_configs_name_unique unique(name);
+      end if;
+
+      if not exists (
         select 1 from pg_constraint where conname = 'service_security_configs_service_id_services_id_fk'
       ) then
         alter table service_security_configs
@@ -235,7 +259,7 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
   `;
   await migrationClient`
     insert into drizzle.__drizzle_migrations (hash, created_at)
-    select 'legacy-schema-repair-0009', ${LATEST_MIGRATION_CREATED_AT}
+    select 'legacy-schema-repair-0010', ${LATEST_MIGRATION_CREATED_AT}
     where not exists (select 1 from drizzle.__drizzle_migrations)
   `;
 }

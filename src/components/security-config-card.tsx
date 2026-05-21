@@ -140,6 +140,14 @@ export function SecurityConfigCard({
 
         return (
           <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <Key className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">SSO provider:</span>
+              <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                {config.config.ssoConfigId || "global legacy provider"}
+              </span>
+            </div>
+
             {hasGroups && (
               <div>
                 <div className="flex items-center gap-2 mb-2">

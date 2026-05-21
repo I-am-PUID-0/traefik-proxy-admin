@@ -22,6 +22,7 @@ export interface SharedLinkConfig extends BaseSecurityConfig {
 export interface SSOConfig extends BaseSecurityConfig {
   type: 'sso';
   config: {
+    ssoConfigId?: string;
     groups: string[];
     users: string[];
   };
@@ -132,6 +133,7 @@ export function parseSecurityConfig(securityConfig: ServiceSecurityConfig): Secu
         ...baseConfig,
         type: 'sso',
         config: {
+          ssoConfigId: parsedConfig.ssoConfigId,
           groups: parsedConfig.groups || [],
           users: parsedConfig.users || [],
         },
@@ -177,6 +179,7 @@ export function parseSecurityConfigWithId(securityConfig: ServiceSecurityConfig)
         ...baseConfig,
         type: 'sso',
         config: {
+          ssoConfigId: parsedConfig.ssoConfigId,
           groups: parsedConfig.groups || [],
           users: parsedConfig.users || [],
         },

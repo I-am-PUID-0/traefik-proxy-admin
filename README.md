@@ -93,6 +93,11 @@ Optional environment:
 ```env
 TRAEFIK_API_URL=http://traefik:8080
 TARGET_TEST_ALLOW_CIDRS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+ADMIN_AUTH_ENABLED=true
+ADMIN_AUTH_SECRET=change-me-to-a-long-random-secret
+ADMIN_AUTH_PROVIDER=local
+ADMIN_COOKIE_DOMAIN=.example.com
+AUTH_COOKIE_DOMAIN=.example.com
 ```
 
 `TRAEFIK_API_URL` is used by Traefik discovery endpoints (`/api/traefik/status`, `/api/traefik/entrypoints`, `/api/traefik/middlewares`, `/api/traefik/routers`, and `/api/traefik/services`) to populate selectors, validate entered middleware names, show live API health, inspect live resources, and detect drift from generated config. It is not required for `/api/traefik/config`; Traefik can still poll the app-generated dynamic config without it. In production, if `TRAEFIK_API_URL` is unset, middleware discovery is disabled and manual middleware values remain editable. In development, the app falls back to `http://localhost:8080` for the devcontainer Traefik instance.
@@ -100,6 +105,26 @@ TARGET_TEST_ALLOW_CIDRS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 For production, point `TRAEFIK_API_URL` at an internal Docker network hostname, VPN-only address, or another protected Traefik API endpoint. Do not expose Traefik's API/dashboard publicly without authentication.
 
 `TARGET_TEST_ALLOW_CIDRS` controls TCP reachability tests used by the service form Test button, service health endpoint, and Traefik Live target health checks. In production these checks are disabled unless this allowlist is set. Use only the private Docker, VPN, or LAN ranges that Traefik Proxy Admin should be allowed to probe. Development defaults to loopback and private ranges for devcontainer convenience.
+
+### Admin Authentication
+
+Full auth details are in [Authentication](docs/authentication.md).
+
+Traefik Proxy Admin is protected by admin authentication by default. Set `ADMIN_AUTH_SECRET` to a long random value before running the production image. The admin provider is selectable: use `ADMIN_AUTH_PROVIDER=local` for a DUMB-style first-user setup/login flow, or `ADMIN_AUTH_PROVIDER=sso` to require the configured OIDC provider. Set `ADMIN_AUTH_ENABLED=false` only for trusted local development or CI.
+
+Admin access uses signed `tpa-admin-session` cookies and role-based authorization:
+
+- `viewer`: read-only UI and API access.
+- `editor`: viewer access plus mutating service operations.
+- `admin`: editor access plus security, session, and global configuration operations.
+
+Admin auth settings are stored in app config under `admin_auth_config` and can be managed from Security -> Admin Authentication or with `GET/PUT /api/auth/admin/config`. Local auth stores bcrypt-hashed users with per-user roles and supports first-admin setup from `/auth/login`. SSO auth can match users by OIDC subject, name, or email, and groups from the provider `groups` claim. When SSO is selected, enable local account sign-in from Security -> Admin Authentication to keep local admin login available as a break-glass path. If no SSO role mappings are configured, any successfully authenticated SSO user receives `admin` so first setup is possible. Add group/user role rules immediately after setup for least privilege. For `ADMIN_AUTH_PROVIDER=sso`, configure the global admin SSO provider from Security -> Admin Authentication with `redirectUri` set to `https://<tpa-host>/api/auth/sso/callback`. Stored SSO client secrets are redacted by default but can be deliberately revealed from the editor when an admin needs to inspect or rotate them. SSO editors also provide **Check configuration** and **Test login** actions so endpoint reachability and returned identity claims can be validated before saving or enabling a provider.
+
+Service Basic Auth configurations on the Security page are reusable HTTP Basic Authentication credential sets for proxied services; they are not TPA admin users. Attach them from a service Security page when Traefik should challenge visitors before forwarding to that service.
+
+Service-level SSO works as a built-in Traefik forwardAuth flow. The Security page supports reusable Service SSO provider configs, and each service SSO rule can choose a provider plus its own allowed users/groups. Existing service SSO rules without a provider continue to fall back to the global admin SSO provider stored in `sso_config`. A service with SSO security redirects unauthenticated browser requests through `/api/auth/sso/login`, validates configured service users/groups on callback, then sets the `traefik-session` cookie. Set `AUTH_COOKIE_DOMAIN=.example.com` when the admin app and protected services are on sibling subdomains so the service request can send the shared session cookie.
+
+`/api/traefik/config` remains unauthenticated so Traefik can poll dynamic config. Keep it reachable only from Traefik or an internal network path.
 
 ## Dev Container
 
@@ -192,8 +217,20 @@ The Traefik Live page at `/traefik` uses `TRAEFIK_API_URL` to show API health, l
 ### Authentication
 - `GET /api/auth/verify` - Forward-auth endpoint for Traefik
 - `POST /api/auth/shared-link` - Authenticate with shared link
-- `GET /api/auth/sso/login` - Initiate SSO login
-- `GET /api/auth/sso/callback` - SSO callback handler
+- `GET /api/auth/sso/login` - Initiate service SSO login
+- `GET /api/auth/sso/callback` - Shared SSO callback handler for service and admin sessions
+- `GET/POST /api/security/sso-configs` - List or create reusable service SSO provider configs
+- `GET/PUT/DELETE /api/security/sso-configs/{id}` - Manage a reusable service SSO provider config
+- `GET/PUT /api/auth/admin/sso-config` - Read or update the global admin SSO provider
+- `GET /api/auth/admin/status` - Show selected admin auth provider and setup state
+- `POST /api/auth/admin/local/setup` - Create the first local admin account
+- `POST /api/auth/admin/local/login` - Sign in with a local admin account
+- `GET /api/auth/admin/login` - Initiate admin SSO login
+- `POST /api/auth/admin/logout` - Clear admin session
+- `GET /api/auth/admin/me` - Show current admin session
+- `GET/PUT /api/auth/admin/config` - Read or update admin auth provider and role mappings
+- `GET/POST /api/auth/admin/users` - List or create local admin users
+- `PUT/DELETE /api/auth/admin/users/[username]` - Update or delete local admin users
 
 ### Session Management
 - `GET /api/sessions` - List active sessions
@@ -329,7 +366,9 @@ Services are publicly accessible without any authentication.
 
 ## SSO Configuration
 
-SSO settings are managed through the admin panel and stored in the `app_config` table:
+Admin SSO settings are stored in the `app_config` table as the global admin SSO provider and can be edited from Security -> Admin Authentication. Reusable service SSO provider settings are managed from the Security page and stored in `sso_configs`. Both editors include inline help, an explicit reveal button for stored client secrets, a server-side configuration check, and an interactive login test that reports returned user claims without creating an admin or service session. A Google setup normally uses explicit endpoint URLs: authorization `https://accounts.google.com/o/oauth2/v2/auth`, token `https://oauth2.googleapis.com/token`, userinfo `https://openidconnect.googleapis.com/v1/userinfo`, and scopes `openid profile email`. Generic OIDC providers can use explicit endpoints or an IdP base URL if they expose `/auth`, `/token`, and `/userinfo` under that base.
+
+Reusable service SSO provider shape:
 
 ```json
 {

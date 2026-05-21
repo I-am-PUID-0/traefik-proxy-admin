@@ -1,0 +1,83 @@
+import { NextRequest, NextResponse } from "next/server";
+import {
+  adminCookieOptions,
+  authenticateLocalAdminUser,
+  createAdminSessionCookie,
+  getAdminAuthConfig,
+} from "@/lib/admin-auth";
+import { ADMIN_SESSION_COOKIE, adminAuthEnabled } from "@/lib/admin-auth-shared";
+
+export async function POST(request: NextRequest) {
+  const wantsHtml = isFormPost(request);
+  if (!adminAuthEnabled()) {
+    return authError(request, "Admin authentication is disabled", 400, wantsHtml);
+  }
+
+  const config = await getAdminAuthConfig();
+  if (config.provider !== "local" && !config.allowLocalFallback) {
+    return authError(request, "Local admin login is disabled while SSO is the selected provider", 403, wantsHtml);
+  }
+
+  const { username, password, returnTo } = await readCredentials(request);
+  if (!username || !password) {
+    return authError(request, "Username and password are required", 400, wantsHtml);
+  }
+
+  const user = await authenticateLocalAdminUser(username, password);
+  if (!user) {
+    return authError(request, "Incorrect username or password", 401, wantsHtml);
+  }
+
+  const sessionToken = await createAdminSessionCookie({ sub: user.username, name: user.username }, user.role, config.sessionDurationHours);
+  const response = wantsHtml
+    ? redirectToPublicUrl(request, safeReturnTo(returnTo), 303)
+    : NextResponse.json({ ok: true, user: { username: user.username, role: user.role } });
+  response.cookies.set(ADMIN_SESSION_COOKIE, sessionToken, adminCookieOptions(config.sessionDurationHours * 60 * 60));
+  return response;
+}
+
+function isFormPost(request: NextRequest) {
+  return request.headers.get("content-type")?.includes("application/x-www-form-urlencoded") ?? false;
+}
+
+async function readCredentials(request: NextRequest) {
+  if (isFormPost(request)) {
+    const form = await request.formData();
+    return {
+      username: String(form.get("username") || ""),
+      password: String(form.get("password") || ""),
+      returnTo: String(form.get("returnTo") || "/"),
+    };
+  }
+
+  return (await request.json()) as { username?: string; password?: string; returnTo?: string };
+}
+
+function authError(request: NextRequest, error: string, status: number, wantsHtml: boolean) {
+  if (!wantsHtml) return NextResponse.json({ error }, { status });
+  const url = publicUrl(request, "/auth/login");
+  url.searchParams.set("error", error);
+  return NextResponse.redirect(url, { status: 303 });
+}
+
+function safeReturnTo(returnTo: string | undefined) {
+  return returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/";
+}
+
+function redirectToPublicUrl(request: NextRequest, path: string, status = 302) {
+  return NextResponse.redirect(publicUrl(request, path), { status });
+}
+
+function publicUrl(request: NextRequest, path: string) {
+  return new URL(path, publicOrigin(request));
+}
+
+function publicOrigin(request: NextRequest) {
+  const proto = firstForwardedHeader(request.headers.get("x-forwarded-proto")) || request.nextUrl.protocol.replace(":", "") || "http";
+  const host = firstForwardedHeader(request.headers.get("x-forwarded-host")) || request.headers.get("host") || request.nextUrl.host;
+  return proto + "://" + host;
+}
+
+function firstForwardedHeader(value: string | null) {
+  return value?.split(",")[0]?.trim() || "";
+}

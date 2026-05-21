@@ -17,6 +17,23 @@ export const basicAuthUsers = pgTable("basic_auth_users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const ssoConfigs = pgTable("sso_configs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 255 }).notNull().unique(),
+  description: text("description"),
+  enabled: boolean("enabled").default(true).notNull(),
+  idpUrl: text("idp_url"),
+  authorizationUrl: text("authorization_url"),
+  tokenUrl: text("token_url"),
+  userinfoUrl: text("userinfo_url"),
+  clientId: varchar("client_id", { length: 255 }).notNull(),
+  clientSecret: text("client_secret").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  scopes: text("scopes").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const domains = pgTable("domains", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -100,6 +117,8 @@ export type BasicAuthConfig = typeof basicAuthConfigs.$inferSelect;
 export type NewBasicAuthConfig = typeof basicAuthConfigs.$inferInsert;
 export type BasicAuthUser = typeof basicAuthUsers.$inferSelect;
 export type NewBasicAuthUser = typeof basicAuthUsers.$inferInsert;
+export type SsoConfig = typeof ssoConfigs.$inferSelect;
+export type NewSsoConfig = typeof ssoConfigs.$inferInsert;
 export type Domain = typeof domains.$inferSelect;
 export type NewDomain = typeof domains.$inferInsert;
 export type Service = typeof services.$inferSelect;

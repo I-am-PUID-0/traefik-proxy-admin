@@ -35,6 +35,13 @@ interface BasicAuthConfig {
   description?: string;
 }
 
+interface SsoProviderConfig {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+}
+
 interface SecurityConfigDialogProps {
   trigger?: React.ReactNode;
   open?: boolean;
@@ -58,6 +65,7 @@ interface FormData {
     expiresInHours?: number;
     sessionDurationMinutes?: number;
     // SSO config
+    ssoConfigId?: string;
     groups?: string[];
     users?: string[];
     // Basic auth config
@@ -72,6 +80,7 @@ interface FormErrors {
   sessionDurationMinutes?: string;
   groups?: string;
   users?: string;
+  ssoConfigId?: string;
   basicAuthConfigId?: string;
 }
 
@@ -108,7 +117,9 @@ export function SecurityConfigDialog({
 }: SecurityConfigDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [basicAuthConfigs, setBasicAuthConfigs] = useState<BasicAuthConfig[]>([]);
+  const [ssoProviderConfigs, setSsoProviderConfigs] = useState<SsoProviderConfig[]>([]);
   const [loadingBasicAuth, setLoadingBasicAuth] = useState(false);
+  const [loadingSsoProviders, setLoadingSsoProviders] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use controlled or internal state
@@ -122,6 +133,7 @@ export function SecurityConfigDialog({
     config: {
       expiresInHours: 24,
       sessionDurationMinutes: 60,
+      ssoConfigId: "",
       groups: [],
       users: [],
       basicAuthConfigId: "",
@@ -162,6 +174,7 @@ export function SecurityConfigDialog({
         priority: editingConfig.priority,
         config: {
           ...editingConfig.config,
+          ssoConfigId: editingConfig.type === "sso" ? editingConfig.config.ssoConfigId : "",
           groups: editingConfig.type === "sso" ? editingConfig.config.groups : [],
           users: editingConfig.type === "sso" ? editingConfig.config.users : [],
         },
@@ -175,6 +188,7 @@ export function SecurityConfigDialog({
         config: {
           expiresInHours: 24,
           sessionDurationMinutes: 60,
+          ssoConfigId: "",
           groups: [],
           users: [],
           basicAuthConfigId: "",
@@ -186,10 +200,13 @@ export function SecurityConfigDialog({
     setUserInput("");
   }, [editingConfig, isOpen]);
 
-  // Load basic auth configs when dialog opens and basic auth is selected
+  // Load reusable auth configs when dialog opens and a provider-backed type is selected
   useEffect(() => {
     if (isOpen && (formData.type === "basic_auth" || editingConfig?.type === "basic_auth")) {
       fetchBasicAuthConfigs();
+    }
+    if (isOpen && (formData.type === "sso" || editingConfig?.type === "sso")) {
+      fetchSsoProviderConfigs();
     }
   }, [isOpen, formData.type, editingConfig?.type]);
 
@@ -205,6 +222,21 @@ export function SecurityConfigDialog({
       console.error("Failed to fetch basic auth configs:", error);
     } finally {
       setLoadingBasicAuth(false);
+    }
+  };
+
+  const fetchSsoProviderConfigs = async () => {
+    setLoadingSsoProviders(true);
+    try {
+      const response = await fetch("/api/security/sso-configs");
+      if (response.ok) {
+        const data = await response.json();
+        setSsoProviderConfigs(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch SSO configs:", error);
+    } finally {
+      setLoadingSsoProviders(false);
     }
   };
 
@@ -270,6 +302,7 @@ export function SecurityConfigDialog({
           break;
         case "sso":
           cleanConfig.config = {
+            ...(cleanConfig.config.ssoConfigId ? { ssoConfigId: cleanConfig.config.ssoConfigId } : {}),
             groups: cleanConfig.config.groups!,
             users: cleanConfig.config.users!,
           };
@@ -383,6 +416,7 @@ export function SecurityConfigDialog({
                 config: {
                   expiresInHours: 24,
                   sessionDurationMinutes: 60,
+                  ssoConfigId: "",
                   groups: [],
                   users: [],
                   basicAuthConfigId: "",
@@ -543,6 +577,62 @@ export function SecurityConfigDialog({
             </div>
 
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="ssoProviderConfig">SSO Provider Configuration</Label>
+                {loadingSsoProviders ? (
+                  <div className="flex items-center gap-2 p-3 border rounded-lg">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm text-muted-foreground">Loading SSO providers...</span>
+                  </div>
+                ) : (
+                  <Select
+                    value={formData.config.ssoConfigId || "__global__"}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        config: {
+                          ...formData.config,
+                          ssoConfigId: value === "__global__" ? "" : value,
+                        },
+                      })
+                    }
+                  >
+                    <SelectTrigger id="ssoProviderConfig">
+                      <SelectValue placeholder="Select an SSO provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__global__">
+                        <div>
+                          <div className="font-medium">Global legacy SSO provider</div>
+                          <div className="text-xs text-muted-foreground">Uses the existing app-wide SSO configuration.</div>
+                        </div>
+                      </SelectItem>
+                      {ssoProviderConfigs.map((config) => (
+                        <SelectItem key={config.id} value={config.id} disabled={!config.enabled}>
+                          <div>
+                            <div className="font-medium">{config.name}{!config.enabled ? " (disabled)" : ""}</div>
+                            {config.description && (
+                              <div className="text-xs text-muted-foreground">
+                                {config.description}
+                              </div>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {errors.ssoConfigId && (
+                  <div className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.ssoConfigId}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Choose a reusable SSO provider from Security, or use the legacy global provider for existing setups.
+                </p>
+              </div>
+
               {/* Groups */}
               <div className="space-y-2">
                 <Label>Allowed Groups</Label>

@@ -1,42 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSSOConfig, generateSSOAuthUrl } from "@/lib/sso-config";
+import { generateSSOAuthUrl, getServiceSSOConfig } from "@/lib/sso-config";
+import { ServiceSecurityService } from "@/lib/services/service-security.service";
 import { randomBytes } from "crypto";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const serviceId = searchParams.get("serviceId");
-    
+    const returnTo = searchParams.get("returnTo");
+
     if (!serviceId) {
       return NextResponse.json({ error: "Service ID required" }, { status: 400 });
     }
 
-    const ssoConfig = await getSSOConfig();
-    
+    const securityConfigs = await ServiceSecurityService.getEnabledSecurityConfigsForService(serviceId);
+    const serviceSsoConfig = securityConfigs.find((config) => config.securityType === "sso");
+    if (!serviceSsoConfig) {
+      return NextResponse.json({ error: "SSO not configured for this service" }, { status: 400 });
+    }
+
+    const parsedServiceConfig = JSON.parse(serviceSsoConfig.config) as { ssoConfigId?: string };
+    const ssoConfig = await getServiceSSOConfig(parsedServiceConfig.ssoConfigId);
+
     if (!ssoConfig.enabled) {
       return NextResponse.json({ error: "SSO not configured" }, { status: 400 });
     }
 
-    // Generate state parameter to prevent CSRF
     const state = randomBytes(32).toString("hex");
     const stateData = {
+      type: "service",
       serviceId,
+      returnTo,
+      ssoConfigId: parsedServiceConfig.ssoConfigId || null,
       timestamp: Date.now(),
     };
 
-    // Store state temporarily (in production, use Redis or similar)
     const response = NextResponse.redirect(generateSSOAuthUrl(ssoConfig, state));
     response.cookies.set("sso_state", JSON.stringify(stateData), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 600, // 10 minutes
+      maxAge: 600,
+      path: "/",
     });
     response.cookies.set("sso_state_token", state, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 600,
+      path: "/",
     });
 
     return response;

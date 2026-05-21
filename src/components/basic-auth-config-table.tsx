@@ -81,10 +81,10 @@ export function BasicAuthConfigTable({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Basic Authentication Configurations
+            Service Basic Auth Configurations
           </CardTitle>
           <CardDescription>
-            Loading configurations...
+            Loading service basic-auth credential sets...
           </CardDescription>
         </CardHeader>
       </Card>
@@ -98,10 +98,10 @@ export function BasicAuthConfigTable({
           <div>
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Basic Authentication Configurations
+              Service Basic Auth Configurations
             </CardTitle>
             <CardDescription>
-              Manage basic authentication configurations and users for your services
+              Reusable Traefik basic-auth credential sets for protected services. These users do not sign in to the TPA admin UI.
             </CardDescription>
           </div>
           <Button onClick={onAddConfig} className="w-full sm:w-auto">
@@ -118,7 +118,7 @@ export function BasicAuthConfigTable({
               No configurations found
             </h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              Get started by creating your first basic authentication configuration.
+              Create a reusable credential set, then attach it to one or more services from a service Security page.
             </p>
             <Button onClick={onAddConfig}>
               <Plus className="mr-2 h-4 w-4" />
