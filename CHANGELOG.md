@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.6.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.5.0...v1.6.0) (2026-05-21)
+
+
+### Features
+
+* **auth:** add SSO provider presets and expand docs ([ad02699](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/ad02699c32f686ec46ec4ac433d465f0b7448034))
+* **auth:** expand OIDC provider presets with additional providers and endpoint details ([3662a1a](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/3662a1a5e2ddb4d12fa344a252e4ad2f7dd7720e))
+* **config:** rename admin panel domain to base URL and improve URL handling ([1ced7ea](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/1ced7eae323cfcfa372029c442400660a44c947c))
+* **security:** implement rate limiting and request body validation for admin and SSO endpoints ([6b44e5e](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/6b44e5e52fe6314a19faff60525750bd31b27dde))
+
+
+### Bug Fixes
+
+* **security:** guard SSO endpoint requests against SSRF ([40ebc3c](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/40ebc3c29046784ef09069fdcfb5a1c63d695841))
+
 ## [1.5.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.4.0...v1.5.0) (2026-05-21)
 
 
