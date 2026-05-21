@@ -92,7 +92,7 @@ The provider config shape is:
 
 For providers that expose groups, include the group scope required by that provider and map those group names into admin roles. Manage the global provider, selected admin auth provider, session duration, and SSO role mappings from **Security -> Admin Authentication**.
 
-Use the **Provider preset** selector for known providers such as Google. A preset fills endpoint URLs and default scopes only; client ID, client secret, and redirect URI still come from your OAuth app registration. Choose **Custom / Generic OIDC** when entering every endpoint manually.
+Use the **Provider preset** selector for known OIDC providers. A preset fills endpoint URLs and default scopes only; client ID, client secret, redirect URI, tenant, realm, and any self-hosted provider hostname still come from your OAuth app registration. Choose **Custom / Generic OIDC** when entering every endpoint manually.
 
 Field guide:
 
@@ -101,16 +101,21 @@ Field guide:
 - **Redirect URI**: must exactly match the callback URL registered with the provider.
 - **Scopes**: space-separated list. Start with `openid profile email`; add provider-specific group scopes only when role mapping needs groups.
 - **IdP base URL**: optional shortcut used only when the provider exposes `/auth`, `/token`, and `/userinfo` below the same base URL.
-- **Authorization URL**, **Token URL**, **Userinfo URL**: explicit OIDC endpoints. Prefer these for Google.
+- **Authorization URL**, **Token URL**, **Userinfo URL**: explicit OIDC endpoints. Presets fill these for known providers, but self-hosted domains, realms, and tenants still need to be edited.
 
-Google preset values. Leave **IdP base URL** blank for Google and use explicit endpoints:
+Preset values. Leave **IdP base URL** blank for these presets and use explicit endpoints. For deployment-specific providers, replace the example hostname, tenant, realm, or authorization server ID with your real value.
 
-```text
-Authorization URL: https://accounts.google.com/o/oauth2/v2/auth
-Token URL: https://oauth2.googleapis.com/token
-Userinfo URL: https://openidconnect.googleapis.com/v1/userinfo
-Scopes: openid profile email
-```
+| Provider | Authorization URL | Token URL | Userinfo URL | Default scopes |
+| --- | --- | --- | --- | --- |
+| Google | `https://accounts.google.com/o/oauth2/v2/auth` | `https://oauth2.googleapis.com/token` | `https://openidconnect.googleapis.com/v1/userinfo` | `openid profile email` |
+| Authelia | `https://auth.example.com/api/oidc/authorization` | `https://auth.example.com/api/oidc/token` | `https://auth.example.com/api/oidc/userinfo` | `openid profile email groups` |
+| Authentik | `https://authentik.example.com/application/o/authorize/` | `https://authentik.example.com/application/o/token/` | `https://authentik.example.com/application/o/userinfo/` | `openid profile email` |
+| Keycloak | `https://keycloak.example.com/realms/myrealm/protocol/openid-connect/auth` | `https://keycloak.example.com/realms/myrealm/protocol/openid-connect/token` | `https://keycloak.example.com/realms/myrealm/protocol/openid-connect/userinfo` | `openid profile email` |
+| Microsoft Entra ID | `https://login.microsoftonline.com/tenant-id-or-domain/oauth2/v2.0/authorize` | `https://login.microsoftonline.com/tenant-id-or-domain/oauth2/v2.0/token` | `https://graph.microsoft.com/oidc/userinfo` | `openid profile email` |
+| Auth0 | `https://tenant.auth0.com/authorize` | `https://tenant.auth0.com/oauth/token` | `https://tenant.auth0.com/userinfo` | `openid profile email` |
+| Okta | `https://dev-000000.okta.com/oauth2/default/v1/authorize` | `https://dev-000000.okta.com/oauth2/default/v1/token` | `https://dev-000000.okta.com/oauth2/default/v1/userinfo` | `openid profile email` |
+| ZITADEL | `https://zitadel.example.com/oauth/v2/authorize` | `https://zitadel.example.com/oauth/v2/token` | `https://zitadel.example.com/oidc/v1/userinfo` | `openid profile email` |
+| Dex | `https://dex.example.com/auth` | `https://dex.example.com/token` | `https://dex.example.com/userinfo` | `openid profile email groups` |
 
 ### Admin Roles
 
@@ -161,7 +166,7 @@ Service SSO, shared links, and service Basic Auth are separate from admin auth. 
 
 The **Service SSO Configurations** section on the Security page creates reusable OAuth/OIDC provider configs for proxied services. Each service SSO rule can choose one provider config and then apply its own allowed users/groups. If a service SSO rule has no provider selected, TPA falls back to the global admin SSO provider in `sso_config` for backward compatibility. Reusable service provider secrets are also redacted by default and can be revealed from the edit dialog. The reusable provider dialog includes the same **Check configuration** and **Test login** actions, so service SSO providers can be validated before saving or attaching them to a service.
 
-A reusable service SSO provider supports explicit OIDC endpoint URLs, which is the preferred setup for providers like Google:
+A reusable service SSO provider supports explicit OIDC endpoint URLs, which is the preferred setup for known providers such as Google, Authelia, Authentik, Keycloak, Microsoft Entra ID, Auth0, Okta, ZITADEL, and Dex:
 
 ```text
 Authorization URL: https://accounts.google.com/o/oauth2/v2/auth
