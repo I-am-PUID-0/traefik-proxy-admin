@@ -7,7 +7,7 @@ export interface GlobalTraefikConfig {
   globalMiddlewares: string[];
   adminPanelDomain: string;
   defaultEntrypoint?: string;
-  defaultEnableDurationMinutes?: number; // null/undefined = forever, number = minutes
+  defaultEnableDurationMinutes?: number | null; // null = forever, undefined = use default, number = minutes
 }
 
 export const DEFAULT_CONFIG: GlobalTraefikConfig = {

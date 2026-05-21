@@ -34,7 +34,7 @@ export function useConfig() {
           globalMiddlewares: Array.isArray(data.globalMiddlewares) ? data.globalMiddlewares : [],
           adminPanelDomain: data.adminPanelDomain || "localhost:3000",
           defaultEntrypoint: data.defaultEntrypoint || "",
-          defaultEnableDurationMinutes: data.defaultEnableDurationMinutes ?? 720,
+          defaultEnableDurationMinutes: Object.prototype.hasOwnProperty.call(data, "defaultEnableDurationMinutes") ? data.defaultEnableDurationMinutes : 720,
         };
         setConfig(fullConfig);
         setOriginalConfig(fullConfig);
@@ -77,7 +77,7 @@ export function useConfig() {
           globalMiddlewares: Array.isArray(updatedConfig.globalMiddlewares) ? updatedConfig.globalMiddlewares : [],
           adminPanelDomain: updatedConfig.adminPanelDomain || "localhost:3000",
           defaultEntrypoint: updatedConfig.defaultEntrypoint || "",
-          defaultEnableDurationMinutes: updatedConfig.defaultEnableDurationMinutes ?? 720,
+          defaultEnableDurationMinutes: Object.prototype.hasOwnProperty.call(updatedConfig, "defaultEnableDurationMinutes") ? updatedConfig.defaultEnableDurationMinutes : 720,
         };
         setConfig(safeConfig);
         setOriginalConfig(safeConfig);
