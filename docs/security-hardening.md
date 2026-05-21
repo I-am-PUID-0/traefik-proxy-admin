@@ -14,6 +14,7 @@ Before exposing a production deployment, verify these controls:
 - Set `AUTH_COOKIE_DOMAIN` only when service forwardAuth sessions must work across sibling service subdomains.
 - Keep `/api/traefik/config` reachable only by Traefik or an internal network path.
 - Point `TRAEFIK_API_URL` at an internal Docker, VPN, or LAN-only Traefik API endpoint.
+- Set `SSO_ENDPOINT_ALLOW_HOSTS` only for intentionally internal SSO provider hostnames.
 - Set `TARGET_TEST_ALLOW_CIDRS` to the narrow private ranges the app is allowed to probe.
 - Do not expose PostgreSQL publicly; use a private Docker network or private host network path.
 - Run `pnpm verify` before release or image publication.
@@ -71,6 +72,18 @@ TRAEFIK_API_URL=http://traefik:8080
 ```
 
 Avoid public dashboard/API exposure. If the Traefik API is exposed for operations, protect it independently with network controls and authentication.
+
+## SSO Endpoint Probes
+
+SSO configuration checks and login callbacks make outbound requests to configured provider token and userinfo endpoints. TPA rejects endpoints that resolve to private, local, multicast, or reserved IP ranges unless the hostname is explicitly allowlisted.
+
+For intentionally internal providers, set:
+
+```env
+SSO_ENDPOINT_ALLOW_HOSTS=auth.example.internal,authentik.example.internal
+```
+
+Only add hostnames you operate and expect TPA to contact. This protects the SSO test/check flow from being used as a generic server-side request primitive.
 
 ## Target Probes
 

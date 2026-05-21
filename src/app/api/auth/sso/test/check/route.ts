@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveSSOEndpoints, validateSSOConfigForUse, type SSOConfig } from "@/lib/sso-config";
+import { assertSsoEndpointAllowed } from "@/lib/sso-endpoint-guard";
 
 interface ProbeResult {
   label: string;
@@ -30,10 +31,24 @@ function normalizeConfig(body: Record<string, unknown>): SSOConfig {
 }
 
 async function probe(label: string, url: string): Promise<ProbeResult> {
+  let allowedUrl: string;
+  try {
+    allowedUrl = await assertSsoEndpointAllowed(url);
+  } catch (error) {
+    return {
+      label,
+      url,
+      reachable: false,
+      error: error instanceof Error ? error.message : "Endpoint is not allowed",
+    };
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
-    const response = await fetch(url, {
+    // allowedUrl has been parsed, DNS-resolved, and rejected unless private/local results are explicitly allowlisted.
+    // codeql[js/request-forgery]
+    const response = await fetch(allowedUrl, {
       method: "HEAD",
       redirect: "manual",
       signal: controller.signal,

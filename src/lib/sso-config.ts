@@ -1,6 +1,7 @@
 import { db, appConfig } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { SsoProviderService } from "@/lib/services/sso-provider.service";
+import { assertSsoEndpointAllowed } from "@/lib/sso-endpoint-guard";
 
 export interface SSOConfig {
   enabled: boolean;
@@ -165,7 +166,10 @@ export async function exchangeCodeForToken(
   config: SSOConfig,
   code: string
 ): Promise<{ access_token: string; id_token?: string }> {
-  const response = await fetch(endpoint(config, "tokenUrl", "/token"), {
+  const tokenUrl = await assertSsoEndpointAllowed(endpoint(config, "tokenUrl", "/token"));
+  // tokenUrl has been parsed, DNS-resolved, and rejected unless private/local results are explicitly allowlisted.
+  // codeql[js/request-forgery]
+  const response = await fetch(tokenUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -190,7 +194,10 @@ export async function getUserInfo(
   config: SSOConfig,
   accessToken: string
 ): Promise<{ sub: string; name?: string; email?: string; groups?: string[] }> {
-  const response = await fetch(endpoint(config, "userinfoUrl", "/userinfo"), {
+  const userinfoUrl = await assertSsoEndpointAllowed(endpoint(config, "userinfoUrl", "/userinfo"));
+  // userinfoUrl has been parsed, DNS-resolved, and rejected unless private/local results are explicitly allowlisted.
+  // codeql[js/request-forgery]
+  const response = await fetch(userinfoUrl, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },

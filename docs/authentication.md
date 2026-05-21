@@ -90,7 +90,7 @@ The provider config shape is:
 }
 ```
 
-For providers that expose groups, include the group scope required by that provider and map those group names into admin roles. Manage the global provider, selected admin auth provider, session duration, and SSO role mappings from **Security -> Admin Authentication**.
+For providers that expose groups, include the group scope required by that provider and map those group names into admin roles. Manage the global provider, selected admin auth provider, session duration, and SSO role mappings from **Security -> Admin Authentication**. If a self-hosted provider resolves to a private/internal address, add its hostname to `SSO_ENDPOINT_ALLOW_HOSTS` so TPA is allowed to contact its token and userinfo endpoints.
 
 Use the **Provider preset** selector for known OIDC providers. A preset fills endpoint URLs and default scopes only; client ID, client secret, redirect URI, tenant, realm, and any self-hosted provider hostname still come from your OAuth app registration. Choose **Custom / Generic OIDC** when entering every endpoint manually.
 
