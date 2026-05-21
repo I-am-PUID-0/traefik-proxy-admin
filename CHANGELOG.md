@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.5.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.4.0...v1.5.0) (2026-05-21)
+
+
+### Features
+
+* **auth:** add admin authentication and reusable SSO providers ([de835f0](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/de835f07dd22901d161ff3ea94fc62ba990b9b96))
+
 ## [1.4.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.3.0...v1.4.0) (2026-05-21)
 
 
