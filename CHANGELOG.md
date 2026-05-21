@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.4.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.3.0...v1.4.0) (2026-05-21)
+
+
+### Features
+
+* add service import and export ([44f69f2](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/44f69f2280764143cff15f889b14f5c35f284596))
+
 ## [1.3.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.2.1...v1.3.0) (2026-05-20)
 
 
