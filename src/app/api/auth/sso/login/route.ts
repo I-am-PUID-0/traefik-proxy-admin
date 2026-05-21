@@ -3,6 +3,7 @@ import { generateSSOAuthUrl, getServiceSSOConfig } from "@/lib/sso-config";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
 import { randomBytes } from "crypto";
 import { rateLimit } from "@/lib/request-guards";
+import { SSO_STATE_COOKIES } from "@/lib/sso-state-cookies";
 
 export async function GET(request: NextRequest) {
   const limited = rateLimit(request, { key: "service-sso-login", limit: 60, windowMs: 10 * 60 * 1000 });
@@ -40,14 +41,14 @@ export async function GET(request: NextRequest) {
     };
 
     const response = NextResponse.redirect(generateSSOAuthUrl(ssoConfig, state));
-    response.cookies.set("sso_state", JSON.stringify(stateData), {
+    response.cookies.set(SSO_STATE_COOKIES.service.data, JSON.stringify(stateData), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 600,
       path: "/",
     });
-    response.cookies.set("sso_state_token", state, {
+    response.cookies.set(SSO_STATE_COOKIES.service.token, state, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

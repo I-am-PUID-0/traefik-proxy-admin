@@ -14,6 +14,7 @@ import {
 } from "@/lib/admin-auth";
 import { ADMIN_SESSION_COOKIE, adminAuthEnabled, type AdminRole } from "@/lib/admin-auth-shared";
 import { rateLimit } from "@/lib/request-guards";
+import { LEGACY_SSO_STATE_COOKIES, SSO_STATE_COOKIES } from "@/lib/sso-state-cookies";
 
 type SSOState = {
   type?: "service" | "admin" | "test";
@@ -38,10 +39,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing code or state" }, { status: 400 });
     }
 
-    const storedStateData = request.cookies.get("sso_state")?.value;
-    const storedStateToken = request.cookies.get("sso_state_token")?.value;
+    const storedStateData = findMatchingStateData(request, state);
 
-    if (!storedStateData || !storedStateToken || storedStateToken !== state) {
+    if (!storedStateData) {
       return NextResponse.json({ error: "Invalid state parameter" }, { status: 400 });
     }
 
@@ -197,9 +197,36 @@ function firstForwardedHeader(value: string | null) {
   return value?.split(",")[0]?.trim() || "";
 }
 
+function findMatchingStateData(request: NextRequest, state: string) {
+  const cookiePairs = [
+    SSO_STATE_COOKIES.service,
+    SSO_STATE_COOKIES.admin,
+    SSO_STATE_COOKIES.test,
+    LEGACY_SSO_STATE_COOKIES,
+  ];
+
+  for (const pair of cookiePairs) {
+    const data = request.cookies.get(pair.data)?.value;
+    const token = request.cookies.get(pair.token)?.value;
+
+    if (data && token === state) {
+      return data;
+    }
+  }
+
+  return null;
+}
+
 function clearStateCookies(response: NextResponse) {
-  response.cookies.delete("sso_state");
-  response.cookies.delete("sso_state_token");
+  for (const pair of [
+    SSO_STATE_COOKIES.service,
+    SSO_STATE_COOKIES.admin,
+    SSO_STATE_COOKIES.test,
+    LEGACY_SSO_STATE_COOKIES,
+  ]) {
+    response.cookies.delete(pair.data);
+    response.cookies.delete(pair.token);
+  }
 }
 
 function safeLocalReturnTo(returnTo: string | null | undefined, fallback: string) {
