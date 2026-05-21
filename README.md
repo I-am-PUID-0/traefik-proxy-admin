@@ -1,19 +1,17 @@
 # Traefik Proxy Admin
 
-Traefik Proxy Admin is a web UI for managing Traefik dynamic HTTP configuration from a PostgreSQL-backed Next.js app. It can create and preview routers, services, middlewares, service auth rules, shared links, and live Traefik diagnostics.
+Traefik Proxy Admin is a production-focused web UI for managing Traefik dynamic HTTP configuration. It runs as a standalone Next.js container backed by PostgreSQL and generates Traefik routers, services, middlewares, service authentication, shared links, and live diagnostics.
 
-The project is intended for privately operated reverse-proxy environments where Traefik exposes internal services through controlled routes, authentication, and temporary access links.
+Use it when you want a managed UI/API for exposing private HTTP services through Traefik without manually maintaining every dynamic config file.
 
-## Features
+## Core Capabilities
 
-- Service CRUD for Traefik HTTP routers and load-balancer services
-- Domain, certificate resolver, entrypoint, middleware, and request-header management
-- Advanced router and managed middleware JSON for bypass rules and redirects
-- Service import/export using a portable JSON format
-- Admin authentication with local accounts or OIDC/SSO
-- Service authentication through shared links, Basic Auth, and SSO forwardAuth
-- Live Traefik discovery for entrypoints, routers, services, middlewares, drift, and target checks
-- Devcontainer with Node.js, PostgreSQL, and local Traefik for development
+- Create, edit, disable, import, and export proxied services
+- Generate Traefik routers, services, TLS settings, middlewares, and advanced router rules
+- Protect the admin UI/API with local accounts or OIDC/SSO
+- Protect proxied services with shared links, Basic Auth, or SSO forwardAuth
+- Discover live Traefik entrypoints, routers, services, and middlewares when the Traefik API is configured
+- Inspect generated-config drift and service target health from the Traefik Live page
 
 ## Screenshots
 
@@ -22,87 +20,79 @@ The project is intended for privately operated reverse-proxy environments where 
 ![Global configuration](docs/screenshots/screenshot2.png "Global configuration")
 ![Service configuration](docs/screenshots/screenshot3.png "Service configuration")
 
-## Architecture
+## Production Deployment
 
-```text
-Admin UI/API (Next.js) -> PostgreSQL
-Admin UI/API (Next.js) -> generated Traefik config endpoint
-Traefik -> target services
+The published image contains only the Traefik Proxy Admin application. Run PostgreSQL and Traefik as separate services.
+
+Example compose service:
+
+```yaml
+services:
+  traefik-proxy-admin:
+    image: iampuid0/traefik-proxy-admin:latest
+    environment:
+      DATABASE_URL: postgresql://tpa:change-me@postgres:5432/traefik_proxy_admin
+      ADMIN_AUTH_ENABLED: "true"
+      ADMIN_AUTH_SECRET: ${ADMIN_AUTH_SECRET}
+      ADMIN_AUTH_PROVIDER: local
+      TRAEFIK_API_URL: http://traefik:8080
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: traefik_proxy_admin
+      POSTGRES_USER: tpa
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - tpa-postgres:/var/lib/postgresql/data
+
+volumes:
+  tpa-postgres:
 ```
 
-Traefik polls `GET /api/traefik/config` for generated dynamic configuration. Optional live discovery uses `TRAEFIK_API_URL` to inspect Traefik's API for selectors, diagnostics, and drift detection.
-
-## Quick Start
-
-```bash
-git clone <repository-url>
-cd traefik-proxy-admin
-cp .env.example .env
-pnpm install
-pnpm dev
-```
-
-At minimum, configure `DATABASE_URL` in `.env`. Open `http://localhost:3000` and create the first local admin account when prompted.
-
-For the full development workflow, use the included devcontainer and see [Development](docs/development.md).
-
-## Production Image
-
-The published Docker image contains only the Traefik Proxy Admin Next.js app. It does not bundle PostgreSQL or Traefik.
-
-Required environment:
-
-```env
-DATABASE_URL=postgresql://user:password@postgres:5432/traefik_share
-ADMIN_AUTH_ENABLED=true
-ADMIN_AUTH_SECRET=<long-random-secret>
-ADMIN_AUTH_PROVIDER=local
-```
-
-Generate `ADMIN_AUTH_SECRET` with a cryptographically random value, for example:
+Generate `ADMIN_AUTH_SECRET` before first start:
 
 ```bash
 openssl rand -base64 48
-# or
-node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 ```
 
-Common optional environment:
+Then open the app and create the first local admin account. Review [Deployment](docs/deployment.md), [Authentication](docs/authentication.md), and [Security Hardening](docs/security-hardening.md) before exposing the admin UI beyond a trusted network.
 
-```env
-TRAEFIK_API_URL=http://traefik:8080
-TARGET_TEST_ALLOW_CIDRS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
-ADMIN_COOKIE_DOMAIN=.example.com
-AUTH_COOKIE_DOMAIN=.example.com
+## Traefik Provider Setup
+
+Configure Traefik to poll the generated config endpoint:
+
+```yaml
+providers:
+  http:
+    endpoints:
+      - "http://traefik-proxy-admin:3000/api/traefik/config"
+    pollInterval: "10s"
 ```
 
-Read [Security Hardening](docs/security-hardening.md) before exposing a production deployment.
+Keep `/api/traefik/config` reachable only by Traefik or an internal network path. See [Traefik Integration](docs/traefik.md) for forwardAuth, live discovery, and target probe guidance.
 
 ## Documentation
 
+Production and operator docs:
+
+- [Deployment](docs/deployment.md): production container setup, required environment, startup flow, and upgrade notes.
 - [Authentication](docs/authentication.md): admin auth, local users, SSO/OIDC, service auth, public auth endpoints, and lockout recovery.
 - [Service Configuration](docs/services.md): services, domains, middlewares, advanced routers, managed middlewares, and import/export.
 - [Traefik Integration](docs/traefik.md): HTTP provider setup, live discovery, config endpoint exposure, and target probes.
 - [Security Hardening](docs/security-hardening.md): production checklist, cookie domains, Traefik API access, target probes, and secrets.
-- [Development](docs/development.md): devcontainer usage, reverse-proxied Next dev origins, local Traefik files, and verification.
 
-New features should update the relevant document above instead of growing this README with operational detail.
+Contributor docs:
 
-## Verification
+- [Contributing](CONTRIBUTING.md): branch model, pull requests, conventional commits, and checks.
+- [Development](docs/development.md): devcontainer usage, local Traefik files, reverse-proxied Next dev origins, and verification.
+- [Security Policy](SECURITY.md): supported branches and private vulnerability reporting.
 
-Before pushing a commit, run the full verification suite from inside the devcontainer:
-
-```bash
-pnpm verify
-```
-
-Useful shorter checks during active development:
-
-```bash
-pnpm lint
-pnpm test
-pnpm build
-```
+New features should update the relevant document instead of growing this README with operational detail.
 
 ## Fork Notice
 
