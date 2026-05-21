@@ -16,8 +16,6 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/admin/local/setup",
   "/api/auth/sso/login",
   "/api/auth/sso/callback",
-  "/api/auth/sso/test/check",
-  "/api/auth/sso/test/start",
   "/api/auth/verify",
   "/api/auth/shared-link",
   "/api/health",
@@ -45,7 +43,8 @@ function requiredRole(request: NextRequest): AdminRole {
     path.startsWith("/api/sessions") ||
     path.startsWith("/api/config") ||
     path.startsWith("/api/auth/admin/config") ||
-    path.startsWith("/api/auth/admin/users")
+    path.startsWith("/api/auth/admin/users") ||
+    path.startsWith("/api/auth/sso/test")
   ) {
     return "admin";
   }
@@ -75,6 +74,38 @@ function forbidden(request: NextRequest) {
   return NextResponse.redirect(publicUrl(request, "/auth/forbidden"));
 }
 
+function unsafeMethod(method: string) {
+  return !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase());
+}
+
+function csrfForbidden(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: "Cross-site admin request blocked" }, { status: 403 });
+  }
+
+  return NextResponse.redirect(publicUrl(request, "/auth/forbidden"));
+}
+
+function sameOriginRequest(request: NextRequest) {
+  const secFetchSite = request.headers.get("sec-fetch-site")?.toLowerCase();
+  if (secFetchSite === "cross-site") return false;
+
+  const expectedOrigin = publicOrigin(request);
+  const origin = request.headers.get("origin");
+  if (origin) return origin === expectedOrigin;
+
+  const referer = request.headers.get("referer");
+  if (referer) {
+    try {
+      return new URL(referer).origin === expectedOrigin;
+    } catch {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function publicUrl(request: NextRequest, path: string) {
   return new URL(path, publicOrigin(request));
 }
@@ -97,6 +128,10 @@ export async function proxy(request: NextRequest) {
   const session = await verifyAdminSessionToken(request.cookies.get(ADMIN_SESSION_COOKIE)?.value);
   if (!session) {
     return unauthorized(request);
+  }
+
+  if (unsafeMethod(request.method) && !sameOriginRequest(request)) {
+    return csrfForbidden(request);
   }
 
   if (!roleAllows(session.role, requiredRole(request))) {

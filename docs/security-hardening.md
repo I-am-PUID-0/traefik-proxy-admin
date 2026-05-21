@@ -52,6 +52,18 @@ Recommended pattern:
 - Map read-only users to `viewer`.
 - Keep local admin fallback available for at least one local account during SSO rollout.
 
+## Admin API Request Hardening
+
+Authenticated admin API mutations are checked by the Next proxy before they reach route handlers. The proxy verifies the signed admin session, enforces the route role (`viewer`, `editor`, or `admin`), and blocks cross-site unsafe requests when browser origin metadata indicates a different origin.
+
+High-risk handlers also apply local limits:
+
+- Local admin login and setup, admin SSO login, service SSO login, SSO callback, SSO provider check/test, service import, and target probe endpoints are rate limited per client address.
+- Service import, global config updates, generated config previews, SSO provider check/test, and target probes reject oversized JSON bodies before parsing.
+- SSO provider test endpoints require an authenticated `admin` session because they can include OAuth client secrets.
+
+These limits are in-memory per app instance and are intended as abuse protection, not as a replacement for reverse-proxy or edge rate limiting.
+
 ## Public Endpoints
 
 These endpoints are intentionally public because Traefik or login flows need them:

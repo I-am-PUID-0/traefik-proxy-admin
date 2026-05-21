@@ -13,6 +13,7 @@ import {
   resolveAdminRole,
 } from "@/lib/admin-auth";
 import { ADMIN_SESSION_COOKIE, adminAuthEnabled, type AdminRole } from "@/lib/admin-auth-shared";
+import { rateLimit } from "@/lib/request-guards";
 
 type SSOState = {
   type?: "service" | "admin" | "test";
@@ -25,6 +26,9 @@ type SSOState = {
 };
 
 export async function GET(request: NextRequest) {
+  const limited = rateLimit(request, { key: "sso-callback", limit: 120, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get("code");

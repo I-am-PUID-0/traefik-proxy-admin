@@ -6,8 +6,12 @@ import {
   getAdminAuthConfig,
 } from "@/lib/admin-auth";
 import { ADMIN_SESSION_COOKIE, adminAuthEnabled } from "@/lib/admin-auth-shared";
+import { rateLimit } from "@/lib/request-guards";
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, { key: "admin-local-setup", limit: 5, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   const wantsHtml = isFormPost(request);
   if (!adminAuthEnabled()) {
     return authError(request, "Admin authentication is disabled", 400, wantsHtml);

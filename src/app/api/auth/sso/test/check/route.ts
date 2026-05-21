@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveSSOEndpoints, validateSSOConfigForUse, type SSOConfig } from "@/lib/sso-config";
 import { assertSsoEndpointAllowed } from "@/lib/sso-endpoint-guard";
+import { bodyErrorResponse, rateLimit, readJsonBody } from "@/lib/request-guards";
 
 interface ProbeResult {
   label: string;
@@ -67,8 +68,11 @@ async function probe(label: string, url: string): Promise<ProbeResult> {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, { key: "sso-test-check", limit: 30, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   try {
-    const config = normalizeConfig(await request.json());
+    const config = normalizeConfig(await readJsonBody<Record<string, unknown>>(request, 64 * 1024));
     const errors = validateSSOConfigForUse(config);
     if (errors.length > 0) {
       return NextResponse.json({ ok: false, errors, probes: [] });
@@ -89,6 +93,10 @@ export async function POST(request: NextRequest) {
       probes,
     });
   } catch (error) {
+    if (error instanceof Error && error.name === "RequestBodyError") {
+      return bodyErrorResponse(error);
+    }
+
     return NextResponse.json(
       { ok: false, errors: [error instanceof Error ? error.message : "SSO provider check failed"], probes: [] },
       { status: 500 },

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGlobalConfig, updateGlobalConfig, GlobalTraefikConfig } from "@/lib/app-config";
+import { bodyErrorResponse, readJsonBody } from "@/lib/request-guards";
 
 export async function GET() {
   try {
@@ -16,7 +17,7 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json() as GlobalTraefikConfig;
+    const body = await readJsonBody<GlobalTraefikConfig>(request, 64 * 1024);
     
     // Validate required fields
     if (!body.adminPanelDomain) {
@@ -37,6 +38,10 @@ export async function PUT(request: NextRequest) {
     const updatedConfig = await getGlobalConfig();
     return NextResponse.json(updatedConfig);
   } catch (error) {
+    if (error instanceof Error && error.name === "RequestBodyError") {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error updating global config:", error);
     return NextResponse.json(
       { error: "Failed to update configuration" },

@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { getSSOConfig, generateSSOAuthUrl } from "@/lib/sso-config";
 import { getAdminAuthConfig } from "@/lib/admin-auth";
+import { rateLimit } from "@/lib/request-guards";
 
 export async function GET(request: NextRequest) {
+  const limited = rateLimit(request, { key: "admin-sso-login", limit: 30, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   try {
     const adminConfig = await getAdminAuthConfig();
     if (adminConfig.provider !== "sso") {

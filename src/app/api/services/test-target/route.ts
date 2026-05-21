@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { testTcpConnection } from "@/lib/target-test";
+import { rateLimit, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 interface TargetTestRequest {
   targetIp?: string;
@@ -7,8 +8,11 @@ interface TargetTestRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, { key: "target-test", limit: 60, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   try {
-    const body: TargetTestRequest = await request.json();
+    const body = await readJsonBody<TargetTestRequest>(request, 16 * 1024);
     const targetIp = body.targetIp?.trim();
     const targetPort = Number(body.targetPort);
 
@@ -21,6 +25,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(await testTcpConnection(targetIp, targetPort));
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ reachable: false, error: error.message }, { status: error.status });
+    }
+
     console.error("Error testing service target:", error);
     return NextResponse.json(
       { reachable: false, error: "Failed to test service target" },

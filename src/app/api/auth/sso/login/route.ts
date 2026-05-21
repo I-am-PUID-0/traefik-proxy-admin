@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateSSOAuthUrl, getServiceSSOConfig } from "@/lib/sso-config";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
 import { randomBytes } from "crypto";
+import { rateLimit } from "@/lib/request-guards";
 
 export async function GET(request: NextRequest) {
+  const limited = rateLimit(request, { key: "service-sso-login", limit: 60, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const serviceId = searchParams.get("serviceId");
