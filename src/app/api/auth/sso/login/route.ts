@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateSSOAuthUrl, getServiceSSOConfig } from "@/lib/sso-config";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
-import { randomBytes } from "crypto";
 import { rateLimit } from "@/lib/request-guards";
 import { SSO_STATE_COOKIES } from "@/lib/sso-state-cookies";
+import { createSignedSSOState } from "@/lib/sso-state-token";
 
 export async function GET(request: NextRequest) {
   const limited = rateLimit(request, { key: "service-sso-login", limit: 60, windowMs: 10 * 60 * 1000 });
@@ -31,14 +31,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "SSO not configured" }, { status: 400 });
     }
 
-    const state = randomBytes(32).toString("hex");
     const stateData = {
-      type: "service",
+      type: "service" as const,
       serviceId,
       returnTo,
       ssoConfigId: parsedServiceConfig.ssoConfigId || null,
       timestamp: Date.now(),
     };
+    const state = createSignedSSOState(stateData);
 
     const response = NextResponse.redirect(generateSSOAuthUrl(ssoConfig, state));
     response.cookies.set(SSO_STATE_COOKIES.service.data, JSON.stringify(stateData), {

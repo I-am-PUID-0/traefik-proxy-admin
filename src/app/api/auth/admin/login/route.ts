@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomBytes } from "crypto";
 import { getSSOConfig, generateSSOAuthUrl } from "@/lib/sso-config";
 import { getAdminAuthConfig } from "@/lib/admin-auth";
 import { rateLimit } from "@/lib/request-guards";
 import { SSO_STATE_COOKIES } from "@/lib/sso-state-cookies";
+import { createSignedSSOState } from "@/lib/sso-state-token";
 
 export async function GET(request: NextRequest) {
   const limited = rateLimit(request, { key: "admin-sso-login", limit: 30, windowMs: 10 * 60 * 1000 });
@@ -22,12 +22,12 @@ export async function GET(request: NextRequest) {
     }
 
     const returnTo = safeReturnTo(request.nextUrl.searchParams.get("returnTo"));
-    const state = randomBytes(32).toString("hex");
     const stateData = {
-      type: "admin",
+      type: "admin" as const,
       returnTo,
       timestamp: Date.now(),
     };
+    const state = createSignedSSOState(stateData);
 
     const response = NextResponse.redirect(generateSSOAuthUrl(ssoConfig, state));
     response.cookies.set(SSO_STATE_COOKIES.admin.data, JSON.stringify(stateData), {

@@ -15,6 +15,7 @@ import {
 import { ADMIN_SESSION_COOKIE, adminAuthEnabled, type AdminRole } from "@/lib/admin-auth-shared";
 import { rateLimit } from "@/lib/request-guards";
 import { LEGACY_SSO_STATE_COOKIES, SSO_STATE_COOKIES } from "@/lib/sso-state-cookies";
+import { verifySignedSSOState } from "@/lib/sso-state-token";
 
 type SSOState = {
   type?: "service" | "admin" | "test";
@@ -39,13 +40,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Missing code or state" }, { status: 400 });
     }
 
-    const storedStateData = findMatchingStateData(request, state);
+    const stateData = findMatchingStateData(request, state);
 
-    if (!storedStateData) {
+    if (!stateData) {
       return NextResponse.json({ error: "Invalid state parameter" }, { status: 400 });
     }
-
-    const stateData = JSON.parse(storedStateData) as SSOState;
 
     if (Date.now() - stateData.timestamp > 600000) {
       return NextResponse.json({ error: "State expired" }, { status: 400 });
@@ -197,7 +196,7 @@ function firstForwardedHeader(value: string | null) {
   return value?.split(",")[0]?.trim() || "";
 }
 
-function findMatchingStateData(request: NextRequest, state: string) {
+function findMatchingStateData(request: NextRequest, state: string): SSOState | null {
   const cookiePairs = [
     SSO_STATE_COOKIES.service,
     SSO_STATE_COOKIES.admin,
@@ -210,9 +209,12 @@ function findMatchingStateData(request: NextRequest, state: string) {
     const token = request.cookies.get(pair.token)?.value;
 
     if (data && token === state) {
-      return data;
+      return JSON.parse(data) as SSOState;
     }
   }
+
+  const signedState = verifySignedSSOState(state);
+  if (signedState) return signedState as SSOState;
 
   return null;
 }
