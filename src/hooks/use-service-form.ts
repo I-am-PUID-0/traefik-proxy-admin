@@ -7,32 +7,43 @@ export type ServiceFormData = Omit<Service, "id" | "createdAt" | "updatedAt"> & 
 
 interface UseServiceFormOptions {
   service: Service | null;
-  defaultDuration?: number;
+  defaultDuration?: number | null;
   initialData?: Partial<ServiceFormData>;
 }
 
 export function useServiceForm({ service, defaultDuration, initialData }: UseServiceFormOptions) {
-  const getDefaultFormData = useCallback((): ServiceFormData => ({
-    name: "",
-    subdomain: "",
-    hostnameMode: "subdomain",
-    customHostnames: null,
-    domainId: "",
-    targetIp: "",
-    targetPort: 80,
-    entrypoint: null,
-    isHttps: true,
-    insecureSkipVerify: false,
-    passHostHeader: true,
-    enabled: true,
-    enabledAt: null,
-    enableDurationMinutes: defaultDuration ?? null,
-    middlewares: "",
-    requestHeaders: "",
-    managedMiddlewares: "",
-    advancedRouters: "",
-    ...initialData,
-  }), [defaultDuration, initialData]);
+  const getDefaultFormData = useCallback((): ServiceFormData => {
+    const hasInitialDuration = Boolean(initialData)
+      && Object.prototype.hasOwnProperty.call(initialData, "enableDurationMinutes")
+      && initialData?.enableDurationMinutes !== undefined;
+    const data: ServiceFormData = {
+      name: "",
+      subdomain: "",
+      hostnameMode: "subdomain",
+      customHostnames: null,
+      domainId: "",
+      targetIp: "",
+      targetPort: 80,
+      entrypoint: null,
+      isHttps: true,
+      insecureSkipVerify: false,
+      passHostHeader: true,
+      enabled: true,
+      enabledAt: null,
+      enableDurationMinutes: defaultDuration ?? null,
+      middlewares: "",
+      requestHeaders: "",
+      managedMiddlewares: "",
+      advancedRouters: "",
+      ...initialData,
+    };
+
+    if (!hasInitialDuration) {
+      data.enableDurationMinutes = defaultDuration ?? null;
+    }
+
+    return data;
+  }, [defaultDuration, initialData]);
 
   const [formData, setFormData] = useState<ServiceFormData>(getDefaultFormData);
   const [originalFormData, setOriginalFormData] = useState<ServiceFormData>(getDefaultFormData);
@@ -69,14 +80,32 @@ export function useServiceForm({ service, defaultDuration, initialData }: UseSer
     }
   }, [service, getDefaultFormData]);
 
-  // Update form data when defaultDuration changes and we're adding a new service
+  // Update form data when the saved default duration loads. Plain new services
+  // can reset to the default shape; imported drafts keep their imported fields and
+  // only receive the duration default when the draft did not provide one.
   useEffect(() => {
-    if (!service && defaultDuration !== undefined) {
+    if (service || defaultDuration === undefined) {
+      return;
+    }
+
+    if (!initialData) {
       const defaultData = getDefaultFormData();
       setFormData(defaultData);
       setOriginalFormData(defaultData);
+      return;
     }
-  }, [defaultDuration, service, getDefaultFormData]);
+
+    const initialDataHasDuration = Object.prototype.hasOwnProperty.call(
+      initialData,
+      "enableDurationMinutes",
+    ) && initialData.enableDurationMinutes !== undefined;
+
+    if (!initialDataHasDuration) {
+      const duration = defaultDuration ?? null;
+      setFormData((prev) => ({ ...prev, enableDurationMinutes: duration }));
+      setOriginalFormData((prev) => ({ ...prev, enableDurationMinutes: duration }));
+    }
+  }, [defaultDuration, initialData, service, getDefaultFormData]);
 
   const hasUnsavedChanges = JSON.stringify(formData) !== JSON.stringify(originalFormData);
 

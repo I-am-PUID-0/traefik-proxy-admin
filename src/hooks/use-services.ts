@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { Service } from "@/components/service-table";
 import type { ServiceFormData } from "./use-service-form";
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
@@ -8,7 +8,8 @@ import { parseMiddlewareNames } from "@/lib/middleware-utils";
 export function useServices() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [defaultDuration, setDefaultDuration] = useState<number | undefined>(12);
+  const [defaultDuration, setDefaultDuration] = useState<number | null | undefined>(undefined);
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   const fetchServices = useCallback(async () => {
     try {
@@ -28,17 +29,30 @@ export function useServices() {
 
   const fetchConfig = useCallback(async () => {
     try {
+      setConfigLoaded(false);
       const response = await fetch("/api/config");
       if (response.ok) {
         const config = await response.json();
-        if (config.defaultEnableDurationMinutes !== undefined) {
+        if (Object.prototype.hasOwnProperty.call(config, "defaultEnableDurationMinutes")) {
           setDefaultDuration(config.defaultEnableDurationMinutes);
+        } else {
+          setDefaultDuration(720);
         }
+      } else {
+        // If config cannot be loaded, prefer the non-expiring option over an unexpected timeout.
+        setDefaultDuration(null);
       }
     } catch (error) {
       console.error("Failed to fetch config:", error);
+      setDefaultDuration(null);
+    } finally {
+      setConfigLoaded(true);
     }
   }, []);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
 
   const saveService = useCallback(async (serviceData: ServiceFormData, editingService?: Service | null) => {
     const url = editingService ? `/api/services/${editingService.id}` : "/api/services";
@@ -133,6 +147,7 @@ export function useServices() {
     services,
     loading,
     defaultDuration,
+    configLoaded,
     fetchServices,
     fetchServiceById,
     fetchConfig,

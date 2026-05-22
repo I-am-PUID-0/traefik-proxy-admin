@@ -91,7 +91,13 @@ In production, point `TRAEFIK_API_URL` at an internal Docker network, private LA
 
 ## Traefik Live Page
 
-The Traefik Live page at `/traefik` shows live API resources, generated-config drift, and target health checks. Router rows can prefill the Add Service form with discovered host, entrypoint, and middleware values.
+The Traefik Live page at `/traefik` shows live API resources, generated-config drift, and target health checks. It can preview-import external routers into a new TPA-managed service draft.
+
+Import preview resolves the selected router, its referenced load-balancer service, middleware references, and any sibling routers that point at the same Traefik service. Sibling routers are mapped into the draft as advanced routers. The preview does not clone external middleware definitions; it only keeps middleware references such as `chain-auth@file`.
+
+TPA blocks imports from Traefik `@internal` resources. Internal routers and services represent Traefik dashboard/API plumbing and should not become user-managed proxied services.
+
+Review the preview warnings before saving. Complex Traefik services, multiple upstream servers, target URLs with paths, or rules that are not simple `Host(...)` matches may require manual cleanup after the draft is created.
 
 ## Target Probes
 

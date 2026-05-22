@@ -1,5 +1,4 @@
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DURATION_PRESETS } from "@/lib/duration-presets";
 
 interface DurationSelectProps {
@@ -32,28 +31,27 @@ export function DurationSelect({ value, onValueChange, disabled }: DurationSelec
     return value.toString();
   };
 
+  const selectValue = getSelectValue();
+
   return (
     <div className="space-y-2">
       <Label htmlFor="duration">Auto-disable Duration</Label>
-      <Select
-        value={getSelectValue()}
-        onValueChange={handleValueChange}
+      <select
+        id="duration"
+        value={selectValue}
+        onChange={(event) => handleValueChange(event.target.value)}
         disabled={disabled}
+        className="h-10 min-w-32 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <SelectTrigger>
-          <SelectValue placeholder="Select duration" />
-        </SelectTrigger>
-        <SelectContent>
-          {DURATION_PRESETS.map((preset) => (
-            <SelectItem
-              key={preset.value === null ? "forever" : preset.value.toString()}
-              value={preset.value === null ? "forever" : preset.value.toString()}
-            >
-              {preset.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        {DURATION_PRESETS.map((preset) => (
+          <option
+            key={preset.value === null ? "forever" : preset.value.toString()}
+            value={preset.value === null ? "forever" : preset.value.toString()}
+          >
+            {preset.label}
+          </option>
+        ))}
+      </select>
       <p className="text-xs text-gray-500">
         Service will automatically disable after this duration.
       </p>

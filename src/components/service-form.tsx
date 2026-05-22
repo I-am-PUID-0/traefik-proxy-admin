@@ -21,7 +21,7 @@ import type { Service } from "./service-table";
 
 interface ServiceFormProps {
   service: Service | null;
-  defaultDuration?: number;
+  defaultDuration?: number | null;
   onSubmit: (data: ServiceFormData) => Promise<void>;
   onCancel: () => void;
   submitting?: boolean;
