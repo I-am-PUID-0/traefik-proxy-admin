@@ -165,7 +165,7 @@ providers:
                   <strong>Cert Resolver:</strong> {config.certResolver}
                 </div>
                 <div>
-                  <strong>Traefik-Reachable Admin URL:</strong> {config.adminPanelDomain}
+                  <strong>Internal TPA URL for Traefik:</strong> {config.adminPanelDomain}
                 </div>
                 <div>
                   <strong>Default Entrypoint:</strong> {config.defaultEntrypoint || "Not set"}

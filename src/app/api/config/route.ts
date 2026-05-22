@@ -22,7 +22,7 @@ export async function PUT(request: NextRequest) {
     // Validate required fields
     if (!body.adminPanelDomain) {
       return NextResponse.json(
-        { error: "Admin panel domain is required" },
+        { error: "Internal TPA URL for Traefik is required" },
         { status: 400 }
       );
     }

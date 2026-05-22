@@ -27,14 +27,14 @@ Service shared links and service SSO use Traefik forwardAuth through:
 /api/auth/verify
 ```
 
-TPA has two admin URL settings for this path:
+TPA has two URL settings for this path:
 
-- **Traefik-Reachable Admin URL**: internal URL Traefik uses for the HTTP provider and forwardAuth calls, such as `http://traefik-proxy-admin:3000`.
-- **Browser Public Admin URL**: public HTTPS URL TPA uses when redirecting a user's browser into SSO, such as `https://tpa.example.com`.
+- **Internal TPA URL for Traefik**: base URL Traefik can reach from its own network. TPA uses this when generating the HTTP provider endpoint and forwardAuth address, such as `http://traefik-proxy-admin:3000`. This often matches Traefik's `providers.http.endpoint` host, but TPA still needs the base URL so generated forwardAuth middleware can point back to TPA.
+- **Public TPA URL for Browser/OAuth**: public HTTPS URL users can open in a browser, such as `https://tpa.example.com`. TPA uses this for admin SSO, service SSO redirects, and OAuth callbacks.
 
-Set both when Traefik reaches TPA through an internal container address. If the browser public URL is missing, service SSO redirects can leak the internal address to the browser.
+Set both when Traefik reaches TPA through an internal container address. If the public URL is missing, service SSO redirects can leak the internal address to the browser.
 
-For service SSO, OAuth providers should redirect back to the Browser Public Admin URL callback. TPA then returns the browser to the protected service with a short-lived auth ticket, and `/api/auth/verify` redeems that ticket on the service hostname. This is what allows service SSO to work across multiple base domains without one shared `AUTH_COOKIE_DOMAIN`.
+For service SSO, OAuth providers should redirect back to the Public TPA URL callback. TPA then returns the browser to the protected service with a short-lived auth ticket, and `/api/auth/verify` redeems that ticket on the service hostname. This is what allows service SSO to work across multiple base domains without one shared `AUTH_COOKIE_DOMAIN`; the Public TPA URL does not need to match every protected service domain.
 
 Admin login for the TPA web UI is separate from service forwardAuth. See [Authentication](authentication.md) for the distinction.
 
