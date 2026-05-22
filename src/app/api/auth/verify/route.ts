@@ -97,7 +97,13 @@ async function authorizeServiceAuthTicket(
 
   sessionManager.rememberSession(consumed.session);
 
-  const response = NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 });
+  const response = isDirectVerifierRequest(originalUri)
+    ? NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 })
+    : NextResponse.json({
+        status: "authorized",
+        user: consumed.session.userIdentifier,
+      });
+
   response.cookies.set(TRAEFIK_SESSION_COOKIE, consumed.session.sessionToken, {
     ...COOKIE_DEFAULTS,
     expires: consumed.session.expiresAt,
