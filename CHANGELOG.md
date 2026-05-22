@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.7.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.6.4...v1.7.0) (2026-05-22)
+
+
+### Features
+
+* **auth:** support multi-domain service SSO sessions ([084760d](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/084760dd65232a7b102c3b3680db2b96e20f005e))
+
 ## [1.6.4](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.6.3...v1.6.4) (2026-05-22)
 
 
