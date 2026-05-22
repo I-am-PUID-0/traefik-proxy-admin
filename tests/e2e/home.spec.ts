@@ -4,7 +4,7 @@ test.describe.configure({ mode: "serial" });
 
 test("homepage loads", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("Manage your Traefik proxy services")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Traefik Admin" })).toBeVisible();
 });
 
 

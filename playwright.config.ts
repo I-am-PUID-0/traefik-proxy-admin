@@ -8,7 +8,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm build && ADMIN_AUTH_ENABLED=false TARGET_TEST_ALLOW_CIDRS=127.0.0.0/8,::1/128 pnpm exec next start --port 3100",
+    command: "pnpm build && rm -rf .next/standalone/.next/static .next/standalone/public && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public && ADMIN_AUTH_ENABLED=false TARGET_TEST_ALLOW_CIDRS=127.0.0.0/8,::1/128 PORT=3100 HOSTNAME=0.0.0.0 node .next/standalone/server.js",
     port: 3100,
     reuseExistingServer: false,
     timeout: 120_000,
