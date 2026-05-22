@@ -180,7 +180,9 @@ When a service has SSO security enabled and the browser has no valid `traefik-se
 /api/auth/sso/login -> provider -> /api/auth/sso/callback
 ```
 
-After callback, TPA validates the service-level allowed users/groups against the selected provider response and sets `traefik-session`.
+After callback, TPA validates the service-level allowed users/groups against the selected provider response, creates a short-lived one-time auth ticket, and redirects the browser back to the original service URL. The next Traefik forwardAuth check redeems that ticket on the service hostname and sets the `traefik-session` cookie there.
+
+That ticket flow is the preferred setup for multiple base domains because it does not depend on one shared parent cookie domain. Use one public TPA callback URL with the OAuth provider, then let each service hostname receive its own host-scoped session cookie during ticket redemption.
 
 ### Service Basic Auth
 
@@ -188,7 +190,7 @@ The **Service Basic Auth Configurations** section on the Security page creates r
 
 A basic-auth config contains one or more usernames/passwords. Attach a config from a service Security page to make Traefik challenge visitors before forwarding requests to that service. This is useful for simple browser-password protection on one or more services, while admin auth continues to protect TPA itself.
 
-If TPA and protected services use sibling subdomains, set a parent cookie domain so the service request includes the forwardAuth session cookie:
+Leave `AUTH_COOKIE_DOMAIN` unset for normal multi-domain service SSO. Set it only when you intentionally want sibling service subdomains to share the same service forwardAuth cookie:
 
 ```env
 AUTH_COOKIE_DOMAIN=.example.com

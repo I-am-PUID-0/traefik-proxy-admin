@@ -17,11 +17,13 @@ export interface SSOConfig {
 
 export class SSOAuthError extends Error {
   code: "token_exchange_failed" | "userinfo_fetch_failed" | "provider_config_invalid";
+  publicDetail?: string;
 
-  constructor(code: SSOAuthError["code"], message: string) {
+  constructor(code: SSOAuthError["code"], message: string, publicDetail?: string) {
     super(message);
     this.name = "SSOAuthError";
     this.code = code;
+    this.publicDetail = publicDetail;
   }
 }
 
@@ -42,6 +44,36 @@ async function safeResponseText(response: Response) {
     return (await response.text()).slice(0, 1000);
   } catch {
     return "";
+  }
+}
+
+function safeProviderDetail(detail: string) {
+  if (!detail) return undefined;
+
+  try {
+    const parsed = JSON.parse(detail) as { error?: unknown; error_description?: unknown };
+    const parts = [parsed.error, parsed.error_description]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .map((value) => value.trim());
+    if (parts.length > 0) return parts.join(": ").slice(0, 300);
+  } catch {
+    // Fall back to a short text body below.
+  }
+
+  return detail.replace(/\s+/g, " ").trim().slice(0, 300) || undefined;
+}
+
+async function fetchWithTimeout(input: string, init: RequestInit, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -184,27 +216,40 @@ export async function exchangeCodeForToken(
   config: SSOConfig,
   code: string
 ): Promise<{ access_token: string; id_token?: string }> {
-  const tokenUrl = await assertSsoEndpointAllowed(endpoint(config, "tokenUrl", "/token"));
-  // tokenUrl has been parsed, DNS-resolved, and rejected unless private/local results are explicitly allowlisted.
-  // codeql[js/request-forgery]
-  const response = await fetch(tokenUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      code,
-      redirect_uri: config.redirectUri,
-    }),
-  });
+  let tokenUrl: string;
+  try {
+    tokenUrl = await assertSsoEndpointAllowed(endpoint(config, "tokenUrl", "/token"));
+  } catch (error) {
+    console.error("SSO token endpoint rejected", { error });
+    throw new SSOAuthError("provider_config_invalid", "SSO token endpoint is not allowed");
+  }
+
+  let response: Response;
+  try {
+    // tokenUrl has been parsed, DNS-resolved, and rejected unless private/local results are explicitly allowlisted.
+    // codeql[js/request-forgery]
+    response = await fetchWithTimeout(tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        code,
+        redirect_uri: config.redirectUri,
+      }),
+    });
+  } catch (error) {
+    console.error("SSO token exchange request failed", { error });
+    throw new SSOAuthError("token_exchange_failed", "Failed to reach token endpoint");
+  }
 
   if (!response.ok) {
     const detail = await safeResponseText(response);
     console.error("SSO token exchange failed", { status: response.status, detail });
-    throw new SSOAuthError("token_exchange_failed", "Failed to exchange code for token");
+    throw new SSOAuthError("token_exchange_failed", "Failed to exchange code for token", safeProviderDetail(detail));
   }
 
   return response.json();
@@ -214,19 +259,32 @@ export async function getUserInfo(
   config: SSOConfig,
   accessToken: string
 ): Promise<{ sub: string; name?: string; email?: string; groups?: string[] }> {
-  const userinfoUrl = await assertSsoEndpointAllowed(endpoint(config, "userinfoUrl", "/userinfo"));
-  // userinfoUrl has been parsed, DNS-resolved, and rejected unless private/local results are explicitly allowlisted.
-  // codeql[js/request-forgery]
-  const response = await fetch(userinfoUrl, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+  let userinfoUrl: string;
+  try {
+    userinfoUrl = await assertSsoEndpointAllowed(endpoint(config, "userinfoUrl", "/userinfo"));
+  } catch (error) {
+    console.error("SSO userinfo endpoint rejected", { error });
+    throw new SSOAuthError("provider_config_invalid", "SSO userinfo endpoint is not allowed");
+  }
+
+  let response: Response;
+  try {
+    // userinfoUrl has been parsed, DNS-resolved, and rejected unless private/local results are explicitly allowlisted.
+    // codeql[js/request-forgery]
+    response = await fetchWithTimeout(userinfoUrl, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  } catch (error) {
+    console.error("SSO userinfo request failed", { error });
+    throw new SSOAuthError("userinfo_fetch_failed", "Failed to reach userinfo endpoint");
+  }
 
   if (!response.ok) {
     const detail = await safeResponseText(response);
     console.error("SSO userinfo fetch failed", { status: response.status, detail });
-    throw new SSOAuthError("userinfo_fetch_failed", "Failed to fetch user info");
+    throw new SSOAuthError("userinfo_fetch_failed", "Failed to fetch user info", safeProviderDetail(detail));
   }
 
   return response.json();

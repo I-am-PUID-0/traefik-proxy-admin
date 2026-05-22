@@ -3,7 +3,7 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { dbCredentials, migrationsFolder } from "../drizzle.config";
 import postgres from "postgres";
 
-const LATEST_MIGRATION_CREATED_AT = 1779386400000;
+const LATEST_MIGRATION_CREATED_AT = 1779414000000;
 
 function getBuildId() {
   try {
@@ -125,6 +125,21 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
       updated_at timestamp default now() not null
     )
   `;
+  await migrationClient`
+    create table if not exists service_auth_tickets (
+      id uuid primary key default gen_random_uuid() not null,
+      service_id uuid not null,
+      token varchar(255) not null,
+      session_token varchar(255) not null,
+      return_to text not null,
+      user_identifier varchar(255),
+      expires_at timestamp not null,
+      consumed_at timestamp,
+      created_at timestamp default now() not null
+    )
+  `;
+  await migrationClient`create index if not exists service_auth_tickets_token_idx on service_auth_tickets(token)`;
+  await migrationClient`create index if not exists service_auth_tickets_expires_at_idx on service_auth_tickets(expires_at)`;
 
   await migrationClient`
     alter table services
@@ -237,6 +252,22 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
       end if;
 
       if not exists (
+        select 1 from pg_constraint where conname = 'service_auth_tickets_token_unique'
+      ) then
+        alter table service_auth_tickets add constraint service_auth_tickets_token_unique unique(token);
+      end if;
+
+      if not exists (
+        select 1 from pg_constraint where conname = 'service_auth_tickets_service_id_services_id_fk'
+      ) then
+        alter table service_auth_tickets
+          add constraint service_auth_tickets_service_id_services_id_fk
+          foreign key (service_id)
+          references services(id)
+          on delete cascade;
+      end if;
+
+      if not exists (
         select 1 from pg_constraint where conname = 'services_domain_id_domains_id_fk'
       ) then
         alter table services
@@ -259,7 +290,7 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
   `;
   await migrationClient`
     insert into drizzle.__drizzle_migrations (hash, created_at)
-    select 'legacy-schema-repair-0010', ${LATEST_MIGRATION_CREATED_AT}
+    select 'legacy-schema-repair-0011', ${LATEST_MIGRATION_CREATED_AT}
     where not exists (select 1 from drizzle.__drizzle_migrations)
   `;
 }

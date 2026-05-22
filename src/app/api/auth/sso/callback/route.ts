@@ -4,7 +4,6 @@ import { sessionManager } from "@/lib/session-manager";
 import { db, services } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
-import { TRAEFIK_SESSION_COOKIE, COOKIE_DEFAULTS } from "@/lib/constants";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
 import {
   adminCookieOptions,
@@ -16,12 +15,14 @@ import { ADMIN_SESSION_COOKIE, adminAuthEnabled, type AdminRole } from "@/lib/ad
 import { rateLimit } from "@/lib/request-guards";
 import { LEGACY_SSO_STATE_COOKIES, SSO_STATE_COOKIES } from "@/lib/sso-state-cookies";
 import { verifySignedSSOState } from "@/lib/sso-state-token";
+import { appendServiceAuthTicket, createServiceAuthTicket } from "@/lib/service-auth-tickets";
 
 type SSOState = {
   type?: "service" | "admin" | "test";
   serviceId?: string;
   returnTo?: string | null;
   ssoConfigId?: string | null;
+  redirectUri?: string;
   testConfig?: SSOConfig;
   roleConfig?: { roles: Record<AdminRole, { users?: string[]; groups?: string[] }> } | null;
   timestamp: number;
@@ -55,7 +56,15 @@ export async function GET(request: NextRequest) {
       : stateData.type === "test" && stateData.testConfig
         ? stateData.testConfig
         : await getSSOConfig();
-    const tokens = await exchangeCodeForToken(ssoProviderConfig, code);
+    const tokenExchangeConfig = stateData.redirectUri
+      ? { ...ssoProviderConfig, redirectUri: stateData.redirectUri }
+      : ssoProviderConfig;
+
+    if (stateData.redirectUri && stateData.redirectUri !== ssoProviderConfig.redirectUri) {
+      console.warn("SSO redirect URI changed between login and callback; using login-time redirect URI for token exchange.");
+    }
+
+    const tokens = await exchangeCodeForToken(tokenExchangeConfig, code);
     const userInfo = await getUserInfo(ssoProviderConfig, tokens.access_token);
 
     if (stateData.type === "admin") {
@@ -70,10 +79,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("SSO callback error:", error);
     if (error instanceof SSOAuthError) {
-      return NextResponse.json({ error: "SSO authentication failed", stage: error.code }, { status: 502 });
+      return NextResponse.json({ error: "SSO authentication failed", stage: error.code, detail: error.publicDetail }, { status: 400 });
     }
 
-    return NextResponse.json({ error: "SSO authentication failed" }, { status: 500 });
+    return NextResponse.json({ error: "SSO authentication failed", stage: "callback_unhandled" }, { status: 400 });
   }
 }
 
@@ -163,7 +172,7 @@ async function handleServiceCallback(
 
   const sessionToken = randomBytes(32).toString("hex");
   const sessionDurationHours = 8;
-  const { cookieExpiresAt } = await sessionManager.createSessionWithOptimalCookieExpiry(
+  await sessionManager.createSessionWithOptimalCookieExpiry(
     serviceId,
     sessionToken,
     sessionDurationHours * 60,
@@ -172,12 +181,15 @@ async function handleServiceCallback(
   );
 
   const fallback = publicUrl(request, "/auth/success").toString();
-  const response = NextResponse.redirect(safeServiceReturnTo(stateData.returnTo, fallback));
-
-  response.cookies.set(TRAEFIK_SESSION_COOKIE, sessionToken, {
-    ...COOKIE_DEFAULTS,
-    expires: cookieExpiresAt,
+  const returnTo = safeServiceReturnTo(stateData.returnTo, fallback);
+  const ticket = await createServiceAuthTicket({
+    serviceId,
+    sessionToken,
+    returnTo,
+    userIdentifier: userInfo.sub,
   });
+  const response = NextResponse.redirect(appendServiceAuthTicket(returnTo, ticket.token));
+
   clearStateCookies(response);
   return response;
 }

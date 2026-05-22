@@ -78,6 +78,13 @@
       "when": 1779386400000,
       "tag": "0010_service_sso_configs",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779414000000,
+      "tag": "0011_service_auth_tickets",
+      "breakpoints": true
     }
   ]
 }

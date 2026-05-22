@@ -6,6 +6,7 @@ export type SignedSSOStateData = {
   serviceId?: string;
   returnTo?: string | null;
   ssoConfigId?: string | null;
+  redirectUri?: string;
   timestamp: number;
 };
 

@@ -34,6 +34,8 @@ TPA has two admin URL settings for this path:
 
 Set both when Traefik reaches TPA through an internal container address. If the browser public URL is missing, service SSO redirects can leak the internal address to the browser.
 
+For service SSO, OAuth providers should redirect back to the Browser Public Admin URL callback. TPA then returns the browser to the protected service with a short-lived auth ticket, and `/api/auth/verify` redeems that ticket on the service hostname. This is what allows service SSO to work across multiple base domains without one shared `AUTH_COOKIE_DOMAIN`.
+
 Admin login for the TPA web UI is separate from service forwardAuth. See [Authentication](authentication.md) for the distinction.
 
 ## Static Traefik Example

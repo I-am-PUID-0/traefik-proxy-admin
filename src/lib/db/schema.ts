@@ -104,6 +104,18 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const serviceAuthTickets = pgTable("service_auth_tickets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  serviceId: uuid("service_id").references(() => services.id, { onDelete: "cascade" }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  sessionToken: varchar("session_token", { length: 255 }).notNull(),
+  returnTo: text("return_to").notNull(),
+  userIdentifier: varchar("user_identifier", { length: 255 }),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedAt: timestamp("consumed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const appConfig = pgTable("app_config", {
   id: uuid("id").primaryKey().defaultRandom(),
   key: varchar("key", { length: 255 }).notNull().unique(),
@@ -129,5 +141,7 @@ export type SharedLink = typeof sharedLinks.$inferSelect;
 export type NewSharedLink = typeof sharedLinks.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+export type ServiceAuthTicket = typeof serviceAuthTickets.$inferSelect;
+export type NewServiceAuthTicket = typeof serviceAuthTickets.$inferInsert;
 export type AppConfig = typeof appConfig.$inferSelect;
 export type NewAppConfig = typeof appConfig.$inferInsert;

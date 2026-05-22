@@ -35,14 +35,13 @@ Keep this value stable across restarts. Changing it invalidates existing admin s
 TRAEFIK_API_URL=http://traefik:8080
 TARGET_TEST_ALLOW_CIDRS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 ADMIN_COOKIE_DOMAIN=.example.com
-AUTH_COOKIE_DOMAIN=.example.com
 ```
 
 `TRAEFIK_API_URL` enables live discovery and diagnostics. It is not required for Traefik to poll generated config from `/api/traefik/config`.
 
 `TARGET_TEST_ALLOW_CIDRS` enables TCP target probes. Keep it limited to private Docker, VPN, or LAN ranges.
 
-Use cookie domain settings only when the admin UI or protected services need sessions across sibling subdomains.
+Use `ADMIN_COOKIE_DOMAIN` only when the admin UI itself must share login sessions across sibling TPA hostnames. Service SSO does not need a global `AUTH_COOKIE_DOMAIN` for multi-domain deployments.
 
 ## First Start
 

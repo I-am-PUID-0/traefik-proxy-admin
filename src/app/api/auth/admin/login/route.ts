@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const stateData = {
       type: "admin" as const,
       returnTo,
+      redirectUri: ssoConfig.redirectUri,
       timestamp: Date.now(),
     };
     const state = createSignedSSOState(stateData);

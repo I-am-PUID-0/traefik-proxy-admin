@@ -116,14 +116,14 @@ Use host-only cookies unless cross-subdomain behavior is required.
 - `ADMIN_COOKIE_DOMAIN` applies to the admin session cookie `tpa-admin-session`.
 - `AUTH_COOKIE_DOMAIN` applies to service forwardAuth sessions such as `traefik-session`.
 
-For sibling subdomains, use a parent domain:
+For sibling admin or service subdomains, a parent cookie domain can be used:
 
 ```env
 ADMIN_COOKIE_DOMAIN=.example.com
 AUTH_COOKIE_DOMAIN=.example.com
 ```
 
-Do not set these values to a broader domain than necessary.
+Do not set these values to a broader domain than necessary. Service SSO can protect services on multiple unrelated base domains without `AUTH_COOKIE_DOMAIN`; TPA redirects through a short-lived auth ticket and lets `/api/auth/verify` set a host-scoped service cookie from the service hostname.
 
 ## Secrets
 

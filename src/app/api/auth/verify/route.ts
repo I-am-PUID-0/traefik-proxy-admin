@@ -7,6 +7,7 @@ import { TRAEFIK_SESSION_COOKIE, COOKIE_DEFAULTS } from "@/lib/constants";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
 import type { Domain, Service } from "@/lib/db/schema";
 import { getGlobalConfig } from "@/lib/app-config";
+import { consumeServiceAuthTicket, SERVICE_AUTH_TICKET_PARAM } from "@/lib/service-auth-tickets";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
   const originalUri = forwardedUri || request.nextUrl.pathname + request.nextUrl.search;
   const originalUrl = new URL(originalUri, "https://example.com");
   const traefikToken = originalUrl.searchParams.get("traefik-token");
+  const serviceAuthTicket = originalUrl.searchParams.get(SERVICE_AUTH_TICKET_PARAM);
 
   if (!serviceId) {
     return NextResponse.json({ error: "Service ID required" }, { status: 400 });
@@ -49,6 +51,11 @@ export async function GET(request: NextRequest) {
       if (sharedLinkResponse) return sharedLinkResponse;
     }
 
+    if (serviceAuthTicket) {
+      const ticketResponse = await authorizeServiceAuthTicket(serviceAuthTicket, serviceId, request, originalUri, service, domain);
+      if (ticketResponse) return ticketResponse;
+    }
+
     const cookieStore = await cookies();
     const sessionToken = cookieStore.get(TRAEFIK_SESSION_COOKIE)?.value;
     const ssoConfig = securityConfigs.find((config) => config.securityType === "sso");
@@ -75,6 +82,26 @@ export async function GET(request: NextRequest) {
     console.error("Auth verification error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
+}
+
+async function authorizeServiceAuthTicket(
+  ticketToken: string,
+  serviceId: string,
+  request: NextRequest,
+  originalUri: string,
+  service: Service,
+  domain: Domain,
+) {
+  const consumed = await consumeServiceAuthTicket(ticketToken, serviceId);
+  if (!consumed) return null;
+
+  const response = NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 });
+  response.cookies.set(TRAEFIK_SESSION_COOKIE, consumed.session.sessionToken, {
+    ...COOKIE_DEFAULTS,
+    expires: consumed.session.expiresAt,
+  });
+
+  return response;
 }
 
 async function authorizeSharedLink(
@@ -196,6 +223,7 @@ function getCleanOriginalUrl(
 ) {
   const cleanUrl = new URL(getOriginalRequestUrl(request, originalUri, service, domain));
   cleanUrl.searchParams.delete("traefik-token");
+  cleanUrl.searchParams.delete(SERVICE_AUTH_TICKET_PARAM);
   return cleanUrl.toString();
 }
 

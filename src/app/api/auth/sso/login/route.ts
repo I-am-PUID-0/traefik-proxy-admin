@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       serviceId,
       returnTo,
       ssoConfigId: parsedServiceConfig.ssoConfigId || null,
+      redirectUri: ssoConfig.redirectUri,
       timestamp: Date.now(),
     };
     const state = createSignedSSOState(stateData);
