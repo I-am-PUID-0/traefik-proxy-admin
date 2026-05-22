@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db, sessions, services } from "@/lib/db";
+import { db, domains, sessions, services } from "@/lib/db";
 import { sessionManager } from "@/lib/session-manager";
 import { eq } from "drizzle-orm";
 
@@ -17,9 +17,13 @@ export async function GET() {
         createdAt: sessions.createdAt,
         serviceName: services.name,
         subdomain: services.subdomain,
+        hostnameMode: services.hostnameMode,
+        customHostnames: services.customHostnames,
+        domain: domains.domain,
       })
       .from(sessions)
-      .leftJoin(services, eq(sessions.serviceId, services.id));
+      .leftJoin(services, eq(sessions.serviceId, services.id))
+      .leftJoin(domains, eq(services.domainId, domains.id));
 
     return NextResponse.json(sessionsWithServices);
   } catch (error) {

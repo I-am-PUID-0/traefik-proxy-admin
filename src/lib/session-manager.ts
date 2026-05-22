@@ -1,5 +1,5 @@
 import { db, sessions, services, Session } from "@/lib/db";
-import { eq, gt, lt } from "drizzle-orm";
+import { and, eq, gt, lt } from "drizzle-orm";
 
 class SessionManager {
   private memoryCache = new Map<string, Session>();
@@ -62,14 +62,46 @@ class SessionManager {
       return null;
     }
     
-    // Update last accessed time
-    session.lastAccessedAt = new Date();
-    await db
+    // Update last accessed time, and verify the cached session still exists in the DB.
+    const lastAccessedAt = new Date();
+    session.lastAccessedAt = lastAccessedAt;
+    const [updatedSession] = await db
       .update(sessions)
-      .set({ lastAccessedAt: new Date() })
-      .where(eq(sessions.sessionToken, sessionToken));
-    
+      .set({ lastAccessedAt })
+      .where(eq(sessions.sessionToken, sessionToken))
+      .returning();
+
+    if (!updatedSession) {
+      this.memoryCache.delete(sessionToken);
+      return null;
+    }
+
+    this.memoryCache.set(sessionToken, updatedSession);
+    return updatedSession;
+  }
+
+  async getActiveSessionForServiceUser(serviceId: string, userIdentifier: string): Promise<Session | null> {
+    await this.initialize();
+
+    const now = new Date();
+    const [session] = await db
+      .select()
+      .from(sessions)
+      .where(and(
+        eq(sessions.serviceId, serviceId),
+        eq(sessions.userIdentifier, userIdentifier),
+        gt(sessions.expiresAt, now),
+      ))
+      .limit(1);
+
+    if (!session) return null;
+
+    this.memoryCache.set(session.sessionToken, session);
     return session;
+  }
+
+  rememberSession(session: Session) {
+    this.memoryCache.set(session.sessionToken, session);
   }
 
   async extendSession(sessionToken: string, newExpiresAt: Date): Promise<boolean> {

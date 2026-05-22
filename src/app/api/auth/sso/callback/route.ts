@@ -170,15 +170,20 @@ async function handleServiceCallback(
     return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
 
-  const sessionToken = randomBytes(32).toString("hex");
-  const sessionDurationHours = 8;
-  await sessionManager.createSessionWithOptimalCookieExpiry(
-    serviceId,
-    sessionToken,
-    sessionDurationHours * 60,
-    undefined,
-    userInfo.sub,
-  );
+  const userIdentifier = getDisplayUserIdentifier(userInfo);
+  const existingSession = await sessionManager.getActiveSessionForServiceUser(serviceId, userIdentifier);
+  const sessionToken = existingSession?.sessionToken || randomBytes(32).toString("hex");
+
+  if (!existingSession) {
+    const sessionDurationHours = 8;
+    await sessionManager.createSessionWithOptimalCookieExpiry(
+      serviceId,
+      sessionToken,
+      sessionDurationHours * 60,
+      undefined,
+      userIdentifier,
+    );
+  }
 
   const fallback = publicUrl(request, "/auth/success").toString();
   const returnTo = safeServiceReturnTo(stateData.returnTo, fallback);
@@ -186,7 +191,7 @@ async function handleServiceCallback(
     serviceId,
     sessionToken,
     returnTo,
-    userIdentifier: userInfo.sub,
+    userIdentifier,
   });
   const response = NextResponse.redirect(appendServiceAuthTicket(returnTo, ticket.token));
 
@@ -262,6 +267,10 @@ function safeServiceReturnTo(returnTo: string | null | undefined, fallback: stri
   } catch {
     return fallback;
   }
+}
+
+function getDisplayUserIdentifier(userInfo: { sub: string; name?: string; email?: string }) {
+  return userInfo.email?.trim() || userInfo.name?.trim() || userInfo.sub;
 }
 
 function checkUserAuthorization(

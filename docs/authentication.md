@@ -182,6 +182,8 @@ When a service has SSO security enabled and the browser has no valid `traefik-se
 
 After callback, TPA validates the service-level allowed users/groups against the selected provider response, creates a short-lived one-time auth ticket, and redirects the browser back to the original service URL. The next Traefik forwardAuth check redeems that ticket on the service hostname and sets the `traefik-session` cookie there.
 
+For service SSO, TPA reuses an existing active session for the same service and provider identity instead of creating a new database row on every successful callback. Session management displays the provider email or name when available and falls back to the provider subject ID when that is the only stable identity returned.
+
 That ticket flow is the preferred setup for multiple base domains because it does not depend on one shared parent cookie domain. Use one public TPA callback URL with the OAuth provider, then let each service hostname receive its own host-scoped session cookie during ticket redemption.
 
 ### Service Basic Auth

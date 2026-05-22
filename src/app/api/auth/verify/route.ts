@@ -95,6 +95,8 @@ async function authorizeServiceAuthTicket(
   const consumed = await consumeServiceAuthTicket(ticketToken, serviceId);
   if (!consumed) return null;
 
+  sessionManager.rememberSession(consumed.session);
+
   const response = NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 });
   response.cookies.set(TRAEFIK_SESSION_COOKIE, consumed.session.sessionToken, {
     ...COOKIE_DEFAULTS,

@@ -37,6 +37,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   generateBuildId: async () => getBuildId(),
   allowedDevOrigins: getAllowedDevOrigins(),
+  experimental: {
+    turbopackFileSystemCacheForDev: false,
+  },
 };
 
 export default nextConfig;

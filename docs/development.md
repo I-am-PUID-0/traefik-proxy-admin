@@ -52,6 +52,10 @@ NEXT_ALLOWED_DEV_ORIGINS=tpa-dev.example.com,tpa-admin.example.test
 
 Restart `pnpm dev` after changing this value. Do not hard-code personal hostnames in `next.config.ts`; keep them in local env only.
 
+### Turbopack Cache
+
+Next.js 16 enables Turbopack filesystem caching for development by default. This repo disables that cache in `next.config.ts` because the devcontainer bind mount has triggered corrupted `.next/dev/cache/turbopack/*.sst` state during active UI work. If you see a `TurbopackInternalError` mentioning missing `.sst` files, stop `pnpm dev`, remove `.next/dev`, and restart `pnpm dev`.
+
 ## Auth During Development
 
 Admin auth is enabled by default. For normal development, use the local provider and create the first admin from `/auth/login`:

@@ -28,11 +28,10 @@ export default function SessionsPage() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Page Header */}
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Session Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage active user sessions and authentication
+          <h1 className="text-3xl font-bold tracking-tight">Session Management</h1>
+          <p className="text-muted-foreground">
+            Manage service sessions, sign-ins, and expiry
           </p>
         </div>
 
