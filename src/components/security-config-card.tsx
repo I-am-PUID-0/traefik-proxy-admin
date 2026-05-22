@@ -39,7 +39,7 @@ const securityTypeConfig = {
     icon: Link,
     label: "Shared Link",
     color: "bg-blue-500",
-    description: "Time-limited access links",
+    description: "Token-gated access links",
   },
   sso: {
     icon: Users,
@@ -126,9 +126,10 @@ export function SecurityConfigCard({
             </div>
             <div className="p-3 bg-muted/50 rounded-lg">
               <p className="text-xs text-muted-foreground">
-                Users can access this service through time-limited shared links. Each link
-                expires after {formatDuration(config.config.expiresInHours)} and grants
-                access for {formatSessionDuration(config.config.sessionDurationMinutes)}.
+                This still protects direct service access. Visitors must start from a valid
+                shared link before Traefik will allow them through. Each link expires after{" "}
+                {formatDuration(config.config.expiresInHours)} and grants access for{" "}
+                {formatSessionDuration(config.config.sessionDurationMinutes)}.
               </p>
             </div>
           </div>

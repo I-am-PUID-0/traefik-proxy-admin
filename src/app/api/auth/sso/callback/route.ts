@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSSOConfig, getServiceSSOConfig, exchangeCodeForToken, getUserInfo, type SSOConfig } from "@/lib/sso-config";
+import { getSSOConfig, getServiceSSOConfig, exchangeCodeForToken, getUserInfo, SSOAuthError, type SSOConfig } from "@/lib/sso-config";
 import { sessionManager } from "@/lib/session-manager";
 import { db, services } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -69,6 +69,10 @@ export async function GET(request: NextRequest) {
     return handleServiceCallback(request, stateData, userInfo);
   } catch (error) {
     console.error("SSO callback error:", error);
+    if (error instanceof SSOAuthError) {
+      return NextResponse.json({ error: "SSO authentication failed", stage: error.code }, { status: 502 });
+    }
+
     return NextResponse.json({ error: "SSO authentication failed" }, { status: 500 });
   }
 }

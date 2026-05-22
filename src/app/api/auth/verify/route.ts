@@ -54,13 +54,13 @@ export async function GET(request: NextRequest) {
     const ssoConfig = securityConfigs.find((config) => config.securityType === "sso");
 
     if (!sessionToken) {
-      return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized();
+      return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
     }
 
     const session = await sessionManager.getSession(sessionToken);
 
     if (!session || session.serviceId !== serviceId) {
-      return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized();
+      return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
     }
 
     if (isDirectVerifierRequest(originalUri)) {
@@ -244,6 +244,10 @@ function firstForwardedHeader(value: string | null) {
   return value?.split(",")[0]?.trim() || "";
 }
 
-function unauthorized() {
+function unauthorized(sharedLinkConfig?: { securityType: string }) {
+  if (sharedLinkConfig) {
+    return NextResponse.json({ error: "Shared link session required" }, { status: 401 });
+  }
+
   return NextResponse.json({ error: "No session found" }, { status: 401 });
 }

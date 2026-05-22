@@ -507,6 +507,10 @@ export function SecurityConfigDialog({
               <Link className="h-4 w-4" />
               Shared Link Configuration
             </div>
+            <p className="text-xs text-muted-foreground">
+              Shared Link is an access-control rule. When enabled, direct service visits are
+              denied until the visitor opens a generated link and receives a service session.
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">

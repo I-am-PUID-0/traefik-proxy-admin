@@ -15,6 +15,16 @@ export interface SSOConfig {
   scopes: string[];
 }
 
+export class SSOAuthError extends Error {
+  code: "token_exchange_failed" | "userinfo_fetch_failed" | "provider_config_invalid";
+
+  constructor(code: SSOAuthError["code"], message: string) {
+    super(message);
+    this.name = "SSOAuthError";
+    this.code = code;
+  }
+}
+
 const DEFAULT_SSO_CONFIG: SSOConfig = {
   enabled: false,
   idpUrl: "",
@@ -26,6 +36,14 @@ const DEFAULT_SSO_CONFIG: SSOConfig = {
   redirectUri: "",
   scopes: ["openid", "profile", "email"],
 };
+
+async function safeResponseText(response: Response) {
+  try {
+    return (await response.text()).slice(0, 1000);
+  } catch {
+    return "";
+  }
+}
 
 function normalizeConfig(value: unknown): SSOConfig {
   if (!value || typeof value !== "object") {
@@ -184,7 +202,9 @@ export async function exchangeCodeForToken(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to exchange code for token");
+    const detail = await safeResponseText(response);
+    console.error("SSO token exchange failed", { status: response.status, detail });
+    throw new SSOAuthError("token_exchange_failed", "Failed to exchange code for token");
   }
 
   return response.json();
@@ -204,7 +224,9 @@ export async function getUserInfo(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch user info");
+    const detail = await safeResponseText(response);
+    console.error("SSO userinfo fetch failed", { status: response.status, detail });
+    throw new SSOAuthError("userinfo_fetch_failed", "Failed to fetch user info");
   }
 
   return response.json();
