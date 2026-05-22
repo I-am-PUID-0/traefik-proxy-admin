@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.8.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.8.0...v1.8.1) (2026-05-22)
+
+
+### Bug Fixes
+
+* **auth:** enhance service authentication response handling ([54d227a](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/54d227ae95b5b72b8ed523353369d68bb2e51df6))
+
 ## [1.8.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.7.0...v1.8.0) (2026-05-22)
 
 
