@@ -15,10 +15,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Traefik Proxy Admin",
-  description: "Admin panel for managing Traefik dynamic configurations",
+  description: "Manage Traefik HTTP provider services, authentication, sessions, and live proxy diagnostics.",
+  icons: {
+    icon: "/tpa-icon.svg",
+    shortcut: "/tpa-icon.svg",
+    apple: "/tpa-icon.svg",
+  },
 };
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export default function RootLayout({
   children,

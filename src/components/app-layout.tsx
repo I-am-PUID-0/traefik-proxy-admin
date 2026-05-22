@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -39,9 +40,12 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                Traefik Admin
-              </h1>
+              <div className="flex items-center gap-2">
+                <Image src="/tpa-icon.svg" alt="" width={28} height={28} className="h-7 w-7" priority />
+                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  Traefik Admin
+                </h1>
+              </div>
               <nav className="hidden md:flex space-x-6">
                 <NextLink
                   href="/"

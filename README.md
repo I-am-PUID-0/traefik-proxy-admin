@@ -1,4 +1,36 @@
-# Traefik Proxy Admin
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="96">
+        <a href="https://github.com/I-am-PUID-0/traefik-proxy-admin">
+          <img src="public/tpa-icon.svg" alt="Traefik Proxy Admin logo" width="84" height="84">
+        </a>
+      </td>
+      <td align="left">
+        <h1>Traefik Proxy Admin</h1>
+        <p><strong>Manage Traefik HTTP provider services, authentication, sessions, and live proxy diagnostics from one focused UI.</strong></p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div align="center">
+  <a href="https://github.com/I-am-PUID-0/traefik-proxy-admin/stargazers">
+    <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/I-am-PUID-0/traefik-proxy-admin?style=for-the-badge">
+  </a>
+  <a href="https://github.com/I-am-PUID-0/traefik-proxy-admin/issues">
+    <img alt="Issues" src="https://img.shields.io/github/issues/I-am-PUID-0/traefik-proxy-admin?style=for-the-badge">
+  </a>
+  <a href="https://github.com/I-am-PUID-0/traefik-proxy-admin/graphs/contributors">
+    <img alt="Contributors" src="https://img.shields.io/github/contributors/I-am-PUID-0/traefik-proxy-admin?style=for-the-badge">
+  </a>
+  <a href="https://hub.docker.com/r/iampuid0/traefik-proxy-admin">
+    <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/iampuid0/traefik-proxy-admin?style=for-the-badge&logo=docker&logoColor=white">
+  </a>
+  <a href="https://github.com/I-am-PUID-0/traefik-proxy-admin/actions/workflows/docker-image.yml">
+    <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/I-am-PUID-0/traefik-proxy-admin/docker-image.yml?style=for-the-badge">
+  </a>
+</div>
 
 Traefik Proxy Admin is a production-focused web UI for managing Traefik dynamic HTTP configuration. It runs as a standalone Next.js container backed by PostgreSQL and generates Traefik routers, services, middlewares, service authentication, shared links, and live diagnostics.
 
@@ -15,10 +47,24 @@ Use it when you want a managed UI/API for exposing private HTTP services through
 
 ## Screenshots
 
-![Service list](docs/screenshots/screenshot1.png "Service list")
-![Session management](docs/screenshots/screenshot4.png "Session management")
-![Global configuration](docs/screenshots/screenshot2.png "Global configuration")
-![Service configuration](docs/screenshots/screenshot3.png "Service configuration")
+<table>
+  <tr>
+    <td width="50%" align="center"><strong>Login</strong><br><a href="docs/screenshots/login.png"><img src="docs/screenshots/login.png" alt="Login" width="100%"></a></td>
+    <td width="50%" align="center"><strong>Add Service</strong><br><a href="docs/screenshots/add_service.png"><img src="docs/screenshots/add_service.png" alt="Add Service" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><strong>Discovered Entrypoints</strong><br><a href="docs/screenshots/discovered_entrypoints.png"><img src="docs/screenshots/discovered_entrypoints.png" alt="Discovered Entrypoints" width="100%"></a></td>
+    <td width="50%" align="center"><strong>Dynamic Add Middleware</strong><br><a href="docs/screenshots/dynamic_add_middleware.png"><img src="docs/screenshots/dynamic_add_middleware.png" alt="Dynamic Add Middleware" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><strong>Service List</strong><br><a href="docs/screenshots/screenshot1.png"><img src="docs/screenshots/screenshot1.png" alt="Service List" width="100%"></a></td>
+    <td width="50%" align="center"><strong>Session Management</strong><br><a href="docs/screenshots/screenshot4.png"><img src="docs/screenshots/screenshot4.png" alt="Session Management" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><strong>Global Configuration</strong><br><a href="docs/screenshots/screenshot2.png"><img src="docs/screenshots/screenshot2.png" alt="Global Configuration" width="100%"></a></td>
+    <td width="50%" align="center"><strong>Service Configuration</strong><br><a href="docs/screenshots/screenshot3.png"><img src="docs/screenshots/screenshot3.png" alt="Service Configuration" width="100%"></a></td>
+  </tr>
+</table>
 
 ## Production Deployment
 
@@ -91,15 +137,3 @@ Contributor docs:
 - [Contributing](CONTRIBUTING.md): branch model, pull requests, conventional commits, and checks.
 - [Development](docs/development.md): devcontainer usage, local Traefik files, reverse-proxied Next dev origins, and verification.
 - [Security Policy](SECURITY.md): supported branches and private vulnerability reporting.
-
-New features should update the relevant document instead of growing this README with operational detail.
-
-## Fork Notice
-
-This is a community-maintained fork of https://github.com/Janhouse/traefik-proxy-admin.
-
-## License
-
-Copyright (c) 2025 The Traefik Proxy Admin Contributors
-
-This project is licensed under AGPL-3.0-or-later. See LICENSE and NOTICE.
