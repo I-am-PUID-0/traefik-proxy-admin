@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.8.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.7.0...v1.8.0) (2026-05-22)
+
+
+### Features
+
+* add import preview API for Traefik routers and services ([b772fd6](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/b772fd6e0ccd567da5c1312956ee435c382e1bff))
+* enhance session management with filtering, sorting, and improved UI ([c755262](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/c75526218a4f8990bf557cc50e4f10b24d8449ec))
+
+
+### Bug Fixes
+
+* **sso:** replace fetchWithTimeout with AbortController for token and userinfo requests ([5855c48](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/5855c482fb7d49a2bb88f10ae6873cb0d05fcc04))
+* update homepage test to check for correct heading visibility ([c863750](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/c86375085795952466745fa4bf103bbd3252c29c))
+
 ## [1.7.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.6.4...v1.7.0) (2026-05-22)
 
 
