@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.6.4](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.6.3...v1.6.4) (2026-05-22)
+
+
+### Bug Fixes
+
+* **sso:** enhance SSO error handling and improve shared link descriptions ([bd7188a](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/bd7188ae38f6c1e93169287ebc70cfd2c1798b01))
+
 ## [1.6.3](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.6.2...v1.6.3) (2026-05-22)
 
 
