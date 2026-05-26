@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ContextHelp, HelpLabel } from "@/components/context-help";
 import { DURATION_PRESETS } from "@/lib/duration-presets";
 import { GlobalConfig } from "@/lib/hooks/use-config";
 import { useTraefikEntrypoints } from "@/lib/hooks/use-traefik-entrypoints";
@@ -62,7 +63,18 @@ export function ConfigForm({
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="defaultEntrypoint">Default Entrypoint</Label>
+              <Label htmlFor="defaultEntrypoint">
+                <HelpLabel
+                  help={
+                    <ContextHelp title="Default entrypoint" href="/docs/traefik#dynamic-config-provider">
+                      <p>Used when a service does not set its own entrypoint. Match this to a Traefik entrypoint name, such as websecure.</p>
+                      <p>Leave it blank if each service should choose its own entrypoint or your Traefik defaults already handle routing.</p>
+                    </ContextHelp>
+                  }
+                >
+                  Default Entrypoint
+                </HelpLabel>
+              </Label>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   id="defaultEntrypoint"
@@ -104,7 +116,18 @@ export function ConfigForm({
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="defaultDuration">Default Service Duration</Label>
+              <Label htmlFor="defaultDuration">
+                <HelpLabel
+                  help={
+                    <ContextHelp title="Default service duration" href="/docs/services#service-basics">
+                      <p>New services use this auto-disable window unless the service form overrides it.</p>
+                      <p>Choose Forever for permanent services. Shorter windows are useful for temporary exposure.</p>
+                    </ContextHelp>
+                  }
+                >
+                  Default Service Duration
+                </HelpLabel>
+              </Label>
               <Select
                 value={config.defaultEnableDurationMinutes?.toString() || "null"}
                 onValueChange={(value) => {
@@ -128,7 +151,18 @@ export function ConfigForm({
               </p>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="adminPanelDomain">Internal TPA URL for Traefik</Label>
+              <Label htmlFor="adminPanelDomain">
+                <HelpLabel
+                  help={
+                    <ContextHelp title="Internal TPA URL for Traefik" href="/docs/traefik#forward-authentication">
+                      <p>This is the base URL Traefik itself can reach. Generated forwardAuth middleware points Traefik here.</p>
+                      <p>Use an internal container, LAN, or host address when Traefik cannot reach the browser-facing TPA URL.</p>
+                    </ContextHelp>
+                  }
+                >
+                  Internal TPA URL for Traefik
+                </HelpLabel>
+              </Label>
               <Input
                 id="adminPanelDomain"
                 placeholder="http://traefik-proxy-admin:3000"
@@ -142,7 +176,18 @@ export function ConfigForm({
               </p>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="adminPanelPublicUrl">Public TPA URL for Browser/OAuth</Label>
+              <Label htmlFor="adminPanelPublicUrl">
+                <HelpLabel
+                  help={
+                    <ContextHelp title="Public TPA URL for Browser/OAuth" href="/docs/authentication#service-sso-and-forwardauth">
+                      <p>This is the HTTPS URL users and OAuth providers can open in a browser.</p>
+                      <p>Service SSO redirects and OAuth callbacks use this value, even when Traefik talks to TPA through an internal URL.</p>
+                    </ContextHelp>
+                  }
+                >
+                  Public TPA URL for Browser/OAuth
+                </HelpLabel>
+              </Label>
               <Input
                 id="adminPanelPublicUrl"
                 placeholder="https://tpa.example.com"
@@ -169,7 +214,18 @@ export function ConfigForm({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <Label htmlFor="middlewares">Middleware Names</Label>
+            <Label htmlFor="middlewares">
+              <HelpLabel
+                help={
+                  <ContextHelp title="Global middlewares" href="/docs/services#middlewares">
+                    <p>These middleware references are applied to every generated service route before service-specific middleware.</p>
+                    <p>Use one Traefik middleware reference per line, such as secure-headers.</p>
+                  </ContextHelp>
+                }
+              >
+                Middleware Names
+              </HelpLabel>
+            </Label>
             <Textarea
               id="middlewares"
               placeholder={`compression\nsecurity-headers\nrate-limit`}

@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ContextHelp, HelpLabel } from "@/components/context-help";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -167,7 +168,18 @@ export function BackupRestoreCard() {
           <section className="rounded-md border bg-background/40 p-4">
             <div className="flex h-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between lg:flex-col lg:items-stretch xl:flex-row xl:items-start">
               <div className="space-y-2">
-                <Label>Export full backup</Label>
+                <Label>
+                  <HelpLabel
+                    help={
+                      <ContextHelp title="Full backup export" href="/docs/deployment#backups-restores">
+                        <p>Exports portable app-level configuration for migration or recovery.</p>
+                        <p>The file includes secrets and password hashes, so store it like a credential.</p>
+                      </ContextHelp>
+                    }
+                  >
+                    Export full backup
+                  </HelpLabel>
+                </Label>
                 <p className="text-sm text-muted-foreground">
                   Download a portable JSON backup of TPA configuration, services, domains, and service auth settings.
                 </p>
@@ -185,7 +197,18 @@ export function BackupRestoreCard() {
           <section className="rounded-md border bg-background/40 p-4">
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="backup-file">Restore from backup</Label>
+                <Label htmlFor="backup-file">
+                  <HelpLabel
+                    help={
+                      <ContextHelp title="Restore from backup" href="/docs/deployment#backups-restores">
+                        <p>Restore runs in replace mode. TPA validates the file first and shows a dry-run summary before the destructive action is enabled.</p>
+                        <p>Active sessions are not restored; users will sign in again.</p>
+                      </ContextHelp>
+                    }
+                  >
+                    Restore from backup
+                  </HelpLabel>
+                </Label>
                 <Input id="backup-file" ref={fileInputRef} type="file" accept="application/json,.json" onChange={handleFileChange} />
                 {selectedFileName && (
                   <p className="flex items-center gap-2 text-sm text-muted-foreground">

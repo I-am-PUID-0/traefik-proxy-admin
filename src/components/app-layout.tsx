@@ -47,7 +47,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   Traefik Admin
                 </h1>
               </div>
-              <nav className="hidden md:flex space-x-6">
+              <nav className="hidden lg:flex space-x-6">
                 <NextLink
                   href="/"
                   className={
@@ -99,6 +99,16 @@ export function AppLayout({ children }: AppLayoutProps) {
                   Traefik
                 </NextLink>
                 <NextLink
+                  href="/docs"
+                  className={
+                    pathname.startsWith("/docs")
+                      ? "text-gray-900 dark:text-gray-100 font-medium"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                  }
+                >
+                  Docs
+                </NextLink>
+                <NextLink
                   href="/config"
                   className={
                     isActive("/config")
@@ -111,7 +121,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               </nav>
             </div>
             <div className="flex items-center gap-2">
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden lg:flex items-center gap-2">
                 <TraefikConfigDialog
                   trigger={
                     <Button variant="outline" size="sm">
@@ -132,7 +142,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="md:hidden"
+                className="lg:hidden"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -143,7 +153,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t bg-white dark:bg-gray-800">
+          <div className="lg:hidden border-t bg-white dark:bg-gray-800">
             <div className="container mx-auto px-4 py-4 space-y-3">
               <NextLink
                 href="/"
@@ -199,6 +209,17 @@ export function AppLayout({ children }: AppLayoutProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Traefik
+              </NextLink>
+              <NextLink
+                href="/docs"
+                className={`block ${
+                  pathname.startsWith("/docs")
+                    ? "text-gray-900 dark:text-gray-100 font-medium"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Docs
               </NextLink>
               <NextLink
                 href="/config"

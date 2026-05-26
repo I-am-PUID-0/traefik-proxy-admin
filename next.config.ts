@@ -37,6 +37,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   generateBuildId: async () => getBuildId(),
   allowedDevOrigins: getAllowedDevOrigins(),
+  outputFileTracingIncludes: {
+    "/*": ["./docs/**/*"],
+  },
   experimental: {
     turbopackFileSystemCacheForDev: false,
   },

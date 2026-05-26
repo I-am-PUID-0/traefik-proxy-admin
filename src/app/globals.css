@@ -195,3 +195,144 @@
     @apply bg-background text-foreground;
   }
 }
+
+.docs-markdown {
+  color: var(--foreground);
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+
+.docs-markdown > * + * {
+  margin-top: 1rem;
+}
+
+.docs-markdown h1,
+.docs-markdown h2,
+.docs-markdown h3,
+.docs-markdown h4 {
+  color: var(--foreground);
+  font-weight: 700;
+  letter-spacing: 0;
+  scroll-margin-top: 6rem;
+}
+
+.docs-markdown h1 {
+  border-bottom: 1px solid var(--border);
+  font-size: 2rem;
+  line-height: 2.25rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+}
+
+.docs-markdown h2 {
+  border-top: 1px solid var(--border);
+  font-size: 1.35rem;
+  line-height: 1.8rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+}
+
+.docs-markdown h3 {
+  font-size: 1.1rem;
+  line-height: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.docs-markdown h4 {
+  font-size: 1rem;
+  line-height: 1.4rem;
+  margin-top: 1.25rem;
+}
+
+.docs-markdown p,
+.docs-markdown li {
+  color: var(--muted-foreground);
+}
+
+.docs-markdown strong {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.docs-markdown a {
+  color: var(--secondary-300);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.docs-markdown ul {
+  list-style: disc;
+  padding-left: 1.35rem;
+}
+
+.docs-markdown li + li {
+  margin-top: 0.35rem;
+}
+
+.docs-markdown code {
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  color: var(--foreground);
+  font-size: 0.85em;
+  padding: 0.12rem 0.28rem;
+}
+
+.docs-markdown pre {
+  background: var(--base-1000);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  color: var(--base-100);
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.docs-markdown pre code {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: block;
+  font-size: 0.86rem;
+  padding: 0;
+  white-space: pre;
+}
+
+.docs-markdown ol {
+  list-style: decimal;
+  padding-left: 1.35rem;
+}
+
+.docs-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  overflow-x: auto;
+}
+
+.docs-markdown table {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 100%;
+}
+
+.docs-markdown th,
+.docs-markdown td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.docs-markdown th {
+  background: var(--muted);
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.docs-markdown td {
+  color: var(--muted-foreground);
+}
+
+.docs-markdown tr:last-child td {
+  border-bottom: 0;
+}

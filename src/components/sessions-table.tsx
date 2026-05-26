@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ContextHelp } from "@/components/context-help";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -358,6 +359,10 @@ export function SessionsTable({
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
                 Session Inventory
+                <ContextHelp title="Session risk context" href="/docs/authentication#service-sso-and-forwardauth">
+                  <p>Sessions record lightweight request context such as auth method, IP source, user agent, last path, access count, and risk flags.</p>
+                  <p>Risk flags are indicators for review, not automatic blocks.</p>
+                </ContextHelp>
               </CardTitle>
               <CardDescription>
                 Review service sessions, users, and expiry windows

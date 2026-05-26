@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ContextHelp, HelpLabel } from "@/components/context-help";
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard";
 import { DurationSelect } from "@/components/duration-select";
 import { X, Save, AlertCircle, PlugZap, FileText } from "lucide-react";
@@ -267,7 +268,18 @@ export function ServiceForm({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="hostnameMode">Hostname Mode</Label>
+                <Label htmlFor="hostnameMode">
+                  <HelpLabel
+                    help={
+                      <ContextHelp title="Hostname mode" href="/docs/services#domains">
+                        <p>Choose how TPA builds the Traefik Host rule for this service.</p>
+                        <p>Subdomain uses a managed domain, apex routes the base domain, and custom uses exact hostnames you provide.</p>
+                      </ContextHelp>
+                    }
+                  >
+                    Hostname Mode
+                  </HelpLabel>
+                </Label>
                 <Select
                   value={formData.hostnameMode || "subdomain"}
                   onValueChange={(value: "subdomain" | "apex" | "custom") => {
@@ -351,7 +363,18 @@ export function ServiceForm({
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="targetIp">Target IP</Label>
+                <Label htmlFor="targetIp">
+                  <HelpLabel
+                    help={
+                      <ContextHelp title="Target host" href="/docs/services#target-tests">
+                        <p>The upstream host or IP Traefik forwards traffic to. This should be reachable from Traefik, not necessarily from your browser.</p>
+                        <p>Use Test to check TCP reachability when target probes are enabled.</p>
+                      </ContextHelp>
+                    }
+                  >
+                    Target IP
+                  </HelpLabel>
+                </Label>
                 <Input
                   id="targetIp"
                   value={formData.targetIp}
@@ -401,7 +424,18 @@ export function ServiceForm({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="entrypoint">Entrypoint (optional)</Label>
+                <Label htmlFor="entrypoint">
+                  <HelpLabel
+                    help={
+                      <ContextHelp title="Service entrypoint" href="/docs/services#service-basics">
+                        <p>Overrides the global default entrypoint for only this service.</p>
+                        <p>Use a Traefik entrypoint name such as websecure. Leave blank to use the global/default behavior.</p>
+                      </ContextHelp>
+                    }
+                  >
+                    Entrypoint (optional)
+                  </HelpLabel>
+                </Label>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input
                     id="entrypoint"
@@ -462,7 +496,18 @@ export function ServiceForm({
                   disabled={submitting}
                 />
                 <div className="space-y-1">
-                  <Label htmlFor="passHostHeader">Pass Host header to target</Label>
+                  <Label htmlFor="passHostHeader">
+                    <HelpLabel
+                      help={
+                        <ContextHelp title="Pass Host header" href="/docs/services#pass-host-header">
+                          <p>When enabled, Traefik sends the public route Host header to the upstream.</p>
+                          <p>Disable it when the target app expects its internal hostname instead.</p>
+                        </ContextHelp>
+                      }
+                    >
+                      Pass Host header to target
+                    </HelpLabel>
+                  </Label>
                   <p className="text-xs text-gray-500">
                     Controls Traefik loadBalancer.passHostHeader for this service
                   </p>
@@ -503,7 +548,18 @@ export function ServiceForm({
               />
 
               <div className="space-y-2">
-                <Label htmlFor="middlewares">Middlewares (comma-separated)</Label>
+                <Label htmlFor="middlewares">
+                  <HelpLabel
+                    help={
+                      <ContextHelp title="Service middlewares" href="/docs/services#middlewares">
+                        <p>Additional Traefik middleware references applied only to this service.</p>
+                        <p>Authentication middleware generated by TPA is added separately when security rules require it.</p>
+                      </ContextHelp>
+                    }
+                  >
+                    Middlewares (comma-separated)
+                  </HelpLabel>
+                </Label>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input
                     id="middlewares"
@@ -569,7 +625,18 @@ export function ServiceForm({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="managedMiddlewares">Managed Middlewares JSON</Label>
+                <Label htmlFor="managedMiddlewares">
+                  <HelpLabel
+                    help={
+                      <ContextHelp title="Managed middleware JSON" href="/docs/services#managed-middlewares-json">
+                        <p>Creates Traefik middleware definitions owned by this service.</p>
+                        <p>Define them here, then reference their names in this service middleware list when needed.</p>
+                      </ContextHelp>
+                    }
+                  >
+                    Managed Middlewares JSON
+                  </HelpLabel>
+                </Label>
                 <Textarea
                   id="managedMiddlewares"
                   value={formData.managedMiddlewares || ""}

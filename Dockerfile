@@ -48,6 +48,7 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/.next/BUILD_ID ./.next/BUILD_ID
 
 COPY ./drizzle/ ./drizzle/
+COPY ./docs/ ./docs/
 COPY ./entrypoint.sh ./
 
 RUN mkdir -p /app/.next/cache && chown nextjs:nodejs /app/.next/cache
