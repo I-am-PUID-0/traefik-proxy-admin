@@ -33,11 +33,14 @@ Keep this value stable across restarts. Changing it invalidates existing admin s
 
 ```env
 TRAEFIK_API_URL=http://traefik:8080
+TRAEFIK_ACCESS_LOG_PATH=/logs/traefik/access.log
 TARGET_TEST_ALLOW_CIDRS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 ADMIN_COOKIE_DOMAIN=.example.com
 ```
 
 `TRAEFIK_API_URL` enables live discovery and diagnostics. It is not required for Traefik to poll generated config from `/api/traefik/config`.
+
+`TRAEFIK_ACCESS_LOG_PATH` enables the read-only log viewer on the Traefik Live page. Mount the Traefik access log file into the TPA container at that path, preferably read-only. TPA supports Traefik JSON access logs and the default extended Common Log Format, so existing non-JSON log consumers can keep using the same file.
 
 `TARGET_TEST_ALLOW_CIDRS` enables TCP target probes. Keep it limited to private Docker, VPN, or LAN ranges.
 

@@ -14,6 +14,7 @@ Before exposing a production deployment, verify these controls:
 - Set `AUTH_COOKIE_DOMAIN` only when service forwardAuth sessions must work across sibling service subdomains.
 - Keep `/api/traefik/config` reachable only by Traefik or an internal network path.
 - Point `TRAEFIK_API_URL` at an internal Docker, VPN, or LAN-only Traefik API endpoint.
+- Mount `TRAEFIK_ACCESS_LOG_PATH` read-only if the in-app access-log viewer is enabled.
 - Set `SSO_ENDPOINT_ALLOW_HOSTS` only for intentionally internal SSO provider hostnames.
 - Set `TARGET_TEST_ALLOW_CIDRS` to the narrow private ranges the app is allowed to probe.
 - Do not expose PostgreSQL publicly; use a private Docker network or private host network path.
@@ -102,7 +103,7 @@ Only add hostnames you operate and expect TPA to contact. This protects the SSO 
 
 The in-app Traefik log viewer is admin-only and disabled unless `TRAEFIK_ACCESS_LOG_PATH` is set. Mount the log file read-only and keep file permissions narrow. Access logs can contain client IPs, requested paths, query strings, and auth failure context.
 
-TPA redacts common secret-like query parameters before displaying log lines, but operators should still avoid placing credentials in URLs. Do not expose the TPA admin UI broadly just because the viewer is read-only.
+TPA redacts common secret-like query parameters before displaying log lines, but operators should still avoid placing credentials in URLs. The viewer supports JSON and default non-JSON Traefik access logs, so do not switch to JSON solely for TPA if other security tooling depends on common-format logs. Do not expose the TPA admin UI broadly just because the viewer is read-only.
 
 ## Target Probes
 

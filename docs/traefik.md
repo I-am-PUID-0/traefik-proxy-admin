@@ -108,7 +108,26 @@ Set `TRAEFIK_ACCESS_LOG_PATH` when TPA should show a read-only Traefik access lo
 TRAEFIK_ACCESS_LOG_PATH=/logs/traefik/access.log
 ```
 
-Mount that file into the TPA container as read-only. The viewer reads the last portion of the file on demand, supports manual refresh and optional live refresh, and filters by search text, method, status family, and loaded line count. The viewer supports Traefik JSON access logs and Traefik default extended Common Log Format. You can keep accessLog.format unset or common for tools such as bouncers that expect non-JSON logs. In common format, TPA extracts the client IP, timestamp, method, path, status, router name, service/server target, and duration when those fields are present.
+Mount that file into the TPA container as read-only. For example, if Traefik writes to `/var/log/traefik/access.log` on the Docker host:
+
+```yaml
+services:
+  traefik-proxy-admin:
+    environment:
+      TRAEFIK_ACCESS_LOG_PATH: /logs/traefik/access.log
+    volumes:
+      - /var/log/traefik/access.log:/logs/traefik/access.log:ro
+```
+
+The viewer reads the last portion of the file on demand, supports manual refresh and optional live refresh, and filters by search text, method, status family, and loaded line count. The viewer supports Traefik JSON access logs and Traefik default extended Common Log Format. You can keep `accessLog.format` unset or common for tools such as bouncers that expect non-JSON logs.
+
+For common-format lines, TPA parses the Traefik extended fields in this order: client IP, timestamp, request method/path, status, user agent, request count, router name, service/server target, and duration. A line like this:
+
+```text
+127.0.0.1,185.177.72.205 - - [26/May/2026:14:57:38 +0000] "GET /_phpinfo.php HTTP/1.1" 404 19 "-" "curl/8.7.1" 253486 "-" "-" 0ms
+```
+
+shows as client `127.0.0.1,185.177.72.205`, time `26/May/2026:14:57:38 +0000`, request `GET /_phpinfo.php`, status `404`, and latency `0ms`.
 
 The log API redacts common sensitive query values such as `token`, `code`, `apikey`, `api_key`, `password`, and `secret` before returning entries. Avoid logging credentials in paths or query strings; redaction is a safety net, not a replacement for clean upstream logging.
 

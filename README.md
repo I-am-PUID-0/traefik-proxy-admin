@@ -43,7 +43,7 @@ Use it when you want a managed UI/API for exposing private HTTP services through
 - Protect the admin UI/API with local accounts or OIDC/SSO
 - Protect proxied services with shared links, Basic Auth, or SSO forwardAuth
 - Discover live Traefik entrypoints, routers, services, and middlewares when the Traefik API is configured
-- Inspect generated-config drift and service target health from the Traefik Live page
+- Inspect generated-config drift, service target health, and optional Traefik access logs from the Traefik Live page
 
 ## Screenshots
 
@@ -82,8 +82,11 @@ services:
       ADMIN_AUTH_SECRET: ${ADMIN_AUTH_SECRET}
       ADMIN_AUTH_PROVIDER: local
       TRAEFIK_API_URL: http://traefik:8080
+      TRAEFIK_ACCESS_LOG_PATH: /logs/traefik/access.log
     ports:
       - "3000:3000"
+    volumes:
+      - /var/log/traefik/access.log:/logs/traefik/access.log:ro
     depends_on:
       - postgres
 
@@ -120,7 +123,7 @@ providers:
     pollInterval: "10s"
 ```
 
-Keep `/api/traefik/config` reachable only by Traefik or an internal network path. See [Traefik Integration](docs/traefik.md) for forwardAuth, live discovery, and target probe guidance.
+Keep `/api/traefik/config` reachable only by Traefik or an internal network path. See [Traefik Integration](docs/traefik.md) for forwardAuth, live discovery, target probe, and access-log viewer guidance.
 
 ## Documentation
 
@@ -129,7 +132,7 @@ Production and operator docs:
 - [Deployment](docs/deployment.md): production container setup, required environment, startup flow, backups, restores, and upgrade notes. The same operator docs are also available inside the app from the Docs navigation item.
 - [Authentication](docs/authentication.md): admin auth, local users, SSO/OIDC, service auth, public auth endpoints, and lockout recovery.
 - [Service Configuration](docs/services.md): services, domains, middlewares, advanced routers, managed middlewares, and import/export.
-- [Traefik Integration](docs/traefik.md): HTTP provider setup, live discovery, config endpoint exposure, and target probes.
+- [Traefik Integration](docs/traefik.md): HTTP provider setup, live discovery, config endpoint exposure, target probes, and access log viewing.
 - [Security Hardening](docs/security-hardening.md): production checklist, cookie domains, Traefik API access, target probes, and secrets.
 
 Contributor docs:

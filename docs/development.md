@@ -84,6 +84,8 @@ The devcontainer starts an internal Traefik process from `.devcontainer/start-se
 
 `.devcontainer/devcontainer.json` sets `TRAEFIK_ACCESS_LOG_PATH` to that file so the Traefik Live log viewer works without an extra bind mount. If you change these flags while the devcontainer is already running, restart the devcontainer or restart the internal Traefik process for the new access-log settings to take effect.
 
+When development points at an external Traefik via `TRAEFIK_API_URL`, the API URL only covers live discovery. The access-log viewer still needs the log file mounted into the devcontainer and `TRAEFIK_ACCESS_LOG_PATH` pointed at the mounted path. For example, add a devcontainer mount for the host log file and set `TRAEFIK_ACCESS_LOG_PATH=/logs/traefik/access.log`. TPA can parse Traefik JSON logs or the default non-JSON extended common format, so your external Traefik does not need `accessLog.format=json`.
+
 ## Verification
 
 Before pushing, run:
