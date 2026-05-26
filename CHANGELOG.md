@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.10.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.10.0...v1.10.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* **logs:** correct Traefik access log viewer and parsing functionality ([436179c](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/436179c1269214281ab76d3e5e751e2502341158))
+
 ## [1.10.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.9.0...v1.10.0) (2026-05-26)
 
 
