@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TraefikApiStatusCard } from "@/components/traefik-api-status-card";
+import { TraefikLogsCard } from "@/components/traefik-logs-card";
 import type { ServiceFormData } from "@/hooks/use-service-form";
 
 type ResourceType = "routers" | "services" | "middlewares" | "entrypoints";
@@ -385,6 +386,8 @@ export default function TraefikResourcesPage() {
         </div>
 
         <TraefikApiStatusCard />
+
+        <TraefikLogsCard />
 
         {error && <p className="text-sm text-amber-700 dark:text-amber-300">{error}</p>}
 

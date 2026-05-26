@@ -99,6 +99,19 @@ TPA blocks imports from Traefik `@internal` resources. Internal routers and serv
 
 Review the preview warnings before saving. Complex Traefik services, multiple upstream servers, target URLs with paths, or rules that are not simple `Host(...)` matches may require manual cleanup after the draft is created.
 
+
+## Access Log Viewer
+
+Set `TRAEFIK_ACCESS_LOG_PATH` when TPA should show a read-only Traefik access log tail on the Traefik Live page:
+
+```env
+TRAEFIK_ACCESS_LOG_PATH=/logs/traefik/access.log
+```
+
+Mount that file into the TPA container as read-only. The viewer reads the last portion of the file on demand, supports manual refresh and optional live refresh, and filters by search text, method, status family, and loaded line count. The viewer supports Traefik JSON access logs and Traefik default extended Common Log Format. You can keep accessLog.format unset or common for tools such as bouncers that expect non-JSON logs. In common format, TPA extracts the client IP, timestamp, method, path, status, router name, service/server target, and duration when those fields are present.
+
+The log API redacts common sensitive query values such as `token`, `code`, `apikey`, `api_key`, `password`, and `secret` before returning entries. Avoid logging credentials in paths or query strings; redaction is a safety net, not a replacement for clean upstream logging.
+
 ## Target Probes
 
 Target checks open TCP connections from the TPA server. In production they are disabled unless `TARGET_TEST_ALLOW_CIDRS` is configured:

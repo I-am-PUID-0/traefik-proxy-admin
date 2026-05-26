@@ -97,6 +97,13 @@ SSO_ENDPOINT_ALLOW_HOSTS=auth.example.internal,authentik.example.internal
 
 Only add hostnames you operate and expect TPA to contact. This protects the SSO test/check flow from being used as a generic server-side request primitive.
 
+
+## Traefik Access Logs
+
+The in-app Traefik log viewer is admin-only and disabled unless `TRAEFIK_ACCESS_LOG_PATH` is set. Mount the log file read-only and keep file permissions narrow. Access logs can contain client IPs, requested paths, query strings, and auth failure context.
+
+TPA redacts common secret-like query parameters before displaying log lines, but operators should still avoid placing credentials in URLs. Do not expose the TPA admin UI broadly just because the viewer is read-only.
+
 ## Target Probes
 
 Target tests open TCP connections from the TPA server. In production they are disabled unless `TARGET_TEST_ALLOW_CIDRS` is set.

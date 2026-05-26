@@ -62,6 +62,14 @@ if ! pgrep -x traefik >/dev/null 2>&1; then
   nohup traefik \
     --log.level=DEBUG \
     --api.insecure=true \
+    --accesslog=true \
+    --accesslog.filepath=/var/log/traefik-access.log \
+    --accesslog.bufferingsize=100 \
+    --accesslog.filters.statuscodes=204-299,400-499,500-599 \
+    --accesslog.fields.defaultmode=keep \
+    --accesslog.fields.headers.defaultmode=drop \
+    --accesslog.fields.headers.names.User-Agent=keep \
+    --accesslog.fields.headers.names.X-Forwarded-For=keep \
     --entrypoints.web.address=:8081 \
     --providers.http.endpoint="http://localhost:3000/api/traefik/config" \
     --providers.http.pollInterval=10s \

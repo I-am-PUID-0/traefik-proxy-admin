@@ -18,6 +18,7 @@
     "POSTGRES_PASSWORD": "password",
     "NEXT_TELEMETRY_DISABLED": "1",
     "WATCHPACK_POLLING": "true",
+    "TRAEFIK_ACCESS_LOG_PATH": "/var/log/traefik-access.log",
     "WORKSPACE_FOLDER": "/workspaces/${localWorkspaceFolderBasename}"
   },
   "runArgs": [

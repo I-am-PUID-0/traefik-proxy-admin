@@ -73,6 +73,17 @@ ADMIN_AUTH_ENABLED=false
 
 Do not use that setting for production-like testing.
 
+
+## Devcontainer Traefik Access Logs
+
+The devcontainer starts an internal Traefik process from `.devcontainer/start-services.sh`. It writes common-format access logs to:
+
+```text
+/var/log/traefik-access.log
+```
+
+`.devcontainer/devcontainer.json` sets `TRAEFIK_ACCESS_LOG_PATH` to that file so the Traefik Live log viewer works without an extra bind mount. If you change these flags while the devcontainer is already running, restart the devcontainer or restart the internal Traefik process for the new access-log settings to take effect.
+
 ## Verification
 
 Before pushing, run:
