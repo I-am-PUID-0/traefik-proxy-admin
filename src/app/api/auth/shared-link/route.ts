@@ -3,6 +3,7 @@ import { consumeSharedLink } from "@/lib/shared-links";
 import { sessionManager } from "@/lib/session-manager";
 import { randomBytes } from "crypto";
 import { TRAEFIK_SESSION_COOKIE, COOKIE_DEFAULTS } from "@/lib/constants";
+import { getSessionRequestContext } from "@/lib/session-request-context";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +34,12 @@ export async function POST(request: NextRequest) {
       sharedLink.serviceId,
       sessionToken,
       sharedLink.sessionDurationMinutes,
-      sharedLink.id
+      sharedLink.id,
+      "shared-link-user",
+      {
+        ...getSessionRequestContext(request),
+        authMethod: "shared_link",
+      },
     );
 
     console.log("🔧 [DEBUG] Cookie being set with expiration:", cookieExpiresAt.toISOString());

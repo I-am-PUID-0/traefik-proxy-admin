@@ -99,6 +99,24 @@ export const sessions = pgTable("sessions", {
   sharedLinkId: uuid("shared_link_id").references(() => sharedLinks.id, { onDelete: "cascade" }),
   sessionToken: varchar("session_token", { length: 255 }).notNull().unique(),
   userIdentifier: varchar("user_identifier", { length: 255 }), // For SSO users
+  authMethod: varchar("auth_method", { length: 50 }), // 'sso', 'shared_link'
+  clientIp: varchar("client_ip", { length: 120 }),
+  clientIpSource: varchar("client_ip_source", { length: 80 }),
+  lastIp: varchar("last_ip", { length: 120 }),
+  ipChanged: boolean("ip_changed").default(false).notNull(),
+  userAgent: text("user_agent"),
+  lastUserAgent: text("last_user_agent"),
+  userAgentChanged: boolean("user_agent_changed").default(false).notNull(),
+  requestedHost: varchar("requested_host", { length: 255 }),
+  entryPoint: varchar("entry_point", { length: 120 }),
+  lastPath: text("last_path"),
+  accessCount: integer("access_count").default(0).notNull(),
+  riskFlags: text("risk_flags"), // JSON array of derived risk flags
+  ssoIssuer: text("sso_issuer"),
+  ssoSubject: varchar("sso_subject", { length: 255 }),
+  ssoEmail: varchar("sso_email", { length: 255 }),
+  ssoName: varchar("sso_name", { length: 255 }),
+  ssoGroups: text("sso_groups"), // JSON array
   expiresAt: timestamp("expires_at").notNull(),
   lastAccessedAt: timestamp("last_accessed_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

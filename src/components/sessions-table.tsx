@@ -15,9 +15,13 @@ import {
 import {
   ArrowDownAZ,
   ArrowUpAZ,
+  Activity,
   ExternalLink,
+  Globe2,
+  Monitor,
   RefreshCw,
   Search,
+  ShieldAlert,
   TimerReset,
   Trash2,
   User,
@@ -31,6 +35,24 @@ export interface SessionInfo {
   serviceId: string;
   sessionToken: string;
   userIdentifier?: string | null;
+  authMethod?: string | null;
+  clientIp?: string | null;
+  clientIpSource?: string | null;
+  lastIp?: string | null;
+  ipChanged?: boolean | null;
+  userAgent?: string | null;
+  lastUserAgent?: string | null;
+  userAgentChanged?: boolean | null;
+  requestedHost?: string | null;
+  entryPoint?: string | null;
+  lastPath?: string | null;
+  accessCount?: number | null;
+  riskFlags?: string | null;
+  ssoIssuer?: string | null;
+  ssoSubject?: string | null;
+  ssoEmail?: string | null;
+  ssoName?: string | null;
+  ssoGroups?: string | null;
   expiresAt: string;
   lastAccessedAt: string;
   createdAt: string;
@@ -51,7 +73,7 @@ interface SessionsTableProps {
 }
 
 type StatusFilter = "all" | "active" | "expired";
-type SortOption = "last-desc" | "last-asc" | "created-desc" | "created-asc" | "expires-asc" | "service-asc" | "user-asc";
+type SortOption = "last-desc" | "last-asc" | "created-desc" | "created-asc" | "expires-asc" | "service-asc" | "user-asc" | "access-desc" | "risk-desc";
 type PageSize = "25" | "50" | "100" | "all";
 
 const OPAQUE_ID_PATTERN = /^[a-zA-Z0-9_-]{18,}$/;
@@ -73,6 +95,40 @@ function parseJsonArray(value: string | null | undefined): string[] {
   } catch {
     return [];
   }
+}
+
+function getRiskFlags(session: SessionInfo) {
+  const parsed = parseJsonArray(session.riskFlags);
+  if (session.ipChanged && !parsed.includes("ip_changed")) parsed.push("ip_changed");
+  if (session.userAgentChanged && !parsed.includes("user_agent_changed")) parsed.push("user_agent_changed");
+  return parsed;
+}
+
+function formatAuthMethod(value: string | null | undefined) {
+  if (value === "shared_link") return "Shared link";
+  if (value === "sso") return "SSO";
+  return "Unknown auth";
+}
+
+function formatRiskFlag(value: string) {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getClientSummary(session: SessionInfo) {
+  if (!session.clientIp && !session.lastIp) return "No IP captured";
+  if (session.clientIp && session.lastIp && session.clientIp !== session.lastIp) {
+    return `${session.clientIp} -> ${session.lastIp}`;
+  }
+  return session.lastIp || session.clientIp || "No IP captured";
+}
+
+function getUserAgentSummary(session: SessionInfo) {
+  const value = session.lastUserAgent || session.userAgent;
+  if (!value) return "No user agent";
+  return value.length > 90 ? `${value.slice(0, 87)}...` : value;
 }
 
 function getServiceHost(session: SessionInfo) {
@@ -151,6 +207,15 @@ export function SessionsTable({
           session.subdomain,
           session.domain,
           session.userIdentifier,
+          session.clientIp,
+          session.lastIp,
+          session.userAgent,
+          session.lastUserAgent,
+          session.authMethod,
+          session.lastPath,
+          session.requestedHost,
+          session.ssoIssuer,
+          session.ssoSubject,
           session.id,
         ]
           .filter(Boolean)
@@ -176,6 +241,10 @@ export function SessionsTable({
             return serviceCompare || userCompare || new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime();
           case "user-asc":
             return userCompare || serviceCompare || new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime();
+          case "access-desc":
+            return (b.accessCount || 0) - (a.accessCount || 0) || new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime();
+          case "risk-desc":
+            return getRiskFlags(b).length - getRiskFlags(a).length || new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime();
           case "last-desc":
           default:
             return new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime();
@@ -370,6 +439,8 @@ export function SessionsTable({
                       <SelectItem value="expires-asc">Expires soonest</SelectItem>
                       <SelectItem value="service-asc">Service A-Z</SelectItem>
                       <SelectItem value="user-asc">User A-Z</SelectItem>
+                      <SelectItem value="access-desc">Access count</SelectItem>
+                      <SelectItem value="risk-desc">Risk first</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={pageSize} onValueChange={handlePageSizeChange}>
@@ -409,6 +480,7 @@ export function SessionsTable({
                     const serviceHost = getServiceHost(session);
                     const userLabel = getUserLabel(session);
                     const userHint = getUserHint(session);
+                    const riskFlags = getRiskFlags(session);
 
                     return (
                       <div
@@ -424,6 +496,13 @@ export function SessionsTable({
                                 <User className="mr-1 h-3 w-3" />
                                 <span className="max-w-[260px] truncate">{userLabel}</span>
                               </Badge>
+                              <Badge variant="secondary">{formatAuthMethod(session.authMethod)}</Badge>
+                              {riskFlags.length > 0 && (
+                                <Badge variant="destructive" title={riskFlags.map(formatRiskFlag).join(", ")}>
+                                  <ShieldAlert className="mr-1 h-3 w-3" />
+                                  {riskFlags.length} risk {riskFlags.length === 1 ? "flag" : "flags"}
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                               {serviceHost ? (
@@ -465,10 +544,26 @@ export function SessionsTable({
                           </div>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
+                        <div className="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-3 xl:grid-cols-6">
                           <div>
                             <p className="text-xs text-muted-foreground">Created</p>
                             <p>{formatDate(session.createdAt)}</p>
+                          </div>
+                          <div>
+                            <p className="flex items-center gap-1 text-xs text-muted-foreground"><Globe2 className="h-3 w-3" /> Client IP</p>
+                            <p className="break-all font-mono text-xs" title={session.clientIpSource || undefined}>{getClientSummary(session)}</p>
+                          </div>
+                          <div>
+                            <p className="flex items-center gap-1 text-xs text-muted-foreground"><Monitor className="h-3 w-3" /> User agent</p>
+                            <p className="break-words text-xs" title={session.lastUserAgent || session.userAgent || undefined}>{getUserAgentSummary(session)}</p>
+                          </div>
+                          <div>
+                            <p className="flex items-center gap-1 text-xs text-muted-foreground"><Activity className="h-3 w-3" /> Accesses</p>
+                            <p>{session.accessCount || 0}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Last path</p>
+                            <p className="break-all font-mono text-xs">{session.lastPath || "-"}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Last Access</p>

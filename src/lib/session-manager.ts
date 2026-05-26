@@ -1,5 +1,29 @@
 import { db, sessions, services, Session } from "@/lib/db";
-import { and, eq, gt, lt } from "drizzle-orm";
+import type { SessionAuthMethod, SessionRequestContext } from "@/lib/session-request-context";
+import { and, eq, gt, lt, sql } from "drizzle-orm";
+
+type CreateSessionMetadata = SessionRequestContext & {
+  authMethod?: SessionAuthMethod;
+  ssoIssuer?: string | null;
+  ssoSubject?: string | null;
+  ssoEmail?: string | null;
+  ssoName?: string | null;
+  ssoGroups?: string[] | null;
+};
+
+function parseRiskFlags(value: string | null | undefined) {
+  if (!value) return [] as string[];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [] as string[];
+  }
+}
+
+function addFlag(flags: string[], flag: string) {
+  return flags.includes(flag) ? flags : [...flags, flag];
+}
 
 class SessionManager {
   private memoryCache = new Map<string, Session>();
@@ -33,7 +57,8 @@ class SessionManager {
     sessionToken: string,
     expiresAt: Date,
     sharedLinkId?: string,
-    userIdentifier?: string
+    userIdentifier?: string,
+    metadata: CreateSessionMetadata = {},
   ): Promise<Session> {
     const newSession = {
       serviceId,
@@ -41,6 +66,21 @@ class SessionManager {
       expiresAt,
       sharedLinkId,
       userIdentifier,
+      authMethod: metadata.authMethod,
+      clientIp: metadata.clientIp || null,
+      clientIpSource: metadata.clientIpSource || null,
+      lastIp: metadata.clientIp || null,
+      userAgent: metadata.userAgent || null,
+      lastUserAgent: metadata.userAgent || null,
+      requestedHost: metadata.requestedHost || null,
+      entryPoint: metadata.entryPoint || null,
+      lastPath: metadata.lastPath || null,
+      ssoIssuer: metadata.ssoIssuer || null,
+      ssoSubject: metadata.ssoSubject || null,
+      ssoEmail: metadata.ssoEmail || null,
+      ssoName: metadata.ssoName || null,
+      ssoGroups: metadata.ssoGroups ? JSON.stringify(metadata.ssoGroups) : null,
+      riskFlags: null,
       lastAccessedAt: new Date(),
     };
 
@@ -50,7 +90,7 @@ class SessionManager {
     return session;
   }
 
-  async getSession(sessionToken: string): Promise<Session | null> {
+  async getSession(sessionToken: string, context?: SessionRequestContext): Promise<Session | null> {
     await this.initialize();
     
     const session = this.memoryCache.get(sessionToken);
@@ -62,12 +102,38 @@ class SessionManager {
       return null;
     }
     
-    // Update last accessed time, and verify the cached session still exists in the DB.
+    // Update last accessed time, verify the cached session still exists in the DB,
+    // and track lightweight request context for abuse/risk review.
     const lastAccessedAt = new Date();
-    session.lastAccessedAt = lastAccessedAt;
+    const riskFlags = parseRiskFlags(session.riskFlags);
+    const updates: Record<string, unknown> = {
+      lastAccessedAt,
+      accessCount: sql`${sessions.accessCount} + 1`,
+    };
+
+    if (context?.clientIp) {
+      updates.lastIp = context.clientIp;
+      if (session.clientIp && session.clientIp !== context.clientIp) {
+        updates.ipChanged = true;
+        updates.riskFlags = JSON.stringify(addFlag(riskFlags, "ip_changed"));
+      }
+    }
+
+    if (context?.userAgent) {
+      updates.lastUserAgent = context.userAgent;
+      if (session.userAgent && session.userAgent !== context.userAgent) {
+        updates.userAgentChanged = true;
+        updates.riskFlags = JSON.stringify(addFlag(riskFlags, "user_agent_changed"));
+      }
+    }
+
+    if (context?.lastPath) updates.lastPath = context.lastPath;
+    if (context?.requestedHost && !session.requestedHost) updates.requestedHost = context.requestedHost;
+    if (context?.entryPoint && !session.entryPoint) updates.entryPoint = context.entryPoint;
+
     const [updatedSession] = await db
       .update(sessions)
-      .set({ lastAccessedAt })
+      .set(updates)
       .where(eq(sessions.sessionToken, sessionToken))
       .returning();
 
@@ -172,7 +238,8 @@ class SessionManager {
     sessionToken: string,
     sessionDurationMinutes: number,
     sharedLinkId?: string,
-    userIdentifier?: string
+    userIdentifier?: string,
+    metadata: CreateSessionMetadata = {},
   ): Promise<{ session: Session; cookieExpiresAt: Date }> {
     console.log("🔧 [DEBUG] createSessionWithOptimalCookieExpiry called with:", {
       serviceId,
@@ -225,7 +292,8 @@ class SessionManager {
       sessionToken,
       sessionExpiresAt,
       sharedLinkId,
-      userIdentifier
+      userIdentifier,
+      metadata,
     );
 
     console.log("🔧 [DEBUG] Final session expiration:", session.expiresAt.toISOString());

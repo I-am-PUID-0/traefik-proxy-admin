@@ -85,6 +85,13 @@
       "when": 1779414000000,
       "tag": "0011_service_auth_tickets",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1779825600000,
+      "tag": "0012_session_risk_context",
+      "breakpoints": true
     }
   ]
 }

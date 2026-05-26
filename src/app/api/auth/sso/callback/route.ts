@@ -16,6 +16,7 @@ import { rateLimit } from "@/lib/request-guards";
 import { LEGACY_SSO_STATE_COOKIES, SSO_STATE_COOKIES } from "@/lib/sso-state-cookies";
 import { verifySignedSSOState } from "@/lib/sso-state-token";
 import { appendServiceAuthTicket, createServiceAuthTicket } from "@/lib/service-auth-tickets";
+import { getSessionRequestContext } from "@/lib/session-request-context";
 
 type SSOState = {
   type?: "service" | "admin" | "test";
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       return handleTestCallback(userInfo, stateData);
     }
 
-    return handleServiceCallback(request, stateData, userInfo);
+    return handleServiceCallback(request, stateData, userInfo, ssoProviderConfig);
   } catch (error) {
     console.error("SSO callback error:", error);
     if (error instanceof SSOAuthError) {
@@ -146,6 +147,7 @@ async function handleServiceCallback(
   request: NextRequest,
   stateData: SSOState,
   userInfo: { sub: string; name?: string; email?: string; groups?: string[] },
+  ssoProviderConfig: SSOConfig,
 ) {
   const { serviceId } = stateData;
   if (!serviceId) {
@@ -171,6 +173,7 @@ async function handleServiceCallback(
   }
 
   const userIdentifier = getDisplayUserIdentifier(userInfo);
+  const requestContext = getSessionRequestContext(request, stateData.returnTo);
   const existingSession = await sessionManager.getActiveSessionForServiceUser(serviceId, userIdentifier);
   const sessionToken = existingSession?.sessionToken || randomBytes(32).toString("hex");
 
@@ -182,6 +185,15 @@ async function handleServiceCallback(
       sessionDurationHours * 60,
       undefined,
       userIdentifier,
+      {
+        ...requestContext,
+        authMethod: "sso",
+        ssoIssuer: ssoProviderConfig.idpUrl || ssoProviderConfig.authorizationUrl || null,
+        ssoSubject: userInfo.sub,
+        ssoEmail: userInfo.email || null,
+        ssoName: userInfo.name || null,
+        ssoGroups: userInfo.groups || [],
+      },
     );
   }
 

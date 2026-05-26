@@ -8,6 +8,7 @@ import { ServiceSecurityService } from "@/lib/services/service-security.service"
 import type { Domain, Service } from "@/lib/db/schema";
 import { getGlobalConfig } from "@/lib/app-config";
 import { consumeServiceAuthTicket, SERVICE_AUTH_TICKET_PARAM } from "@/lib/service-auth-tickets";
+import { getSessionRequestContext } from "@/lib/session-request-context";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
       return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
     }
 
-    const session = await sessionManager.getSession(sessionToken);
+    const session = await sessionManager.getSession(sessionToken, getSessionRequestContext(request, originalUri));
 
     if (!session || session.serviceId !== serviceId) {
       return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
@@ -96,6 +97,7 @@ async function authorizeServiceAuthTicket(
   if (!consumed) return null;
 
   sessionManager.rememberSession(consumed.session);
+  await sessionManager.getSession(consumed.session.sessionToken, getSessionRequestContext(request, originalUri));
 
   const response = isDirectVerifierRequest(originalUri)
     ? NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 })
@@ -131,7 +133,7 @@ async function authorizeSharedLink(
   const existingSessionToken = cookieStore.get(TRAEFIK_SESSION_COOKIE)?.value;
 
   if (existingSessionToken) {
-    const existingSession = await sessionManager.getSession(existingSessionToken);
+    const existingSession = await sessionManager.getSession(existingSessionToken, getSessionRequestContext(request, originalUri));
 
     if (existingSession && existingSession.serviceId === serviceId) {
       const cookieExpiresAt = getServiceSessionExpiry(service);
@@ -152,6 +154,10 @@ async function authorizeSharedLink(
     sharedLink.sessionDurationMinutes,
     sharedLink.id,
     "shared-link-user",
+    {
+      ...getSessionRequestContext(request, originalUri),
+      authMethod: "shared_link",
+    },
   );
 
   cookieStore.set(TRAEFIK_SESSION_COOKIE, session.sessionToken, {
