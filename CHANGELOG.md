@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.9.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.8.1...v1.9.0) (2026-05-26)
+
+
+### Features
+
+* **auth:** enhance session management with risk context and user agent tracking ([c180cc0](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/c180cc011e61e0c00fe42fa0575e5547016209ac))
+
 ## [1.8.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.8.0...v1.8.1) (2026-05-22)
 
 
