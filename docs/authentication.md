@@ -184,6 +184,8 @@ After callback, TPA validates the service-level allowed users/groups against the
 
 For service SSO, TPA reuses an existing active session for the same service and provider identity instead of creating a new database row on every successful callback. Session management displays the provider email or name when available and falls back to the provider subject ID when that is the only stable identity returned.
 
+The Sessions page also records lightweight request context for abuse review: auth method, client IP and header source, last IP, user agent, requested host, last path, access count, and derived risk flags such as IP or user-agent changes. Avoid storing sensitive request details such as full URLs with query strings, cookies, tokens, raw headers, or request bodies in session metadata.
+
 That ticket flow is the preferred setup for multiple base domains because it does not depend on one shared parent cookie domain. Use one public TPA callback URL with the OAuth provider, then let each service hostname receive its own host-scoped session cookie during ticket redemption.
 
 ### Service Basic Auth

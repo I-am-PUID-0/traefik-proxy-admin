@@ -42,6 +42,7 @@ function requiredRole(request: NextRequest): AdminRole {
     path.startsWith("/api/security") ||
     path.startsWith("/api/sessions") ||
     path.startsWith("/api/config") ||
+    path.startsWith("/api/backup") ||
     path.startsWith("/api/auth/admin/config") ||
     path.startsWith("/api/auth/admin/users") ||
     path.startsWith("/api/auth/sso/test")

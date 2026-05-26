@@ -69,6 +69,14 @@ http://traefik-proxy-admin:3000/api/traefik/config
 
 That endpoint is intentionally unauthenticated for Traefik. Restrict access with network placement or reverse-proxy rules. See [Traefik Integration](traefik.md).
 
+## Backups & Restores
+
+Use **Config -> Backup & Restore** to download a full TPA backup before upgrades or risky configuration changes. The backup includes global app config, domains, services, service security rules, reusable Basic Auth and SSO provider configs, shared links, local admin auth config, password hashes, and OAuth client secrets. Store backup files like credentials.
+
+Restore currently uses replace mode: TPA validates the selected backup, shows a dry-run summary, and then deletes existing domains, services, service security rules, reusable auth providers, shared links, and app config before importing the backup. Active sessions and one-time service auth tickets are intentionally excluded, so users must sign in again after a restore.
+
+PostgreSQL backups are still recommended for disaster recovery, especially before changing image versions or running migrations. The TPA JSON backup is intended for portable app-level recovery and migration between instances.
+
 ## Upgrades
 
 Before upgrading:

@@ -126,7 +126,7 @@ Keep `/api/traefik/config` reachable only by Traefik or an internal network path
 
 Production and operator docs:
 
-- [Deployment](docs/deployment.md): production container setup, required environment, startup flow, and upgrade notes.
+- [Deployment](docs/deployment.md): production container setup, required environment, startup flow, backups, restores, and upgrade notes.
 - [Authentication](docs/authentication.md): admin auth, local users, SSO/OIDC, service auth, public auth endpoints, and lockout recovery.
 - [Service Configuration](docs/services.md): services, domains, middlewares, advanced routers, managed middlewares, and import/export.
 - [Traefik Integration](docs/traefik.md): HTTP provider setup, live discovery, config endpoint exposure, and target probes.
