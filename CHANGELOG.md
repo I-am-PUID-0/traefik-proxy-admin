@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.10.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.9.0...v1.10.0) (2026-05-26)
+
+
+### Features
+
+* **backup:** implement backup and restore functionality with UI integration ([cb8dbd2](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/cb8dbd2d491f1bab6b5cd4ecd2ef4c139dc020d1)), closes [#26](https://github.com/I-am-PUID-0/traefik-proxy-admin/issues/26)
+* **docs:** add documentation pages and context help components ([9a48c11](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/9a48c11c742a31dbcd50c5017be815f97fe478c5)), closes [#25](https://github.com/I-am-PUID-0/traefik-proxy-admin/issues/25)
+* **logs:** add Traefik access log functionality and viewer ([c71c904](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/c71c90410b6b352d611dd62fa48d2bedc78071b5))
+
 ## [1.9.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.8.1...v1.9.0) (2026-05-26)
 
 
