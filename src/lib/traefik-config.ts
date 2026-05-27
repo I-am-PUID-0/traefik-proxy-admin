@@ -5,6 +5,7 @@ import { getGlobalConfig, type GlobalTraefikConfig } from "./app-config";
 import { BasicAuthService } from "./services/basic-auth.service";
 import { ServiceSecurityService } from "./services/service-security.service";
 import { TRAEFIK_SESSION_COOKIE } from "./constants";
+import { SERVICE_AUTH_TICKET_PATH } from "./service-auth-tickets";
 import type { Service, Domain } from "@/lib/db/schema";
 import type { CertificateConfig } from "@/lib/dto/domain.dto";
 
@@ -80,6 +81,15 @@ function getAdminPanelBaseUrl(globalConfig: GlobalTraefikConfig) {
     : `http://${configuredUrl}`;
 
   return baseUrl.replace(/\/+$/, "");
+}
+
+function ensureServiceAuthTicketService(config: TraefikConfig, globalConfig: GlobalTraefikConfig) {
+  config.http.services["tpa-service-auth-ticket"] = {
+    loadBalancer: {
+      servers: [{ url: getAdminPanelBaseUrl(globalConfig) }],
+      passHostHeader: true,
+    },
+  };
 }
 
 /**
@@ -452,6 +462,18 @@ async function createTraefikService(
   }
 
   const securityConfigs = await ServiceSecurityService.getEnabledSecurityConfigsForService(service.id);
+
+  if (securityConfigs.some((item) => item.securityType === "sso")) {
+    ensureServiceAuthTicketService(config, globalConfig);
+    config.http.routers[`${routerName}-tpa-auth-ticket`] = {
+      rule: hostRules + " && Path(`" + SERVICE_AUTH_TICKET_PATH + "`)",
+      service: "tpa-service-auth-ticket",
+      ...(entrypoint && { entryPoints: [entrypoint] }),
+      priority: 10000,
+      tls: tlsConfig,
+    };
+  }
+
   for (const securityConfig of securityConfigs.filter((item) => item.securityType === "bypass")) {
     const bypassConfig = JSON.parse(securityConfig.config) as BypassSecurityConfig;
     if (!bypassConfig.rule || !bypassConfig.name) continue;

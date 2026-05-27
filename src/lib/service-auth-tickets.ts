@@ -5,6 +5,8 @@ import { db, serviceAuthTickets, sessions } from "@/lib/db";
 
 const TICKET_TTL_MS = 5 * 60 * 1000;
 export const SERVICE_AUTH_TICKET_PARAM = "tpa-auth-ticket";
+export const SERVICE_AUTH_TICKET_PATH = "/tpa/auth/ticket";
+export const SERVICE_AUTH_TICKET_RETURN_PARAM = "returnTo";
 
 export async function createServiceAuthTicket(input: {
   serviceId: string;
@@ -73,4 +75,13 @@ export function removeServiceAuthTicket(url: string) {
   const nextUrl = new URL(url);
   nextUrl.searchParams.delete(SERVICE_AUTH_TICKET_PARAM);
   return nextUrl.toString();
+}
+
+export function buildServiceAuthTicketUrl(returnTo: string, serviceId: string, token: string) {
+  const returnUrl = new URL(returnTo);
+  const ticketUrl = new URL(SERVICE_AUTH_TICKET_PATH, returnUrl.origin);
+  ticketUrl.searchParams.set("serviceId", serviceId);
+  ticketUrl.searchParams.set(SERVICE_AUTH_TICKET_PARAM, token);
+  ticketUrl.searchParams.set(SERVICE_AUTH_TICKET_RETURN_PARAM, removeServiceAuthTicket(returnUrl.toString()));
+  return ticketUrl.toString();
 }

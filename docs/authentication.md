@@ -180,7 +180,7 @@ When a service has SSO security enabled and the browser has no valid `traefik-se
 /api/auth/sso/login -> provider -> /api/auth/sso/callback
 ```
 
-After callback, TPA validates the service-level allowed users/groups against the selected provider response, creates a short-lived one-time auth ticket, and redirects the browser back to the original service URL. The next Traefik forwardAuth check redeems that ticket on the service hostname, returns an authorized `2xx` response to Traefik, and sets the `traefik-session` cookie through `addAuthCookiesToResponse` so the first post-login service request can proceed immediately.
+After callback, TPA validates the service-level allowed users/groups against the selected provider response, creates a short-lived one-time auth ticket, and redirects the browser to `/tpa/auth/ticket` on the service hostname. TPA generates a high-priority Traefik router for that reserved path on SSO-protected services. The reserved path points back to TPA, redeems the ticket on the service hostname, sets the `traefik-session` cookie, and redirects the browser to the original service URL without the one-time ticket so the upstream app never receives `tpa-auth-ticket` query strings. Older ticket-in-query redirects are still cleaned by `/api/auth/verify` as a compatibility fallback.
 
 For service SSO, TPA reuses an existing active session for the same service and provider identity instead of creating a new database row on every successful callback. Session management displays the provider email or name when available and falls back to the provider subject ID when that is the only stable identity returned.
 

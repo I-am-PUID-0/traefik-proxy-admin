@@ -71,6 +71,10 @@ export async function GET(request: NextRequest) {
       return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
     }
 
+    if (serviceAuthTicket) {
+      return NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 });
+    }
+
     if (isDirectVerifierRequest(originalUri)) {
       return NextResponse.redirect(getServicePublicUrl(request, service, domain), { status: 302 });
     }
@@ -99,12 +103,7 @@ async function authorizeServiceAuthTicket(
   sessionManager.rememberSession(consumed.session);
   await sessionManager.getSession(consumed.session.sessionToken, getSessionRequestContext(request, originalUri));
 
-  const response = isDirectVerifierRequest(originalUri)
-    ? NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 })
-    : NextResponse.json({
-        status: "authorized",
-        user: consumed.session.userIdentifier,
-      });
+  const response = NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 });
 
   response.cookies.set(TRAEFIK_SESSION_COOKIE, consumed.session.sessionToken, {
     ...COOKIE_DEFAULTS,

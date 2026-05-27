@@ -15,7 +15,7 @@ import { ADMIN_SESSION_COOKIE, adminAuthEnabled, type AdminRole } from "@/lib/ad
 import { rateLimit } from "@/lib/request-guards";
 import { LEGACY_SSO_STATE_COOKIES, SSO_STATE_COOKIES } from "@/lib/sso-state-cookies";
 import { verifySignedSSOState } from "@/lib/sso-state-token";
-import { appendServiceAuthTicket, createServiceAuthTicket } from "@/lib/service-auth-tickets";
+import { buildServiceAuthTicketUrl, createServiceAuthTicket } from "@/lib/service-auth-tickets";
 import { getSessionRequestContext } from "@/lib/session-request-context";
 
 type SSOState = {
@@ -205,7 +205,7 @@ async function handleServiceCallback(
     returnTo,
     userIdentifier,
   });
-  const response = NextResponse.redirect(appendServiceAuthTicket(returnTo, ticket.token));
+  const response = NextResponse.redirect(buildServiceAuthTicketUrl(returnTo, serviceId, ticket.token));
 
   clearStateCookies(response);
   return response;
@@ -271,8 +271,6 @@ function safeLocalReturnTo(returnTo: string | null | undefined, fallback: string
 
 function safeServiceReturnTo(returnTo: string | null | undefined, fallback: string) {
   if (!returnTo) return fallback;
-  if (returnTo.startsWith("/") && !returnTo.startsWith("//")) return returnTo;
-
   try {
     const url = new URL(returnTo);
     return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : fallback;

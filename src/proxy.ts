@@ -19,6 +19,7 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/verify",
   "/api/auth/observe",
   "/api/auth/shared-link",
+  "/tpa/auth/ticket",
   "/api/health",
   "/api/traefik/config",
   "/auth/forbidden",
