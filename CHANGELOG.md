@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.11.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.0...v1.11.1) (2026-05-27)
+
+
+### Bug Fixes
+
+* **auth:** finalize service SSO tickets on reserved route ([922d7cb](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/922d7cb89e72716efe09d4e93483f4ffbf41b5cd))
+
 ## [1.11.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.10.1...v1.11.0) (2026-05-27)
 
 
