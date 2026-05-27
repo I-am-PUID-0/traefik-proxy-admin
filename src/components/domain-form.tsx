@@ -309,7 +309,7 @@ export function DomainForm({ domain, onSave, onCancel }: DomainFormProps) {
                           id={`cert-sans-${index}`}
                           value={config.sans?.join('\n') || ''}
                           onChange={(e) => updateSansArray(index, e.target.value)}
-                          placeholder="www.example.com&#10;api.example.com&#10;app.example.com"
+                          placeholder={"www.example.com\napi.example.com\napp.example.com"}
                           rows={3}
                           disabled={saving}
                         />

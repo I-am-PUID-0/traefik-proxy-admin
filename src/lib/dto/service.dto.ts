@@ -8,7 +8,7 @@ export interface CreateServiceRequest {
   name: string;
   subdomain?: string;
   hostnameMode: HostnameMode;
-  customHostnames?: string[]; // Array of hostnames for custom mode
+  customHostnames?: string[] | string | null; // Array, JSON string, or text list of hostnames for custom mode
   domainId: string;
   targetIp: string;
   targetPort: number;
@@ -28,7 +28,7 @@ export interface UpdateServiceRequest {
   name: string;
   subdomain?: string;
   hostnameMode: HostnameMode;
-  customHostnames?: string[]; // Array of hostnames for custom mode
+  customHostnames?: string[] | string | null; // Array, JSON string, or text list of hostnames for custom mode
   domainId: string;
   targetIp: string;
   targetPort: number;

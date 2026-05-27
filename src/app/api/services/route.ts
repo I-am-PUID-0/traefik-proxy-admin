@@ -3,6 +3,7 @@ import { ServiceService } from "@/lib/services/service.service";
 import { DomainService } from "@/lib/services/domain.service";
 import type { CreateServiceData, CreateServiceRequest } from "@/lib/dto/service.dto";
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
+import { customHostnamesJsonOrNull } from "@/lib/service-hostnames";
 import "@/lib/startup"; // Initialize background services
 
 function jsonFieldOrNull(value: unknown): string | null {
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       name: body.name,
       subdomain: body.subdomain || null,
       hostnameMode: body.hostnameMode,
-      customHostnames: body.customHostnames ? JSON.stringify(body.customHostnames) : null,
+      customHostnames: customHostnamesJsonOrNull(body.customHostnames),
       domainId: domainId,
       targetIp: body.targetIp,
       targetPort: body.targetPort,

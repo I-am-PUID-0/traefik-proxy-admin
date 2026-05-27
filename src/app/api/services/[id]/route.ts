@@ -3,6 +3,7 @@ import { ServiceService } from "@/lib/services/service.service";
 import { DomainService } from "@/lib/services/domain.service";
 import type { UpdateServiceData, UpdateServiceRequest } from "@/lib/dto/service.dto";
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
+import { customHostnamesJsonOrNull } from "@/lib/service-hostnames";
 
 function jsonFieldOrNull(value: unknown): string | null {
   if (value === undefined || value === null || value === "") return null;
@@ -61,7 +62,7 @@ export async function PUT(
       name: body.name,
       subdomain: body.subdomain || null,
       hostnameMode: body.hostnameMode,
-      customHostnames: body.customHostnames ? JSON.stringify(body.customHostnames) : null,
+      customHostnames: customHostnamesJsonOrNull(body.customHostnames),
       domainId: body.domainId,
       targetIp: body.targetIp,
       targetPort: body.targetPort,

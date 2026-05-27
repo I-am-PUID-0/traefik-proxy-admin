@@ -354,7 +354,7 @@ export function ServiceForm({
                         customHostnames: hostnames.length > 0 ? JSON.stringify(hostnames) : null
                       });
                     }}
-                    placeholder="app.example.com&#10;api.example.com&#10;www.example.com"
+                    placeholder={"app.example.com\napi.example.com\nwww.example.com"}
                     rows={4}
                     disabled={submitting}
                   />
