@@ -128,7 +128,9 @@ Keep `/api/traefik/config` reachable only by Traefik or an internal network path
 
 ## Fork Delta
 
-This fork has diverged substantially from upstream after `bc1bf6283242149c08eba8d770fdbdc12af5bff4`. The main differences are:
+This fork has diverged substantially from upstream after [commit bc1bf6](https://github.com/Janhouse/traefik-proxy-admin/commit/bc1bf6283242149c08eba8d770fdbdc12af5bff4).
+
+The main differences are:
 
 - Modernized the app into a Next.js App Router codebase under `src/`, with TypeScript 6, React 19, Next 16, pnpm, Vitest, Playwright, and a devcontainer workflow.
 - Added production packaging and release automation: Docker Hub publishing, multi-arch builds, Release Please, Dependabot, CI, CodeQL-oriented permissions, and pre-push verification docs.
