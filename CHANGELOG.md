@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.11.2](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.1...v1.11.2) (2026-05-27)
+
+
+### Bug Fixes
+
+* **services:** recognize app-managed middleware references ([ff74099](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/ff7409951c34dddec99a9e9461ebb07a1b7089eb))
+
 ## [1.11.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.0...v1.11.1) (2026-05-27)
 
 
