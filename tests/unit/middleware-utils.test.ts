@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMiddlewareNames, getUnknownMiddlewareNames, parseMiddlewareNames } from "@/lib/middleware-utils";
+import { formatMiddlewareNames, getManagedMiddlewareNames, getUnknownMiddlewareNames, parseMiddlewareNames } from "@/lib/middleware-utils";
 
 describe("middleware name normalization", () => {
   it("parses comma-separated middleware text", () => {
@@ -30,5 +30,12 @@ describe("middleware name normalization", () => {
         "secure-headers@file",
       ]),
     ).toEqual(["missing@file"]);
+  });
+
+  it("extracts app-managed middleware names from JSON definitions", () => {
+    expect(getManagedMiddlewareNames(JSON.stringify({
+      "redirect-to-admin": { redirectRegex: {} },
+      "secure-headers": { headers: {} },
+    }))).toEqual(["redirect-to-admin", "secure-headers"]);
   });
 });

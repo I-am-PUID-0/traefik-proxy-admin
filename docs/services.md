@@ -53,7 +53,7 @@ The normal form covers the common router and load-balancer path. Advanced fields
 
 ### Managed Middlewares JSON
 
-Managed middleware JSON creates middleware definitions under `http.middlewares` in the generated Traefik config. Use this for app-managed middlewares that belong to one service.
+Managed middleware JSON creates middleware definitions under `http.middlewares` in the generated Traefik config. Use this for app-managed middlewares that belong to one service. Defining a managed middleware does not apply it by itself; add the middleware key to the service **Middlewares** field as well. For example, after defining `redirect-to-admin` below, put `redirect-to-admin` in **Middlewares (comma-separated)**. Use `@file` only for middlewares from Traefik file provider, not for TPA-managed middlewares.
 
 Example redirect middleware:
 

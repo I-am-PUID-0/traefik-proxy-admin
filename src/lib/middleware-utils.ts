@@ -43,3 +43,17 @@ export function getUnknownMiddlewareNames(value: unknown, availableNames: Iterab
 
   return parseMiddlewareNames(value).filter((name) => !available.has(name));
 }
+
+
+export function getManagedMiddlewareNames(value: unknown): string[] {
+  if (!value || typeof value !== "string") return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return [];
+
+    return Object.keys(parsed).map((name) => name.trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
