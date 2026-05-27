@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.11.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.10.1...v1.11.0) (2026-05-27)
+
+
+### Features
+
+* **security:** add service bypass rules with observed sessions ([1e4e03f](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/1e4e03f78fd0df78b4fa8e4e33cb1abe07d1c57a))
+
 ## [1.10.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.10.0...v1.10.1) (2026-05-26)
 
 
