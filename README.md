@@ -150,6 +150,7 @@ Production and operator docs:
 - [Service Configuration](docs/services.md): services, domains, middlewares, Bypass Rules, advanced routers, managed middlewares, and import/export.
 - [Traefik Integration](docs/traefik.md): HTTP provider setup, live discovery, config endpoint exposure, target probes, and access log viewing.
 - [Security Hardening](docs/security-hardening.md): production checklist, cookie domains, Traefik API access, target probes, and secrets.
+- [Comparison: Middleware Manager](docs/comparison-middleware-manager.md): how TPA compares with [hhftechnology/middleware-manager](https://github.com/hhftechnology/middleware-manager), including fit, overlap, and ownership boundaries.
 
 Contributor docs:
 

@@ -41,6 +41,12 @@ export const DOC_PAGES: DocPageMeta[] = [
     file: "security-hardening.md",
   },
   {
+    slug: "comparison-middleware-manager",
+    title: "Comparison: Middleware Manager",
+    description: "How TPA compares with hhftechnology/middleware-manager.",
+    file: "comparison-middleware-manager.md",
+  },
+  {
     slug: "development",
     title: "Development",
     description: "Devcontainer usage, local Traefik setup, and verification.",
