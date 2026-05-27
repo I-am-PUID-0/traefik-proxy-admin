@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -70,7 +71,12 @@ interface FormData {
     users?: string[];
     // Basic auth config
     basicAuthConfigId?: string;
-  };
+    // Bypass config
+    name?: string;
+    rule?: string;
+    mode?: "simple" | "observed";
+    middlewares?: string[];
+      };
 }
 
 interface FormErrors {
@@ -82,7 +88,54 @@ interface FormErrors {
   users?: string;
   ssoConfigId?: string;
   basicAuthConfigId?: string;
+  name?: string;
+  rule?: string;
+  middlewares?: string;
 }
+
+
+const bypassRulePresets = [
+  {
+    value: "ha-companion",
+    label: "HA Companion User-Agent",
+    rule: "HeaderRegexp(`User-Agent`, `Home Assistant/.*`)",
+  },
+  {
+    value: "tautulli-api-key",
+    label: "Tautulli API key",
+    rule: "Header(`X-Api-Key`, `change-me`) || Query(`apikey`, `change-me`)",
+  },
+  {
+    value: "post-webhook",
+    label: "POST webhook path",
+    rule: "Method(`POST`) && Path(`/api/webhook/your-token`)",
+  },
+  {
+    value: "path-prefix",
+    label: "Path prefix",
+    rule: "PathPrefix(`/api/public`)",
+  },
+  {
+    value: "client-ip",
+    label: "Client IP/CIDR",
+    rule: "ClientIP(`10.0.0.0/8`)",
+  },
+  {
+    value: "header",
+    label: "Exact header",
+    rule: "Header(`X-Bypass-Token`, `change-me`)",
+  },
+  {
+    value: "healthcheck",
+    label: "Health check path",
+    rule: "Path(`/health`) || Path(`/ping`)",
+  },
+  {
+    value: "plex-webhook",
+    label: "Plex webhook",
+    rule: "Method(`POST`) && Path(`/webhooks/plex`)",
+  },
+];
 
 const securityTypeOptions = [
   {
@@ -102,6 +155,12 @@ const securityTypeOptions = [
     label: "Basic Authentication",
     description: "Username and password authentication",
     icon: Key,
+  },
+  {
+    value: "bypass" as const,
+    label: "Bypass Rule",
+    description: "Higher-priority auth bypass route",
+    icon: Shield,
   },
 ];
 
@@ -137,6 +196,10 @@ export function SecurityConfigDialog({
       groups: [],
       users: [],
       basicAuthConfigId: "",
+      name: "",
+      rule: "",
+      mode: "simple",
+      middlewares: [],
     },
   });
 
@@ -177,6 +240,10 @@ export function SecurityConfigDialog({
           ssoConfigId: editingConfig.type === "sso" ? editingConfig.config.ssoConfigId : "",
           groups: editingConfig.type === "sso" ? editingConfig.config.groups : [],
           users: editingConfig.type === "sso" ? editingConfig.config.users : [],
+          name: editingConfig.type === "bypass" ? editingConfig.config.name : "",
+          rule: editingConfig.type === "bypass" ? editingConfig.config.rule : "",
+          mode: editingConfig.type === "bypass" ? editingConfig.config.mode : "simple",
+          middlewares: editingConfig.type === "bypass" ? editingConfig.config.middlewares : [],
         },
       });
     } else if (isOpen) {
@@ -192,7 +259,11 @@ export function SecurityConfigDialog({
           groups: [],
           users: [],
           basicAuthConfigId: "",
-        },
+          name: "",
+          rule: "",
+          mode: "simple",
+          middlewares: [],
+            },
       });
     }
     setErrors({});
@@ -274,6 +345,15 @@ export function SecurityConfigDialog({
           newErrors.basicAuthConfigId = "Basic auth configuration is required";
         }
         break;
+
+      case "bypass":
+        if (!formData.config.name?.trim()) {
+          newErrors.name = "Bypass name is required";
+        }
+        if (!formData.config.rule?.trim()) {
+          newErrors.rule = "Match rule is required";
+        }
+        break;
     }
 
     setErrors(newErrors);
@@ -310,6 +390,15 @@ export function SecurityConfigDialog({
         case "basic_auth":
           cleanConfig.config = {
             basicAuthConfigId: cleanConfig.config.basicAuthConfigId!,
+          };
+          break;
+        case "bypass":
+          cleanConfig.config = {
+            name: cleanConfig.config.name!.trim(),
+            rule: cleanConfig.config.rule!.trim(),
+            mode: cleanConfig.config.mode === "observed" ? "observed" : "simple",
+            middlewares: cleanConfig.config.middlewares || [],
+            sessionDurationMinutes: 0,
           };
           break;
       }
@@ -413,6 +502,7 @@ export function SecurityConfigDialog({
               setFormData({
                 ...formData,
                 type: value as SecurityType,
+                priority: value === "bypass" ? 100 : formData.type === "bypass" ? 10 : formData.priority,
                 config: {
                   expiresInHours: 24,
                   sessionDurationMinutes: 60,
@@ -420,7 +510,11 @@ export function SecurityConfigDialog({
                   groups: [],
                   users: [],
                   basicAuthConfigId: "",
-                },
+                  name: "",
+                  rule: "",
+                  mode: value === "bypass" ? "simple" : undefined,
+                  middlewares: [],
+                            },
               });
               setErrors({});
             }}
@@ -479,7 +573,7 @@ export function SecurityConfigDialog({
               </div>
             )}
             <p className="text-xs text-muted-foreground">
-              Higher numbers have higher priority
+              Higher numbers have higher priority. Bypass rules usually need a higher priority than the normal auth route.
             </p>
           </div>
 
@@ -803,6 +897,112 @@ export function SecurityConfigDialog({
               <span className="text-sm text-orange-700 dark:text-orange-300">
                 Users must provide valid username and password credentials to access this service.
               </span>
+            </div>
+          </div>
+        )}
+
+        {formData.type === "bypass" && (
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Shield className="h-4 w-4" />
+              Bypass Rule Configuration
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Creates a higher-priority router for this service that skips SSO/shared-link/basic-auth middleware. Use a match expression without the Host rule; TPA adds the service host automatically.
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="bypassName">Name</Label>
+              <Input
+                id="bypassName"
+                value={formData.config.name || ""}
+                placeholder="Home Assistant companion app"
+                onChange={(e) => setFormData({ ...formData, config: { ...formData.config, name: e.target.value } })}
+              />
+              {errors.name && (
+                <div className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400">
+                  <AlertCircle className="h-4 w-4" />
+                  {errors.name}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <Label htmlFor="bypassRule">Match expression</Label>
+                <Select
+                  value=""
+                  onValueChange={(value) => {
+                    const preset = bypassRulePresets.find((item) => item.value === value);
+                    if (!preset) return;
+                    setFormData({ ...formData, config: { ...formData.config, rule: preset.rule } });
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-full sm:w-[230px]">
+                    <SelectValue placeholder="Insert rule preset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bypassRulePresets.map((preset) => (
+                      <SelectItem key={preset.value} value={preset.value}>
+                        {preset.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Textarea
+                id="bypassRule"
+                value={formData.config.rule || ""}
+                placeholder={'Example: HeaderRegexp(`User-Agent`, `Home Assistant/.*`)\nExample: Method(`POST`) && Path(`/api/webhook/...`)'}
+                onChange={(e) => setFormData({ ...formData, config: { ...formData.config, rule: e.target.value } })}
+                rows={3}
+              />
+              {errors.rule && (
+                <div className="flex items-center gap-1 text-sm text-red-600 dark:text-red-400">
+                  <AlertCircle className="h-4 w-4" />
+                  {errors.rule}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Pick a preset, then replace the sample values. TPA automatically adds the service Host(...) rule unless your expression already includes Host(...).
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bypassMode">Bypass mode</Label>
+              <Select
+                value={formData.config.mode || "simple"}
+                onValueChange={(value) => setFormData({ ...formData, config: { ...formData.config, mode: value as "simple" | "observed" } })}
+              >
+                <SelectTrigger id="bypassMode"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="simple">Simple bypass</SelectItem>
+                  <SelectItem value="observed">Observed bypass</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Simple bypass never touches TPA auth. Observed bypass adds an allow-only observer that records matching access in Sessions while the bypass rule remains enabled.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bypassMiddlewares">Bypass middlewares</Label>
+              <Textarea
+                id="bypassMiddlewares"
+                value={(formData.config.middlewares || []).join("\n")}
+                placeholder={'ha-bypass-ratelimit\nsecure-headers@file'}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  config: {
+                    ...formData.config,
+                    middlewares: e.target.value.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean),
+                  },
+                })}
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional middlewares to keep on the bypass lane, such as rate limits. Use @file only for middlewares defined in the Traefik file provider.
+              </p>
             </div>
           </div>
         )}

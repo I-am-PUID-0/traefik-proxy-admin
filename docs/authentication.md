@@ -186,6 +186,8 @@ For service SSO, TPA reuses an existing active session for the same service and 
 
 The Sessions page also records lightweight request context for abuse review: auth method, client IP and header source, last IP, user agent, requested host, last path, access count, and derived risk flags such as IP or user-agent changes. Avoid storing sensitive request details such as full URLs with query strings, cookies, tokens, raw headers, or request bodies in session metadata.
 
+Service Security also supports **Bypass Rule** configurations. A simple bypass creates a higher-priority Traefik router that skips TPA auth and does not create a session. An observed bypass adds an allow-only forwardAuth observer at `/api/auth/observe`; matching traffic is still allowed without SSO/shared-link/basic-auth, but TPA records an `Observed bypass` session row with the same lightweight request context while the bypass rule remains enabled. Observed-bypass sessions are intentionally not accepted by the normal `/api/auth/verify` auth router, so a bypass observation cannot unlock the protected route.
+
 That ticket flow is the preferred setup for multiple base domains because it does not depend on one shared parent cookie domain. Use one public TPA callback URL with the OAuth provider, then let each service hostname receive its own host-scoped session cookie during ticket redemption.
 
 ### Service Basic Auth
@@ -213,6 +215,7 @@ When service SSO runs behind Traefik, configure **Public TPA URL for Browser/OAu
 Admin auth intentionally does not protect every route. These endpoints remain public by design:
 
 - `GET /api/traefik/config`: Traefik needs to poll generated dynamic config.
+- `GET /api/auth/observe`: Traefik uses this for observed bypass forwardAuth rules.
 - `GET /api/auth/verify`: Traefik forwardAuth endpoint for service requests.
 - SSO/login/callback endpoints needed to complete authentication.
 - `GET /api/health` for health checks.

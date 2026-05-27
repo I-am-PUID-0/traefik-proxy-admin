@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     const session = await sessionManager.getSession(sessionToken, getSessionRequestContext(request, originalUri));
 
-    if (!session || session.serviceId !== serviceId) {
+    if (!session || session.serviceId !== serviceId || session.authMethod === "bypass_observed") {
       return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
     }
 

@@ -26,9 +26,9 @@ export function validateCreateServiceSecurityConfig(data: unknown): ValidationRe
   }
 
   // Validate securityType
-  const validSecurityTypes: SecurityType[] = ['shared_link', 'sso', 'basic_auth'];
+  const validSecurityTypes: SecurityType[] = ['shared_link', 'sso', 'basic_auth', 'bypass'];
   if (!request.securityType || !validSecurityTypes.includes(request.securityType)) {
-    errors.push("Security type must be one of: shared_link, sso, basic_auth");
+    errors.push("Security type must be one of: shared_link, sso, basic_auth, bypass");
   }
 
   // Validate priority
@@ -115,6 +115,30 @@ function validateSecurityTypeConfig(securityType: SecurityType, config: Record<s
         errors.push("basicAuthConfigId is required and must be a string");
       } else if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(config.basicAuthConfigId)) {
         errors.push("basicAuthConfigId must be a valid UUID");
+      }
+      break;
+
+    case 'bypass':
+      if (!config.name || typeof config.name !== "string" || !config.name.trim()) {
+        errors.push("Bypass name is required");
+      }
+      if (!config.rule || typeof config.rule !== "string" || !config.rule.trim()) {
+        errors.push("Bypass match rule is required");
+      }
+      if (config.mode !== undefined && config.mode !== "simple" && config.mode !== "observed") {
+        errors.push("Bypass mode must be simple or observed");
+      }
+      if (config.middlewares !== undefined) {
+        if (!Array.isArray(config.middlewares)) {
+          errors.push("Bypass middlewares must be an array");
+        } else if (!config.middlewares.every((middleware: unknown) => typeof middleware === "string")) {
+          errors.push("All bypass middlewares must be strings");
+        }
+      }
+      if (config.sessionDurationMinutes !== undefined) {
+        if (typeof config.sessionDurationMinutes !== "number" || config.sessionDurationMinutes < 0 || config.sessionDurationMinutes > 5256000) {
+          errors.push("Observed bypass retention must be 0 for long-lived records or a positive number up to 5256000 minutes");
+        }
       }
       break;
 

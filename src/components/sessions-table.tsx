@@ -108,6 +108,7 @@ function getRiskFlags(session: SessionInfo) {
 function formatAuthMethod(value: string | null | undefined) {
   if (value === "shared_link") return "Shared link";
   if (value === "sso") return "SSO";
+  if (value === "bypass_observed") return "Observed bypass";
   return "Unknown auth";
 }
 

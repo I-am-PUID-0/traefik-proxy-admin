@@ -1,7 +1,7 @@
 import type { ServiceSecurityConfig } from "@/lib/db/schema";
 
 // Security configuration types
-export type SecurityType = 'shared_link' | 'sso' | 'basic_auth';
+export type SecurityType = 'shared_link' | 'sso' | 'basic_auth' | 'bypass';
 
 // Base security configuration interface
 export interface BaseSecurityConfig {
@@ -35,8 +35,19 @@ export interface BasicAuthConfig extends BaseSecurityConfig {
   };
 }
 
+export interface BypassConfig extends BaseSecurityConfig {
+  type: 'bypass';
+  config: {
+    name: string;
+    rule: string;
+    mode: 'simple' | 'observed';
+    middlewares: string[];
+    sessionDurationMinutes: number;
+  };
+}
+
 // Union type for all security configurations
-export type SecurityConfig = SharedLinkConfig | SSOConfig | BasicAuthConfig;
+export type SecurityConfig = SharedLinkConfig | SSOConfig | BasicAuthConfig | BypassConfig;
 
 // Request DTOs
 export interface CreateServiceSecurityConfigRequest {
@@ -148,6 +159,19 @@ export function parseSecurityConfig(securityConfig: ServiceSecurityConfig): Secu
         },
       } as BasicAuthConfig;
 
+    case 'bypass':
+      return {
+        ...baseConfig,
+        type: 'bypass',
+        config: {
+          name: parsedConfig.name || 'Bypass rule',
+          rule: parsedConfig.rule || '',
+          mode: parsedConfig.mode === 'observed' ? 'observed' : 'simple',
+          middlewares: Array.isArray(parsedConfig.middlewares) ? parsedConfig.middlewares : [],
+          sessionDurationMinutes: typeof parsedConfig.sessionDurationMinutes === "number" ? parsedConfig.sessionDurationMinutes : 0,
+        },
+      } as BypassConfig;
+
     default:
       throw new Error(`Unknown security type: ${securityConfig.securityType}`);
   }
@@ -193,6 +217,19 @@ export function parseSecurityConfigWithId(securityConfig: ServiceSecurityConfig)
           basicAuthConfigId: parsedConfig.basicAuthConfigId,
         },
       } as BasicAuthConfig & { id: string };
+
+    case 'bypass':
+      return {
+        ...baseConfig,
+        type: 'bypass',
+        config: {
+          name: parsedConfig.name || 'Bypass rule',
+          rule: parsedConfig.rule || '',
+          mode: parsedConfig.mode === 'observed' ? 'observed' : 'simple',
+          middlewares: Array.isArray(parsedConfig.middlewares) ? parsedConfig.middlewares : [],
+          sessionDurationMinutes: typeof parsedConfig.sessionDurationMinutes === "number" ? parsedConfig.sessionDurationMinutes : 0,
+        },
+      } as BypassConfig & { id: string };
 
     default:
       throw new Error(`Unknown security type: ${securityConfig.securityType}`);

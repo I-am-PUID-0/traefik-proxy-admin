@@ -17,6 +17,7 @@ const PUBLIC_PATHS = new Set([
   "/api/auth/sso/login",
   "/api/auth/sso/callback",
   "/api/auth/verify",
+  "/api/auth/observe",
   "/api/auth/shared-link",
   "/api/health",
   "/api/traefik/config",

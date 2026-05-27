@@ -142,6 +142,14 @@ export interface AdvancedRouterConfig {
   enabled?: boolean;
 }
 
+interface BypassSecurityConfig {
+  name?: string;
+  rule?: string;
+  mode?: "simple" | "observed";
+  middlewares?: string[] | string;
+  sessionDurationMinutes?: number;
+}
+
 function safeName(value: string): string {
   return value.trim().replace(/[^a-zA-Z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || "custom";
 }
@@ -194,6 +202,17 @@ function routerMiddlewares(value: AdvancedRouterConfig["middlewares"], fallback:
   if (value === undefined) return fallback;
   if (Array.isArray(value)) return value.map((middleware) => String(middleware).trim()).filter(Boolean);
   return parseServiceMiddlewares(value);
+}
+
+function bypassMiddlewares(value: BypassSecurityConfig["middlewares"]): string[] {
+  if (Array.isArray(value)) return value.map((middleware) => String(middleware).trim()).filter(Boolean);
+  if (typeof value === "string") return parseServiceMiddlewares(value);
+  return [];
+}
+
+function bypassRule(hostRules: string, rule: string): string {
+  const trimmed = rule.trim();
+  return /\bHost(?:Regexp)?\s*\(/.test(trimmed) ? trimmed : `${hostRules} && (${trimmed})`;
 }
 
 /**
@@ -293,6 +312,10 @@ async function buildServiceMiddlewares(
             middlewares.push(basicAuthMiddlewareName);
           }
         }
+        break;
+
+      case "bypass":
+        // Bypass configs generate their own routers below instead of protecting the main route.
         break;
 
       default:
@@ -425,6 +448,37 @@ async function createTraefikService(
       ...(advancedEntryPoints && advancedEntryPoints.length > 0 && { entryPoints: advancedEntryPoints }),
       ...(typeof advancedRouter.priority === "number" && { priority: advancedRouter.priority }),
       ...(advancedTls && { tls: advancedTls }),
+    };
+  }
+
+  const securityConfigs = await ServiceSecurityService.getEnabledSecurityConfigsForService(service.id);
+  for (const securityConfig of securityConfigs.filter((item) => item.securityType === "bypass")) {
+    const bypassConfig = JSON.parse(securityConfig.config) as BypassSecurityConfig;
+    if (!bypassConfig.rule || !bypassConfig.name) continue;
+
+    const configuredMiddlewares = bypassMiddlewares(bypassConfig.middlewares);
+    const bypassMiddlewareNames = [...configuredMiddlewares];
+
+    if (bypassConfig.mode === "observed") {
+      const observerMiddlewareName = `observe-bypass-${serviceIdentifier}-${securityConfig.id.substring(0, 8)}`;
+      config.http.middlewares![observerMiddlewareName] = {
+        forwardAuth: {
+          address: `${getAdminPanelBaseUrl(globalConfig)}/api/auth/observe?serviceId=${service.id}&configId=${securityConfig.id}`,
+          trustForwardHeader: true,
+          addAuthCookiesToResponse: [TRAEFIK_SESSION_COOKIE],
+          authRequestHeaders: ["Accept", "Cookie", "X-Forwarded-Proto", "X-Forwarded-Host", "X-Forwarded-Uri"],
+        },
+      };
+      bypassMiddlewareNames.unshift(observerMiddlewareName);
+    }
+
+    config.http.routers[`${routerName}-bypass-${safeName(bypassConfig.name)}`] = {
+      rule: bypassRule(hostRules, bypassConfig.rule),
+      service: serviceName,
+      ...(bypassMiddlewareNames.length > 0 && { middlewares: bypassMiddlewareNames }),
+      ...(entrypoint && { entryPoints: [entrypoint] }),
+      priority: securityConfig.priority,
+      tls: tlsConfig,
     };
   }
 }

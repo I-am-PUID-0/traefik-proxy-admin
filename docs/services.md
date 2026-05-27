@@ -69,9 +69,20 @@ Example redirect middleware:
 }
 ```
 
+### Bypass Rules
+
+A service Security page can create **Bypass Rule** configurations for common auth exceptions such as mobile apps, webhooks, health checks, or automation callbacks. TPA generates a higher-priority router for the same backend service and leaves the normal SSO/shared-link/basic-auth router in place.
+
+Bypass modes:
+
+- **Simple bypass** forwards matching traffic without touching TPA auth endpoints. It is the most isolated option and does not create Sessions rows.
+- **Observed bypass** adds an allow-only TPA forwardAuth observer before the service. It still bypasses authentication, but records lightweight access metadata in Sessions while the bypass rule remains enabled.
+
+Bypass rules accept Traefik match expressions such as `HeaderRegexp(...)`, `Header(...) || Query(...)`, `Method(...) && Path(...)`, `PathPrefix(...)`, or `ClientIP(...)`. If the rule does not include `Host(...)`, TPA adds the service host rule automatically. Set a high priority, usually `100`, so the bypass route wins over the normal protected route. Optional bypass middlewares can keep rate limits or headers on the bypass lane. Use `@file` only for middlewares that still live in Traefik's file provider; TPA-managed middlewares are referenced without a provider suffix.
+
 ### Additional Routers JSON
 
-Additional routers point at the same generated backend service. Use them for alternate match rules, bypass rules, explicit router priority, entrypoint overrides, middleware overrides, or cert resolver overrides.
+Additional routers point at the same generated backend service. Use them for alternate match rules, explicit router priority, entrypoint overrides, middleware overrides, or cert resolver overrides. Prefer Security page Bypass Rules for auth bypasses when possible.
 
 Example bypass router:
 

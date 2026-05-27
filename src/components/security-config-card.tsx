@@ -20,6 +20,7 @@ import {
   User,
   UserCheck,
   AlertCircle,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SecurityConfig } from "@/lib/dto/service-security.dto";
@@ -52,6 +53,12 @@ const securityTypeConfig = {
     label: "Basic Auth",
     color: "bg-orange-500",
     description: "Username and password authentication",
+  },
+  bypass: {
+    icon: ShieldCheck,
+    label: "Bypass Rule",
+    color: "bg-purple-500",
+    description: "Higher-priority auth bypass route",
   },
 } as const;
 
@@ -220,6 +227,48 @@ export function SecurityConfigCard({
               <p className="text-xs text-muted-foreground">
                 Users must provide valid username and password credentials
                 from the selected basic authentication configuration.
+              </p>
+            </div>
+          </div>
+        );
+
+      case "bypass":
+        return (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center gap-2 text-sm">
+                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Mode:</span>
+                <span className="font-medium">
+                  {config.config.mode === "observed" ? "Observed" : "Simple"}
+                </span>
+              </div>
+              {config.config.mode === "observed" && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">Tracking:</span>
+                  <span className="font-medium">While enabled</span>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium">{config.config.name}</div>
+              <div className="font-mono text-xs bg-muted px-2 py-1 rounded break-all">
+                {config.config.rule}
+              </div>
+            </div>
+            {config.config.middlewares.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {config.config.middlewares.map((middleware) => (
+                  <Badge key={middleware} variant="outline" className="text-xs">
+                    {middleware}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                Matching requests skip this service auth chain. Observed bypass also records lightweight access in Sessions while the rule remains enabled.
               </p>
             </div>
           </div>

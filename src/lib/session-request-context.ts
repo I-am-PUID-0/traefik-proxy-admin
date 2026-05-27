@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-export type SessionAuthMethod = "sso" | "shared_link";
+export type SessionAuthMethod = "sso" | "shared_link" | "bypass_observed";
 
 export interface SessionRequestContext {
   clientIp?: string | null;

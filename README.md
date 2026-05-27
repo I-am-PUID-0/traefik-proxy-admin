@@ -42,6 +42,7 @@ Use it when you want a managed UI/API for exposing private HTTP services through
 - Generate Traefik routers, services, TLS settings, middlewares, and advanced router rules
 - Protect the admin UI/API with local accounts or OIDC/SSO
 - Protect proxied services with shared links, Basic Auth, or SSO forwardAuth
+- Add service-level Bypass Rules for webhooks, companion apps, health checks, and automations, with optional observed bypass session tracking
 - Discover live Traefik entrypoints, routers, services, and middlewares when the Traefik API is configured
 - Inspect generated-config drift, service target health, and optional Traefik access logs from the Traefik Live page
 
@@ -125,13 +126,26 @@ providers:
 
 Keep `/api/traefik/config` reachable only by Traefik or an internal network path. See [Traefik Integration](docs/traefik.md) for forwardAuth, live discovery, target probe, and access-log viewer guidance.
 
+## Fork Delta
+
+This fork has diverged substantially from upstream after `bc1bf6283242149c08eba8d770fdbdc12af5bff4`. The main differences are:
+
+- Modernized the app into a Next.js App Router codebase under `src/`, with TypeScript 6, React 19, Next 16, pnpm, Vitest, Playwright, and a devcontainer workflow.
+- Added production packaging and release automation: Docker Hub publishing, multi-arch builds, Release Please, Dependabot, CI, CodeQL-oriented permissions, and pre-push verification docs.
+- Added secure-by-default admin authentication with local admin users, optional admin SSO/OIDC, role-aware admin sessions, CSRF/same-origin checks, rate/body guards, and recovery-oriented auth docs.
+- Expanded service protection beyond the original shared-link flow with reusable Basic Auth configs, reusable service SSO providers, signed SSO state, multi-domain service SSO tickets, session risk metadata, and service-level Bypass Rules with Simple or Observed modes.
+- Added Traefik operator tooling: live API status, entrypoint/router/service/middleware discovery, middleware validation, target reachability checks with SSRF guards, generated-config preview/diff, drift checks, router import preview, and an optional access-log viewer.
+- Added portable service import/export plus full backup/restore for domains, services, security configs, auth providers, app config, shared links, secrets, and admin auth config.
+- Added bundled operator documentation inside the app, contextual help bubbles, screenshots, and expanded production/development/security documentation.
+- Added legacy database repair and migration safety for pre-Drizzle installs, plus tests covering middleware utilities, access-log parsing, Traefik middleware routes, homepage behavior, and functional API flows.
+
 ## Documentation
 
 Production and operator docs:
 
 - [Deployment](docs/deployment.md): production container setup, required environment, startup flow, backups, restores, and upgrade notes. The same operator docs are also available inside the app from the Docs navigation item.
-- [Authentication](docs/authentication.md): admin auth, local users, SSO/OIDC, service auth, public auth endpoints, and lockout recovery.
-- [Service Configuration](docs/services.md): services, domains, middlewares, advanced routers, managed middlewares, and import/export.
+- [Authentication](docs/authentication.md): admin auth, local users, SSO/OIDC, service auth, bypass observation, public auth endpoints, and lockout recovery.
+- [Service Configuration](docs/services.md): services, domains, middlewares, Bypass Rules, advanced routers, managed middlewares, and import/export.
 - [Traefik Integration](docs/traefik.md): HTTP provider setup, live discovery, config endpoint exposure, target probes, and access log viewing.
 - [Security Hardening](docs/security-hardening.md): production checklist, cookie domains, Traefik API access, target probes, and secrets.
 
