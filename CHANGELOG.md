@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.11.3](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.2...v1.11.3) (2026-05-27)
+
+
+### Bug Fixes
+
+* **services:** normalize custom hostname input ([84408b1](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/84408b1442c6bdd00998e5bdedb92705823b3f33))
+
 ## [1.11.2](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.1...v1.11.2) (2026-05-27)
 
 
