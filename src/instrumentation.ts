@@ -299,9 +299,8 @@ async function runMigrations() {
   console.log("Running database migrations");
   try {
     const migrationClient = postgres(dbCredentials.url, { max: 1 });
-    const [{ hasMigrationTable, migrationCount, hasSchema }] = await migrationClient<{
+    const [{ hasMigrationTable, hasSchema }] = await migrationClient<{
       hasMigrationTable: boolean;
-      migrationCount: number;
       hasSchema: boolean;
     }[]>`
       select
@@ -311,15 +310,6 @@ async function runMigrations() {
           where table_schema = 'drizzle'
             and table_name = '__drizzle_migrations'
         ) as "hasMigrationTable",
-        case
-          when exists (
-            select 1
-            from information_schema.tables
-            where table_schema = 'drizzle'
-              and table_name = '__drizzle_migrations'
-          ) then (select count(*)::int from drizzle.__drizzle_migrations)
-          else 0
-        end as "migrationCount",
         exists (
           select 1
           from information_schema.tables
@@ -327,6 +317,15 @@ async function runMigrations() {
             and table_name = 'app_config'
         ) as "hasSchema"
     `;
+    const migrationCount = hasMigrationTable
+      ? Number(
+          (
+            await migrationClient<{ count: number }[]>`
+              select count(*)::int as "count" from drizzle.__drizzle_migrations
+            `
+          )[0]?.count ?? 0,
+        )
+      : 0;
 
     if (hasSchema && (!hasMigrationTable || migrationCount === 0)) {
       await repairLegacySchema(migrationClient);
