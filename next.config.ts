@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
   generateBuildId: async () => getBuildId(),
   allowedDevOrigins: getAllowedDevOrigins(),
   outputFileTracingIncludes: {
-    "/*": ["./docs/**/*"],
+    "/*": ["./docs/**/*", "./drizzle/migrations/**/*"],
   },
   experimental: {
     turbopackFileSystemCacheForDev: false,

@@ -1,9 +1,37 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { dbCredentials, migrationsFolder } from "../drizzle.config";
+import { existsSync } from "fs";
+import { isAbsolute, join, resolve } from "path";
+import { dbCredentials, migrationsFolder as configuredMigrationsFolder } from "../drizzle.config";
 import postgres from "postgres";
 
 const LATEST_MIGRATION_CREATED_AT = 1779414000000;
+
+function isBuildPhase() {
+  return (
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.npm_lifecycle_event === "build"
+  );
+}
+
+function resolveMigrationsFolder() {
+  const configured = configuredMigrationsFolder || "./drizzle/migrations";
+  const candidates = [
+    isAbsolute(configured) ? configured : resolve(process.cwd(), configured),
+    resolve(process.cwd(), "drizzle/migrations"),
+    resolve(process.cwd(), ".next/standalone/drizzle/migrations"),
+    resolve(process.cwd(), "../drizzle/migrations"),
+    join(__dirname, "../drizzle/migrations"),
+    join(__dirname, "../../drizzle/migrations"),
+    join(__dirname, "../../../drizzle/migrations"),
+  ];
+
+  const found = candidates.find((candidate) =>
+    existsSync(join(candidate, "meta", "_journal.json")),
+  );
+
+  return found ?? candidates[0];
+}
 
 function getBuildId() {
   try {
@@ -334,7 +362,7 @@ async function runMigrations() {
     }
 
     const db = drizzle(dbCredentials.url);
-    await migrate(db, { migrationsFolder: migrationsFolder });
+    await migrate(db, { migrationsFolder: resolveMigrationsFolder() });
     await migrationClient.end();
   } catch (error) {
     console.log(`Running migrations failed, please do it manually - ${error}`);
@@ -343,6 +371,9 @@ async function runMigrations() {
 
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") {
+    return;
+  }
+  if (isBuildPhase()) {
     return;
   }
   process.env["BUILD_ID"] = getBuildId();
