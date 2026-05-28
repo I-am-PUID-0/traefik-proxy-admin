@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.13.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.12.0...v1.13.0) (2026-05-28)
+
+
+### Features
+
+* **startup:** add build phase check and improve service initialization logic ([0bf145a](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/0bf145affb6b1ae9d88f65cead94e6dd28882391))
+
 ## [1.12.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.4...v1.12.0) (2026-05-28)
 
 
