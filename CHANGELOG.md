@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.12.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.4...v1.12.0) (2026-05-28)
+
+
+### Features
+
+* **instrumentation:** enhance migration resolution and add build phase check ([cb1fca7](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/cb1fca7dbaa8631cb45524a0f30a9302b3cda225))
+
 ## [1.11.4](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.3...v1.11.4) (2026-05-28)
 
 
