@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.11.4](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.3...v1.11.4) (2026-05-28)
+
+
+### Bug Fixes
+
+* **migrations:** remove unused migrationCount from runMigrations function ([5be614f](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/5be614fad4b3fec5850ae24fc2c2b765810f8e90))
+
 ## [1.11.3](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.11.2...v1.11.3) (2026-05-27)
 
 
