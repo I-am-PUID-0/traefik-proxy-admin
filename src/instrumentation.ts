@@ -1,7 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { existsSync } from "fs";
-import { isAbsolute, join, resolve } from "path";
 import { dbCredentials, migrationsFolder as configuredMigrationsFolder } from "../drizzle.config";
 import postgres from "postgres";
 
@@ -15,19 +13,27 @@ function isBuildPhase() {
 }
 
 function resolveMigrationsFolder() {
+  // Keep Node-only modules behind runtime require calls so Next/Turbopack does
+  // not try to bundle this helper for the Edge instrumentation path.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require("fs") as typeof import("fs");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const path = require("path") as typeof import("path");
+
   const configured = configuredMigrationsFolder || "./drizzle/migrations";
+  const workingDirectory = process.env.PWD || ".";
   const candidates = [
-    isAbsolute(configured) ? configured : resolve(process.cwd(), configured),
-    resolve(process.cwd(), "drizzle/migrations"),
-    resolve(process.cwd(), ".next/standalone/drizzle/migrations"),
-    resolve(process.cwd(), "../drizzle/migrations"),
-    join(__dirname, "../drizzle/migrations"),
-    join(__dirname, "../../drizzle/migrations"),
-    join(__dirname, "../../../drizzle/migrations"),
+    path.isAbsolute(configured) ? configured : path.resolve(workingDirectory, configured),
+    path.resolve(workingDirectory, "drizzle/migrations"),
+    path.resolve(workingDirectory, ".next/standalone/drizzle/migrations"),
+    path.resolve(workingDirectory, "../drizzle/migrations"),
+    path.join(__dirname, "../drizzle/migrations"),
+    path.join(__dirname, "../../drizzle/migrations"),
+    path.join(__dirname, "../../../drizzle/migrations"),
   ];
 
   const found = candidates.find((candidate) =>
-    existsSync(join(candidate, "meta", "_journal.json")),
+    fs.existsSync(path.join(candidate, "meta", "_journal.json")),
   );
 
   return found ?? candidates[0];
