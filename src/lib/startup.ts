@@ -3,6 +3,13 @@ import { serviceScheduler } from "./service-scheduler";
 
 let isInitialized = false;
 
+function isBuildPhase() {
+  return (
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.npm_lifecycle_event === "build"
+  );
+}
+
 export async function initializeServices() {
   if (isInitialized) {
     return;
@@ -32,6 +39,6 @@ export function shutdownServices() {
 }
 
 // Auto-initialize when this module is imported
-if (typeof window === "undefined") { // Server-side only
+if (typeof window === "undefined" && !isBuildPhase()) { // Server-side runtime only
   initializeServices();
 }

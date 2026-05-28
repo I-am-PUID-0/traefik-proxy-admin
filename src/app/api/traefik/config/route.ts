@@ -12,7 +12,8 @@ export async function GET() {
     }
     
     const config = await generateTraefikConfig();
-    return NextResponse.json(config);
+    const traefikConfig = "http" in config ? config : { http: config };
+    return NextResponse.json(traefikConfig);
   } catch (error) {
     console.error("Error generating Traefik config:", error);
     return NextResponse.json(
