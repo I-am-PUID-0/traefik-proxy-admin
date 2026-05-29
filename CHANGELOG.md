@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.14.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.13.0...v1.14.0) (2026-05-29)
+
+
+### Features
+
+* **auth:** replace redirectToSSOLogin with ssoRequiredResponse for improved SSO handling ([c3caf4d](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/c3caf4d00a6517847e3aabc28eec04b88b6f2255))
+* **cert-resolver:** improve handling of certificate resolvers across components ([a18ef93](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/a18ef933c31bd1e29a45c3ee9c76e792f8778173))
+
 ## [1.13.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.12.0...v1.13.0) (2026-05-28)
 
 
