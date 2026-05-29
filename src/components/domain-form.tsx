@@ -32,7 +32,7 @@ export function DomainForm({ domain, onSave, onCancel }: DomainFormProps) {
     domain: "",
     description: "",
     useWildcardCert: true,
-    certResolver: "letsencrypt",
+    certResolver: "",
     certificateConfigs: [] as CertificateConfig[],
     isDefault: false,
   });
@@ -57,7 +57,7 @@ export function DomainForm({ domain, onSave, onCancel }: DomainFormProps) {
         domain: "",
         description: "",
         useWildcardCert: true,
-        certResolver: "letsencrypt",
+        certResolver: "",
         certificateConfigs: [],
         isDefault: false,
       });
@@ -124,7 +124,7 @@ export function DomainForm({ domain, onSave, onCancel }: DomainFormProps) {
         domain: formData.domain.trim().toLowerCase(),
         description: formData.description.trim() || undefined,
         useWildcardCert: formData.useWildcardCert,
-        certResolver: formData.certResolver.trim() || "letsencrypt",
+        certResolver: formData.certResolver.trim(),
         certificateConfigs: formData.certificateConfigs,
         isDefault: formData.isDefault,
       };
@@ -195,9 +195,11 @@ export function DomainForm({ domain, onSave, onCancel }: DomainFormProps) {
                 id="certResolver"
                 value={formData.certResolver}
                 onChange={(e) => handleChange("certResolver", e.target.value)}
-                placeholder="e.g., letsencrypt"
-                required
+                placeholder="e.g., letsencrypt; leave blank for none"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Leave blank when another layer, such as Cloudflare Tunnel, handles public TLS.
+              </p>
             </div>
 
             <div className="flex items-center justify-between">
@@ -296,7 +298,7 @@ export function DomainForm({ domain, onSave, onCancel }: DomainFormProps) {
                           id={`cert-resolver-${index}`}
                           value={config.certResolver}
                           onChange={(e) => updateCertificateConfig(index, 'certResolver', e.target.value)}
-                          placeholder="e.g., letsencrypt"
+                          placeholder="e.g., letsencrypt; leave blank for none"
                           disabled={saving}
                         />
                       </div>

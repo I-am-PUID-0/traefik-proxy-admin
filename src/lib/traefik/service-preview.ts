@@ -95,6 +95,17 @@ function routerMiddlewares(value: AdvancedRouterConfig["middlewares"], fallback:
   if (Array.isArray(value)) return value.map((middleware) => String(middleware).trim()).filter(Boolean);
   return parseMiddlewareNames(value);
 }
+
+function normalizeCertResolver(value: string | null | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed.toLowerCase() === "none") return undefined;
+  return trimmed;
+}
+
+function routerTlsConfig(certResolver: string | null | undefined): TraefikRouter["tls"] {
+  const normalized = normalizeCertResolver(certResolver);
+  return normalized ? { certResolver: normalized } : {};
+}
 function serviceIdentifier(input: ServicePreviewRequest, domain: Domain): string {
   if (input.hostnameMode === "apex") return domain.domain.replace(/\./g, "-");
   if (input.hostnameMode === "custom") {
@@ -198,7 +209,7 @@ async function buildSlice(input: ServicePreviewRequest): Promise<ServiceConfigSl
     service: serviceName,
     ...(middlewareNames.length > 0 && { middlewares: middlewareNames }),
     ...(entrypoint && { entryPoints: [entrypoint] }),
-    tls: { certResolver: domain.certResolver },
+    tls: routerTlsConfig(domain.certResolver),
   };
   const routers: Record<string, TraefikRouter> = { [routerName]: router };
 
@@ -209,8 +220,8 @@ async function buildSlice(input: ServicePreviewRequest): Promise<ServiceConfigSl
     const advancedTls = advancedRouter.tls === false
       ? undefined
       : advancedRouter.certResolver
-        ? { certResolver: advancedRouter.certResolver }
-        : { certResolver: domain.certResolver };
+        ? routerTlsConfig(advancedRouter.certResolver)
+        : routerTlsConfig(domain.certResolver);
 
     routers[`${routerName}-${safeName(advancedRouter.name)}`] = {
       rule: advancedRouter.rule,

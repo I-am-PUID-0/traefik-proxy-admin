@@ -66,7 +66,7 @@ certificatesResolvers:
         delayBeforeCheck: 10
 ```
 
-Match the certificate resolver name in TPA domain settings.
+Match the certificate resolver name in TPA domain settings when Traefik should issue certificates. Leave the resolver blank when an upstream layer, such as Cloudflare Tunnel, handles public TLS and Traefik only needs TLS enabled locally.
 
 ## Live Traefik API Discovery
 

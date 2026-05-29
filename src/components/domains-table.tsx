@@ -88,7 +88,7 @@ export function DomainsTable({ domains, onEdit, onDelete }: DomainsTableProps) {
                   </TableCell>
                   <TableCell>
                     <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                      {domain.certResolver}
+                      {domain.certResolver || "None"}
                     </code>
                   </TableCell>
                   <TableCell className="text-center">

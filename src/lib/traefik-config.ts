@@ -225,6 +225,24 @@ function bypassRule(hostRules: string, rule: string): string {
   return /\bHost(?:Regexp)?\s*\(/.test(trimmed) ? trimmed : `${hostRules} && (${trimmed})`;
 }
 
+function normalizeCertResolver(value: string | null | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed.toLowerCase() === "none") return undefined;
+  return trimmed;
+}
+
+function routerTlsConfig(
+  certResolver: string | null | undefined,
+  domains?: NonNullable<TraefikRouter["tls"]>["domains"],
+): TraefikRouter["tls"] {
+  const normalized = normalizeCertResolver(certResolver);
+  if (!normalized) return {};
+  return {
+    certResolver: normalized,
+    ...(domains && domains.length > 0 && { domains }),
+  };
+}
+
 /**
  * Generate service identifier based on hostname mode
  */
@@ -448,7 +466,7 @@ async function createTraefikService(
     const advancedTls = advancedRouter.tls === false
       ? undefined
       : advancedRouter.certResolver
-        ? { certResolver: advancedRouter.certResolver }
+        ? routerTlsConfig(advancedRouter.certResolver)
         : tlsConfig;
 
     config.http.routers[`${routerName}-${safeName(advancedRouter.name)}`] = {
@@ -509,45 +527,33 @@ async function createTraefikService(
  * Determine TLS configuration for a service based on hostname mode and certificate configs
  */
 function determineTlsConfig(service: Service, domain: Domain, hostnames: string[]): TraefikRouter['tls'] {
-  // If domain uses wildcard certificates and service is in subdomain mode, use wildcard
+  // A blank/none resolver keeps TLS enabled without asking Traefik ACME to issue certificates.
   if (domain.useWildcardCert && service.hostnameMode === 'subdomain') {
-    return {
-      certResolver: domain.certResolver,
-      domains: [
-        {
-          main: domain.domain,
-          sans: [`*.${domain.domain}`],
-        },
-      ],
-    };
+    return routerTlsConfig(domain.certResolver, [
+      {
+        main: domain.domain,
+        sans: [`*.${domain.domain}`],
+      },
+    ]);
   }
 
-  // Check if any certificate configurations match the service hostnames
   const certificateConfigs = parseCertificateConfigs(domain.certificateConfigs);
 
   for (const certConfig of certificateConfigs) {
-    // Check if this certificate covers any of the service hostnames
     const certDomains = [certConfig.main, ...(certConfig.sans || [])];
     const hasMatchingDomain = hostnames.some(hostname => certDomains.includes(hostname));
 
     if (hasMatchingDomain) {
-      return {
-        certResolver: certConfig.certResolver,
-        domains: [
-          {
-            main: certConfig.main,
-            sans: certConfig.sans,
-          },
-        ],
-      };
+      return routerTlsConfig(certConfig.certResolver, [
+        {
+          main: certConfig.main,
+          sans: certConfig.sans,
+        },
+      ]);
     }
   }
 
-  // Fallback to domain's default certificate resolver without specific domains
-  // This will cause Traefik to automatically request certificates for the hostnames
-  return {
-    certResolver: domain.certResolver,
-  };
+  return routerTlsConfig(domain.certResolver);
 }
 
 /**
@@ -558,6 +564,8 @@ function createWildcardCertTrigger(
   globalConfig: GlobalTraefikConfig,
   config: TraefikConfig
 ): void {
+  if (!normalizeCertResolver(domain.certResolver)) return;
+
   // Create unique names for this domain
   const domainSafe = domain.domain.replace(/\./g, '-');
   const wildcardServiceName = `wildcard-cert-trigger-${domainSafe}`;
@@ -599,15 +607,12 @@ function createWildcardCertTrigger(
     service: wildcardServiceName,
     ...(wildcardMiddlewares.length > 0 && { middlewares: wildcardMiddlewares }),
     ...(globalConfig.defaultEntrypoint && { entryPoints: [globalConfig.defaultEntrypoint] }),
-    tls: {
-      certResolver: domain.certResolver,
-      domains: [
-        {
-          main: domain.domain,
-          sans: [`*.${domain.domain}`],
-        },
-      ],
-    },
+    tls: routerTlsConfig(domain.certResolver, [
+      {
+        main: domain.domain,
+        sans: [`*.${domain.domain}`],
+      },
+    ]),
   };
   config.http.routers[wildcardRouterName] = wildcardRouter;
 }
@@ -623,6 +628,8 @@ function createCertificateConfigTriggers(
   const certificateConfigs = parseCertificateConfigs(domain.certificateConfigs);
 
   for (const certConfig of certificateConfigs) {
+    if (!normalizeCertResolver(certConfig.certResolver)) continue;
+
     // Create unique names for this certificate config
     const certConfigSafe = `${certConfig.name.replace(/[^a-zA-Z0-9]/g, '-')}-${certConfig.main.replace(/\./g, '-')}`;
     const certServiceName = `cert-trigger-${certConfigSafe}`;
@@ -668,15 +675,12 @@ function createCertificateConfigTriggers(
       service: certServiceName,
       ...(certMiddlewares.length > 0 && { middlewares: certMiddlewares }),
       ...(globalConfig.defaultEntrypoint && { entryPoints: [globalConfig.defaultEntrypoint] }),
-      tls: {
-        certResolver: certConfig.certResolver,
-        domains: [
-          {
-            main: certConfig.main,
-            sans: certConfig.sans,
-          },
-        ],
-      },
+      tls: routerTlsConfig(certConfig.certResolver, [
+        {
+          main: certConfig.main,
+          sans: certConfig.sans,
+        },
+      ]),
     };
     config.http.routers[certRouterName] = certRouter;
   }

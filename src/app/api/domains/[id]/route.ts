@@ -40,7 +40,7 @@ export async function PUT(
       domain: body.domain,
       description: body.description || null,
       useWildcardCert: body.useWildcardCert ?? true,
-      certResolver: body.certResolver || "letsencrypt",
+      certResolver: typeof body.certResolver === "string" ? body.certResolver.trim() : "",
       certificateConfigs: body.certificateConfigs ? JSON.stringify(body.certificateConfigs) : null,
       isDefault: body.isDefault ?? false,
     };

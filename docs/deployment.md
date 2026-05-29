@@ -52,7 +52,7 @@ Use `ADMIN_COOKIE_DOMAIN` only when the admin UI itself must share login session
 2. Start Traefik Proxy Admin with the required environment.
 3. Open the admin UI.
 4. Create the first local admin account.
-5. Configure domains, certificate resolver names, and global defaults.
+5. Configure domains, certificate resolver names if Traefik should issue certificates, and global defaults. Leave the resolver blank when another layer handles public TLS.
 6. Add Traefik's HTTP provider endpoint for `/api/traefik/config`.
 7. Add services and verify generated config from the Traefik Live page.
 

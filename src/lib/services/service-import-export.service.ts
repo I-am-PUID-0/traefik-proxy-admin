@@ -174,7 +174,7 @@ async function ensureDomainForImport(domainData: ExportedDomainData) {
     domain: domainName,
     description: typeof domainData.description === "string" ? domainData.description : null,
     useWildcardCert: normalizeBoolean(domainData.useWildcardCert, true),
-    certResolver: normalizeString(domainData.certResolver) || "letsencrypt",
+    certResolver: normalizeString(domainData.certResolver),
     certificateConfigs: stringifyJsonField(domainData.certificateConfigs),
     isDefault: false,
   });
