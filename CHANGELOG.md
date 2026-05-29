@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.15.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.14.0...v1.15.0) (2026-05-29)
+
+
+### Features
+
+* **cookie:** add ADMIN_COOKIE_SECURE option for configurable cookie security ([e7396c0](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/e7396c0c3e75f5860d87597048b1866e2a067204))
+
 ## [1.14.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.13.0...v1.14.0) (2026-05-29)
 
 
