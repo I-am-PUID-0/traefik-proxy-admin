@@ -62,13 +62,13 @@ export async function GET(request: NextRequest) {
     const ssoConfig = securityConfigs.find((config) => config.securityType === "sso");
 
     if (!sessionToken) {
-      return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
+      return ssoConfig ? await ssoRequiredResponse(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
     }
 
     const session = await sessionManager.getSession(sessionToken, getSessionRequestContext(request, originalUri));
 
     if (!session || session.serviceId !== serviceId || session.authMethod === "bypass_observed") {
-      return ssoConfig ? await redirectToSSOLogin(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
+      return ssoConfig ? await ssoRequiredResponse(request, serviceId, originalUri, service, domain) : unauthorized(sharedLinkConfig);
     }
 
     if (serviceAuthTicket) {
@@ -175,7 +175,26 @@ function getServiceSessionExpiry(service: Service) {
   return new Date(service.enabledAt.getTime() + service.enableDurationMinutes * 60 * 1000);
 }
 
-async function redirectToSSOLogin(
+async function ssoRequiredResponse(
+  request: NextRequest,
+  serviceId: string,
+  originalUri: string,
+  service: Service,
+  domain: Domain,
+) {
+  const loginUrl = await buildSSOLoginUrl(request, serviceId, originalUri, service, domain);
+
+  if (isInteractiveBrowserRequest(request, originalUri)) {
+    return NextResponse.redirect(loginUrl, { status: 302 });
+  }
+
+  return NextResponse.json(
+    { error: "SSO session required", loginUrl: loginUrl.toString() },
+    { status: 401, headers: { "X-TPA-Login-Url": loginUrl.toString() } },
+  );
+}
+
+async function buildSSOLoginUrl(
   request: NextRequest,
   serviceId: string,
   originalUri: string,
@@ -185,7 +204,28 @@ async function redirectToSSOLogin(
   const loginUrl = new URL("/api/auth/sso/login", await getAdminPublicBaseUrl(request));
   loginUrl.searchParams.set("serviceId", serviceId);
   loginUrl.searchParams.set("returnTo", getOriginalRequestUrl(request, originalUri, service, domain));
-  return NextResponse.redirect(loginUrl, { status: 302 });
+  return loginUrl;
+}
+
+function isInteractiveBrowserRequest(request: NextRequest, originalUri: string) {
+  if (isDirectVerifierRequest(originalUri)) return true;
+
+  const accept = request.headers.get("Accept") || "";
+  const mode = request.headers.get("Sec-Fetch-Mode") || "";
+  const destination = request.headers.get("Sec-Fetch-Dest") || "";
+  const requestedWith = request.headers.get("X-Requested-With") || "";
+
+  if (requestedWith.toLowerCase() === "xmlhttprequest") return false;
+  if (destination && destination !== "document") return false;
+  if (mode && mode !== "navigate") return false;
+  if (accept.includes("text/html")) return true;
+
+  try {
+    const url = new URL(originalUri || "/", "https://example.invalid");
+    return !url.pathname.startsWith("/api/");
+  } catch {
+    return false;
+  }
 }
 
 async function getAdminPublicBaseUrl(request: NextRequest) {
