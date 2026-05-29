@@ -122,6 +122,7 @@ Do not set broad public ranges. The allowlist is intended for private Docker, VP
 Use host-only cookies unless cross-subdomain behavior is required.
 
 - `ADMIN_COOKIE_DOMAIN` applies to the admin session cookie `tpa-admin-session`.
+- `ADMIN_COOKIE_SECURE` controls whether the admin session cookie requires HTTPS. It defaults to production-safe secure cookies; set it to `false` only for trusted plain-HTTP local or LAN access.
 - `AUTH_COOKIE_DOMAIN` applies to service forwardAuth sessions such as `traefik-session`.
 
 For sibling admin or service subdomains, a parent cookie domain can be used:

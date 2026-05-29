@@ -261,10 +261,17 @@ export async function authenticateLocalAdminUser(username: string, password: str
   return valid ? user : null;
 }
 
+function adminCookieSecure() {
+  const override = process.env.ADMIN_COOKIE_SECURE?.trim().toLowerCase();
+  if (override === "true") return true;
+  if (override === "false") return false;
+  return process.env.NODE_ENV === "production";
+}
+
 export function adminCookieOptions(maxAgeSeconds?: number) {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: adminCookieSecure(),
     sameSite: "lax" as const,
     path: "/",
     ...(process.env.ADMIN_COOKIE_DOMAIN ? { domain: process.env.ADMIN_COOKIE_DOMAIN } : {}),
