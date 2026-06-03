@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.16.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.15.0...v1.16.0) (2026-06-03)
+
+
+### Features
+
+* **auth:** implement isDirectVerifierRequest function for improved request handling ([eee69ea](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/eee69ea5adcd9e73c9f13274b60280dec62a55ca))
+
 ## [1.15.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.14.0...v1.15.0) (2026-05-29)
 
 
