@@ -23,6 +23,8 @@ RUN set -e; \
   fi; \
   curl -fsSL "https://github.com/traefik/traefik/releases/download/v${TRAEFIK_VERSION}/traefik_v${TRAEFIK_VERSION}_linux_${arch}.tar.gz" -o /tmp/traefik.tgz; \
   tar -xzf /tmp/traefik.tgz -C /usr/local/bin traefik; \
+  curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${arch}" -o /usr/local/bin/cloudflared; \
+  chmod +x /usr/local/bin/cloudflared; \
   rm /tmp/traefik.tgz
 
 COPY start-services.sh /usr/local/bin/start-services.sh

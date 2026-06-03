@@ -7,6 +7,77 @@ POSTGRES_USER="${POSTGRES_USER:-admin}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-password}"
 WORKSPACE_FOLDER="${WORKSPACE_FOLDER:-/workspaces/workspace}"
 POSTGRES_RUN_USER="${POSTGRES_RUN_USER:-postgres}"
+ENV_FILE="${ENV_FILE:-${WORKSPACE_FOLDER}/.env}"
+CLOUDFLARED_PID_FILE="${CLOUDFLARED_PID_FILE:-/var/run/tpa-dev-cloudflared.pid}"
+
+read_env_value() {
+  key="$1"
+  file="$2"
+
+  if [ ! -f "${file}" ]; then
+    return 0
+  fi
+
+  awk -v key="${key}" '
+    $0 ~ "^[[:space:]]*#" { next }
+    $0 ~ "^[[:space:]]*$" { next }
+    {
+      line = $0
+      sub(/^[[:space:]]*export[[:space:]]+/, "", line)
+      split(line, parts, "=")
+      name = parts[1]
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", name)
+      if (name != key) next
+      value = substr(line, index(line, "=") + 1)
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+      if ((substr(value, 1, 1) == "\"" && substr(value, length(value), 1) == "\"") || (substr(value, 1, 1) == "'"'"'" && substr(value, length(value), 1) == "'"'"'")) {
+        value = substr(value, 2, length(value) - 2)
+      }
+      print value
+      exit
+    }
+  ' "${file}"
+}
+
+cloudflared_token() {
+  token="${CLOUDFLARED_TUNNEL_TOKEN:-${TUNNEL_TOKEN:-}}"
+
+  if [ -z "${token}" ]; then
+    token="$(read_env_value CLOUDFLARED_TUNNEL_TOKEN "${ENV_FILE}")"
+  fi
+
+  if [ -z "${token}" ]; then
+    token="$(read_env_value TUNNEL_TOKEN "${ENV_FILE}")"
+  fi
+
+  printf '%s' "${token}"
+}
+
+process_is_running() {
+  pid_file="$1"
+
+  if [ ! -f "${pid_file}" ]; then
+    return 1
+  fi
+
+  pid="$(cat "${pid_file}" 2>/dev/null || true)"
+  if [ -z "${pid}" ]; then
+    return 1
+  fi
+
+  kill -0 "${pid}" >/dev/null 2>&1
+}
+
+stop_managed_cloudflared() {
+  if ! process_is_running "${CLOUDFLARED_PID_FILE}"; then
+    rm -f "${CLOUDFLARED_PID_FILE}"
+    return 0
+  fi
+
+  pid="$(cat "${CLOUDFLARED_PID_FILE}")"
+  kill "${pid}" >/dev/null 2>&1 || true
+  rm -f "${CLOUDFLARED_PID_FILE}"
+}
 
 PG_BIN_DIR=""
 if command -v pg_config >/dev/null 2>&1; then
@@ -78,11 +149,33 @@ if ! pgrep -x traefik >/dev/null 2>&1; then
     >/var/log/traefik.log 2>&1 &
 fi
 
-cat <<'EOF'
+
+cloudflared_status="disabled"
+cloudflared_token_value="$(cloudflared_token)"
+if [ -n "${cloudflared_token_value}" ]; then
+  if ! command -v cloudflared >/dev/null 2>&1; then
+    echo "cloudflared tunnel token is set, but cloudflared is not installed in this devcontainer." >&2
+  elif process_is_running "${CLOUDFLARED_PID_FILE}"; then
+    cloudflared_status="already running"
+  else
+    nohup cloudflared tunnel --no-autoupdate run --token "${cloudflared_token_value}" >/var/log/cloudflared.log 2>&1 &
+    echo "$!" > "${CLOUDFLARED_PID_FILE}"
+    cloudflared_status="started"
+  fi
+else
+  stop_managed_cloudflared
+fi
+unset cloudflared_token_value
+
+cat <<EOF
 Dev services are available at:
 - App: http://localhost:3000
 - Traefik dashboard: http://localhost:8080
 - Traefik web entrypoint: http://localhost:8081
+- Cloudflared tunnel: ${cloudflared_status}
+
+Cloudflared is opt-in. Set CLOUDFLARED_TUNNEL_TOKEN or TUNNEL_TOKEN in .env to start it.
+Point the Cloudflare Tunnel origin at https://localhost:8081 with TLS verification disabled.
 
 Common commands:
 - pnpm dev (start dev server)

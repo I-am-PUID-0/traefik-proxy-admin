@@ -36,6 +36,33 @@ TRAEFIK_API_URL=http://traefik.example.internal:8080
 
 If unset in development, TPA falls back to the devcontainer Traefik API at `http://localhost:8080`.
 
+## Optional Cloudflare Tunnel
+
+The devcontainer can start a Cloudflare Tunnel automatically when a tunnel token is present in your local `.env`. Leave both variables unset to keep `cloudflared` disabled:
+
+```env
+CLOUDFLARED_TUNNEL_TOKEN=ey...
+# TUNNEL_TOKEN=ey...
+```
+
+`TUNNEL_TOKEN` is accepted as an alias for Cloudflare's default naming. The startup script reads only these keys from `.env`; it does not source the entire file.
+
+Point the Cloudflare Tunnel origin at the devcontainer Traefik service entrypoint:
+
+```text
+https://localhost:8081
+```
+
+Enable **No TLS Verify** in Cloudflare for the local Traefik certificate. Do not point the tunnel at `http://localhost:8080`; that is Traefik's dashboard/API port and can permanently redirect service hostnames to `/dashboard/` in the browser cache.
+
+Cloudflared writes logs to:
+
+```text
+/var/log/cloudflared.log
+```
+
+Restart the devcontainer after adding or removing the token so `.devcontainer/start-services.sh` can start or stop the managed tunnel process.
+
 ## Reverse Proxying Next Dev
 
 When accessing `pnpm dev` through Traefik or another reverse proxy, Next.js blocks dev resources from unknown origins. Add the proxied development host to your local `.env`:
