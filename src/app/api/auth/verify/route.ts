@@ -9,6 +9,7 @@ import type { Domain, Service } from "@/lib/db/schema";
 import { getGlobalConfig } from "@/lib/app-config";
 import { consumeServiceAuthTicket, SERVICE_AUTH_TICKET_PARAM } from "@/lib/service-auth-tickets";
 import { getSessionRequestContext } from "@/lib/session-request-context";
+import { isDirectVerifierRequest } from "@/lib/auth-verifier-routing";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     const securityConfigs = await ServiceSecurityService.getEnabledSecurityConfigsForService(serviceId);
 
     if (securityConfigs.length === 0) {
-      if (isDirectVerifierRequest(originalUri)) {
+      if (isDirectVerifierRequest(originalUri, forwardedUri)) {
         return NextResponse.redirect(getServicePublicUrl(request, service, domain), { status: 302 });
       }
 
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 });
     }
 
-    if (isDirectVerifierRequest(originalUri)) {
+    if (isDirectVerifierRequest(originalUri, forwardedUri)) {
       return NextResponse.redirect(getServicePublicUrl(request, service, domain), { status: 302 });
     }
 
@@ -208,7 +209,7 @@ async function buildSSOLoginUrl(
 }
 
 function isInteractiveBrowserRequest(request: NextRequest, originalUri: string) {
-  if (isDirectVerifierRequest(originalUri)) return true;
+  if (isDirectVerifierRequest(originalUri, request.headers.get("X-Forwarded-Uri"))) return true;
 
   const accept = request.headers.get("Accept") || "";
   const mode = request.headers.get("Sec-Fetch-Mode") || "";
@@ -259,7 +260,7 @@ function getOriginalRequestUrl(
   service: Service,
   domain: Domain,
 ) {
-  if (isDirectVerifierRequest(originalUri)) {
+  if (isDirectVerifierRequest(originalUri, request.headers.get("X-Forwarded-Uri"))) {
     return getServicePublicUrl(request, service, domain).toString();
   }
 
@@ -278,15 +279,6 @@ function getCleanOriginalUrl(
   cleanUrl.searchParams.delete("traefik-token");
   cleanUrl.searchParams.delete(SERVICE_AUTH_TICKET_PARAM);
   return cleanUrl.toString();
-}
-
-function isDirectVerifierRequest(originalUri: string) {
-  try {
-    const url = new URL(originalUri || "/", "https://example.invalid");
-    return url.pathname.startsWith("/api/auth/verify");
-  } catch {
-    return true;
-  }
 }
 
 function getServicePublicUrl(
