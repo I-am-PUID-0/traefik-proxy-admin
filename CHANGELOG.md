@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.17.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.16.0...v1.17.0) (2026-06-19)
+
+
+### Features
+
+* **ui:** use local geist package fonts instead of next/font/google ([6be8113](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/6be8113e7c97cd78d3bddeda2b4cc83c93fbf20b)), closes [#47](https://github.com/I-am-PUID-0/traefik-proxy-admin/issues/47)
+
 ## [1.16.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.15.0...v1.16.0) (2026-06-03)
 
 
