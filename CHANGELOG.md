@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.18.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.17.0...v1.18.0) (2026-06-25)
+
+
+### Features
+
+* **auth:** enhance SSO role mapping and access control ([82f5c73](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/82f5c73fc89ecc2cd7f7f68253b8f99bb9a11598))
+
 ## [1.17.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.16.0...v1.17.0) (2026-06-19)
 
 
