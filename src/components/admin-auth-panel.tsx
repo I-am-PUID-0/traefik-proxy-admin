@@ -82,6 +82,9 @@ export function AdminAuthPanel() {
   }, []);
 
   const localUsers = config?.localUsers || [];
+  const hasSsoRoleMappings = Boolean(config && ROLES.some((role) =>
+    config.roles[role].users.length > 0 || config.roles[role].groups.length > 0,
+  ));
   const roleHelp = useMemo(
     () => ({
       viewer: "Can inspect services and config without making changes.",
@@ -580,8 +583,13 @@ export function AdminAuthPanel() {
 
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-gray-100">SSO Role Mapping</h3>
-              <p className="text-sm text-muted-foreground">Map OIDC users or groups into TPA roles. Values are comma-separated.</p>
+              <p className="text-sm text-muted-foreground">Map OIDC users or groups into TPA roles. Blank mappings deny admin SSO access.</p>
             </div>
+            {!hasSsoRoleMappings && (
+              <div className="rounded-md border border-amber-500/40 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                Add at least one user email, subject, or group before relying on SSO. Provider login tests can succeed even when TPA admin access will be denied.
+              </div>
+            )}
             <div className="grid gap-4 lg:grid-cols-3">
               {ROLES.map((role) => (
                 <div key={role} className="rounded-md border p-4 space-y-3">

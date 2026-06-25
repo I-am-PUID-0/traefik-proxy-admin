@@ -90,7 +90,7 @@ The provider config shape is:
 }
 ```
 
-For providers that expose groups, include the group scope required by that provider and map those group names into admin roles. Manage the global provider, selected admin auth provider, session duration, and SSO role mappings from **Security -> Admin Authentication**. If a self-hosted provider resolves to a private/internal address, add its hostname to `SSO_ENDPOINT_ALLOW_HOSTS` so TPA is allowed to contact its token and userinfo endpoints.
+For providers that expose groups, include the group scope required by that provider and map those group names into admin roles. Manage the global provider, selected admin auth provider, session duration, and SSO role mappings from **Security -> Admin Authentication**. TPA admin SSO is deny-by-default: a successful provider login only proves identity, and the user still needs an explicit user or group role mapping in TPA. If a self-hosted provider resolves to a private/internal address, add its hostname to `SSO_ENDPOINT_ALLOW_HOSTS` so TPA is allowed to contact its token and userinfo endpoints.
 
 Use the **Provider preset** selector for known OIDC providers. A preset fills endpoint URLs and default scopes only; client ID, client secret, redirect URI, tenant, realm, and any self-hosted provider hostname still come from your OAuth app registration. Choose **Custom / Generic OIDC** when entering every endpoint manually.
 
@@ -144,11 +144,11 @@ Example SSO role mapping:
 }
 ```
 
-If SSO is selected and no role mappings are configured, any successfully authenticated SSO user receives `admin`. That makes first setup possible, but you should add explicit user/group role rules immediately.
+If SSO is selected and no role mappings are configured, TPA denies admin SSO access. Add at least one explicit admin user email, OIDC subject, or group before relying on SSO, and keep local account fallback available until you verify the mapped account can sign in.
 
 ## Lockout Recovery
 
-If SSO is selected but the saved global SSO provider is missing, disabled, or misconfigured, temporarily force local auth with an environment override:
+If SSO is selected but the saved global SSO provider is missing, disabled, misconfigured, or the role mapping denies every user, temporarily force local auth with an environment override:
 
 ```env
 ADMIN_AUTH_PROVIDER=local

@@ -8,7 +8,7 @@ Before exposing a production deployment, verify these controls:
 
 - Set a strong `ADMIN_AUTH_SECRET` and keep `ADMIN_AUTH_ENABLED=true`.
 - Use `ADMIN_AUTH_PROVIDER=local` until at least one local admin exists and you have verified SSO.
-- If SSO is enabled, configure explicit admin role mappings for `viewer`, `editor`, and `admin` users or groups.
+- If SSO is enabled, configure explicit admin role mappings for every user or group that should access TPA.
 - Keep **Allow local account sign-in** enabled only when you want a break-glass local login path.
 - Set `ADMIN_COOKIE_DOMAIN` only when the admin UI must share a session across sibling subdomains.
 - Set `AUTH_COOKIE_DOMAIN` only when service forwardAuth sessions must work across sibling service subdomains.
@@ -44,7 +44,7 @@ After initial setup, you can switch the provider to SSO from **Security -> Admin
 
 ## SSO Role Mapping
 
-If no SSO role mappings are configured, any successfully authenticated SSO user receives `admin`. This is useful for first setup but too permissive for ongoing use.
+Admin SSO is deny-by-default. If no SSO role mappings are configured, provider login can still succeed, but TPA will not create an admin session.
 
 Recommended pattern:
 

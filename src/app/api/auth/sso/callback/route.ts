@@ -11,6 +11,7 @@ import {
   getAdminAuthConfig,
   resolveAdminRole,
 } from "@/lib/admin-auth";
+import { hasAdminRoleMappings } from "@/lib/admin-role-mapping";
 import { ADMIN_SESSION_COOKIE, adminAuthEnabled, type AdminRole } from "@/lib/admin-auth-shared";
 import { rateLimit } from "@/lib/request-guards";
 import { LEGACY_SSO_STATE_COOKIES, SSO_STATE_COOKIES } from "@/lib/sso-state-cookies";
@@ -99,6 +100,7 @@ async function handleTestCallback(
     localUsers: [],
     roles: stateData.roleConfig.roles,
   }, userInfo) : null;
+  const hasMappings = stateData.roleConfig ? hasAdminRoleMappings(stateData.roleConfig) : null;
 
   const payload = {
     ok: true,
@@ -110,6 +112,10 @@ async function handleTestCallback(
     },
     role,
     roleAllowed: stateData.roleConfig ? Boolean(role) : null,
+    roleMappingConfigured: hasMappings,
+    accessNote: stateData.roleConfig && !hasMappings
+      ? "No admin SSO role mappings are configured. TPA admin access will be denied until this user or one of their groups is mapped to a role."
+      : undefined,
   };
 
   const response = new NextResponse(renderTestResult(payload), {

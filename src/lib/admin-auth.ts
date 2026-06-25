@@ -12,13 +12,12 @@ import {
   type AdminRole,
   type AdminSessionClaims,
 } from "@/lib/admin-auth-shared";
+import {
+  resolveAdminRole as resolveMappedAdminRole,
+  type RoleRule,
+} from "@/lib/admin-role-mapping";
 
 export type AdminAuthProvider = "local" | "sso";
-
-export interface RoleRule {
-  users?: string[];
-  groups?: string[];
-}
 
 export interface LocalAdminUser {
   username: string;
@@ -130,26 +129,11 @@ export async function getAdminAuthConfig(): Promise<AdminAuthConfig> {
   };
 }
 
-function matchesRule(rule: RoleRule, userInfo: { sub: string; name?: string; email?: string; groups?: string[] }) {
-  const identities = [userInfo.sub, userInfo.name, userInfo.email].filter(Boolean);
-  const userAllowed = (rule.users || []).some((user) => identities.includes(user));
-  const groupAllowed = (rule.groups || []).some((group) => userInfo.groups?.includes(group));
-  return userAllowed || groupAllowed;
-}
-
 export function resolveAdminRole(
   config: AdminAuthConfig,
   userInfo: { sub: string; name?: string; email?: string; groups?: string[] },
 ): AdminRole | null {
-  if (matchesRule(config.roles.admin, userInfo)) return "admin";
-  if (matchesRule(config.roles.editor, userInfo)) return "editor";
-  if (matchesRule(config.roles.viewer, userInfo)) return "viewer";
-
-  const hasRules = (["admin", "editor", "viewer"] as AdminRole[]).some((role) =>
-    (config.roles[role].users || []).length > 0 || (config.roles[role].groups || []).length > 0,
-  );
-
-  return hasRules ? null : "admin";
+  return resolveMappedAdminRole(config, userInfo);
 }
 
 export async function hasLocalAdminUsers() {
