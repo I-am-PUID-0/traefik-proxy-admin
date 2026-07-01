@@ -11,7 +11,6 @@ export async function GET() {
       .select({
         id: sessions.id,
         serviceId: sessions.serviceId,
-        sessionToken: sessions.sessionToken,
         userIdentifier: sessions.userIdentifier,
         authMethod: sessions.authMethod,
         clientIp: sessions.clientIp,

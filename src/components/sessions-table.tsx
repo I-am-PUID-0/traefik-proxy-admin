@@ -34,7 +34,6 @@ import { CountdownTimer } from "@/components/countdown-timer";
 export interface SessionInfo {
   id: string;
   serviceId: string;
-  sessionToken: string;
   userIdentifier?: string | null;
   authMethod?: string | null;
   clientIp?: string | null;
@@ -74,6 +73,7 @@ interface SessionsTableProps {
 }
 
 type StatusFilter = "all" | "active" | "expired";
+type AuthMethodFilter = "all" | "user" | "sso" | "shared_link" | "bypass_observed" | "unknown";
 type SortOption = "last-desc" | "last-asc" | "created-desc" | "created-asc" | "expires-asc" | "service-asc" | "user-asc" | "access-desc" | "risk-desc";
 type PageSize = "25" | "50" | "100" | "all";
 
@@ -110,6 +110,28 @@ function formatAuthMethod(value: string | null | undefined) {
   if (value === "sso") return "SSO";
   if (value === "bypass_observed") return "Observed bypass";
   return "Unknown auth";
+}
+
+function formatAuthMethodFilter(value: AuthMethodFilter) {
+  if (value === "all") return "All session kinds";
+  if (value === "user") return "Normal user sessions";
+  if (value === "unknown") return "Unknown auth";
+  return formatAuthMethod(value);
+}
+
+function isObservedBypassSession(session: SessionInfo) {
+  return session.authMethod === "bypass_observed";
+}
+
+function isKnownAuthMethod(value: string | null | undefined) {
+  return value === "sso" || value === "shared_link" || value === "bypass_observed";
+}
+
+function matchesAuthMethodFilter(session: SessionInfo, filter: AuthMethodFilter) {
+  if (filter === "all") return true;
+  if (filter === "user") return !isObservedBypassSession(session);
+  if (filter === "unknown") return !isKnownAuthMethod(session.authMethod);
+  return session.authMethod === filter;
 }
 
 function formatRiskFlag(value: string) {
@@ -156,6 +178,30 @@ function getUserHint(session: SessionInfo) {
   return "User identifier";
 }
 
+function formatIssuer(value: string | null | undefined) {
+  if (!value) return "";
+  try {
+    return new URL(value).host;
+  } catch {
+    return value;
+  }
+}
+
+function getAuthContextSummary(session: SessionInfo) {
+  if (session.authMethod === "bypass_observed") return "Bypass observation only";
+  if (session.authMethod === "shared_link") return "Shared-link access";
+  if (session.authMethod === "sso") {
+    const issuer = formatIssuer(session.ssoIssuer);
+    const groupCount = parseJsonArray(session.ssoGroups).length;
+    const parts = [
+      issuer ? `Issuer ${issuer}` : "",
+      groupCount > 0 ? `${groupCount} group${groupCount === 1 ? "" : "s"}` : "",
+    ].filter(Boolean);
+    return parts.join(" / ") || "Provider identity captured";
+  }
+  return "No auth method recorded";
+}
+
 export function SessionsTable({
   sessions,
   loading,
@@ -168,6 +214,7 @@ export function SessionsTable({
   const [deletingAll, setDeletingAll] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [authMethodFilter, setAuthMethodFilter] = useState<AuthMethodFilter>("all");
   const [serviceFilter, setServiceFilter] = useState("all");
   const [sortOption, setSortOption] = useState<SortOption>("last-desc");
   const [pageSize, setPageSize] = useState<PageSize>("50");
@@ -175,14 +222,17 @@ export function SessionsTable({
   const sessionStats = useMemo(() => {
     const active = sessions.filter((session) => !isExpired(session)).length;
     const serviceCount = new Set(sessions.map((session) => session.serviceId)).size;
-    const userCount = new Set(sessions.map((session) => session.userIdentifier || "unknown")).size;
+    const bypassCount = sessions.filter(isObservedBypassSession).length;
+    const userSessions = sessions.filter((session) => !isObservedBypassSession(session));
+    const userCount = new Set(userSessions.map((session) => session.userIdentifier || "unknown")).size;
 
     return {
-      total: sessions.length,
       active,
       expired: sessions.length - active,
       serviceCount,
       userCount,
+      bypassCount,
+      userSessionCount: userSessions.length,
     };
   }, [sessions]);
 
@@ -199,6 +249,7 @@ export function SessionsTable({
         const expired = isExpired(session);
         if (statusFilter === "active" && expired) return false;
         if (statusFilter === "expired" && !expired) return false;
+        if (!matchesAuthMethodFilter(session, authMethodFilter)) return false;
         if (serviceFilter !== "all" && session.serviceId !== serviceFilter) return false;
 
         if (!normalizedQuery) return true;
@@ -209,6 +260,9 @@ export function SessionsTable({
           session.subdomain,
           session.domain,
           session.userIdentifier,
+          session.ssoEmail,
+          session.ssoName,
+          session.ssoGroups,
           session.clientIp,
           session.lastIp,
           session.userAgent,
@@ -252,11 +306,11 @@ export function SessionsTable({
             return new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime();
         }
       });
-  }, [sessions, searchQuery, serviceFilter, sortOption, statusFilter]);
+  }, [authMethodFilter, sessions, searchQuery, serviceFilter, sortOption, statusFilter]);
 
   const visibleSessions = pageSize === "all" ? filteredSessions : filteredSessions.slice(0, Number(pageSize));
   const hiddenByPageSize = filteredSessions.length - visibleSessions.length;
-  const hasActiveViewControls = Boolean(searchQuery.trim()) || statusFilter !== "all" || serviceFilter !== "all" || sortOption !== "last-desc" || pageSize !== "50";
+  const hasActiveViewControls = Boolean(searchQuery.trim()) || statusFilter !== "all" || authMethodFilter !== "all" || serviceFilter !== "all" || sortOption !== "last-desc" || pageSize !== "50";
 
   const handleDeleteSession = async (sessionId: string) => {
     setDeletingSession(sessionId);
@@ -279,6 +333,7 @@ export function SessionsTable({
   const resetViewControls = () => {
     setSearchQuery("");
     setStatusFilter("all");
+    setAuthMethodFilter("all");
     setServiceFilter("all");
     setSortOption("last-desc");
     setPageSize("50");
@@ -287,6 +342,11 @@ export function SessionsTable({
   const handleStatusFilterChange = (value: string) => {
     if (!value) return;
     setStatusFilter(value as StatusFilter);
+  };
+
+  const handleAuthMethodFilterChange = (value: string) => {
+    if (!value) return;
+    setAuthMethodFilter(value as AuthMethodFilter);
   };
 
   const handleServiceFilterChange = (value: string) => {
@@ -320,7 +380,7 @@ export function SessionsTable({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Active</p>
@@ -335,8 +395,8 @@ export function SessionsTable({
         </Card>
         <Card>
           <CardContent className="p-3">
-            <p className="text-xs text-muted-foreground">Total</p>
-            <p className="text-2xl font-semibold">{sessionStats.total}</p>
+            <p className="text-xs text-muted-foreground">User sessions</p>
+            <p className="text-2xl font-semibold">{sessionStats.userSessionCount}</p>
           </CardContent>
         </Card>
         <Card>
@@ -349,6 +409,12 @@ export function SessionsTable({
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Users</p>
             <p className="text-2xl font-semibold">{sessionStats.userCount}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3">
+            <p className="text-xs text-muted-foreground">Bypass</p>
+            <p className="text-2xl font-semibold">{sessionStats.bypassCount}</p>
           </CardContent>
         </Card>
       </div>
@@ -402,7 +468,7 @@ export function SessionsTable({
           ) : (
             <div className="space-y-4">
               <div className="rounded-md border bg-muted/20 p-3">
-                <div className="grid gap-3 xl:grid-cols-[minmax(240px,1fr)_150px_190px_190px_130px_auto] xl:items-center">
+                <div className="grid gap-3 xl:grid-cols-[minmax(220px,1fr)_150px_170px_190px_190px_130px_auto] xl:items-center">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -420,6 +486,19 @@ export function SessionsTable({
                       <SelectItem value="all">All statuses</SelectItem>
                       <SelectItem value="active">Active only</SelectItem>
                       <SelectItem value="expired">Expired only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={authMethodFilter} onValueChange={handleAuthMethodFilterChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Session kind" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All session kinds</SelectItem>
+                      <SelectItem value="user">Normal user sessions</SelectItem>
+                      <SelectItem value="sso">SSO only</SelectItem>
+                      <SelectItem value="shared_link">Shared link only</SelectItem>
+                      <SelectItem value="bypass_observed">Observed bypass only</SelectItem>
+                      <SelectItem value="unknown">Unknown auth only</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={serviceFilter} onValueChange={handleServiceFilterChange}>
@@ -468,6 +547,7 @@ export function SessionsTable({
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                   <span>Showing {visibleSessions.length} of {filteredSessions.length} matching sessions</span>
                   {hiddenByPageSize > 0 && <Badge variant="secondary">{hiddenByPageSize} hidden by page size</Badge>}
+                  {authMethodFilter !== "all" && <Badge variant="outline">{formatAuthMethodFilter(authMethodFilter)}</Badge>}
                   {sortOption === "service-asc" && <ArrowDownAZ className="h-4 w-4" />}
                   {sortOption === "user-asc" && <ArrowUpAZ className="h-4 w-4" />}
                 </div>
@@ -486,6 +566,8 @@ export function SessionsTable({
                     const serviceHost = getServiceHost(session);
                     const userLabel = getUserLabel(session);
                     const userHint = getUserHint(session);
+                    const authContext = getAuthContextSummary(session);
+                    const requestedHost = session.requestedHost || serviceHost || "-";
                     const riskFlags = getRiskFlags(session);
 
                     return (
@@ -496,11 +578,11 @@ export function SessionsTable({
                         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                           <div className="min-w-0 space-y-2">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="break-words text-base font-semibold">{session.serviceName || "Unknown Service"}</h3>
+                              <h3 className="wrap-break-word text-base font-semibold">{session.serviceName || "Unknown Service"}</h3>
                               <Badge variant={expired ? "secondary" : "default"}>{expired ? "Expired" : "Active"}</Badge>
                               <Badge variant="outline" title={userHint}>
                                 <User className="mr-1 h-3 w-3" />
-                                <span className="max-w-[260px] truncate">{userLabel}</span>
+                                <span className="max-w-65 truncate">{userLabel}</span>
                               </Badge>
                               <Badge variant="secondary">{formatAuthMethod(session.authMethod)}</Badge>
                               {riskFlags.length > 0 && (
@@ -561,11 +643,23 @@ export function SessionsTable({
                           </div>
                           <div>
                             <p className="flex items-center gap-1 text-xs text-muted-foreground"><Monitor className="h-3 w-3" /> User agent</p>
-                            <p className="break-words text-xs" title={session.lastUserAgent || session.userAgent || undefined}>{getUserAgentSummary(session)}</p>
+                            <p className="wrap-break-word text-xs" title={session.lastUserAgent || session.userAgent || undefined}>{getUserAgentSummary(session)}</p>
                           </div>
                           <div>
                             <p className="flex items-center gap-1 text-xs text-muted-foreground"><Activity className="h-3 w-3" /> Accesses</p>
                             <p>{session.accessCount || 0}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Auth context</p>
+                            <p className="wrap-break-word text-xs" title={authContext}>{authContext}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Requested host</p>
+                            <p className="break-all font-mono text-xs">{requestedHost}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Entrypoint</p>
+                            <p className="break-all font-mono text-xs">{session.entryPoint || "-"}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Last path</p>
