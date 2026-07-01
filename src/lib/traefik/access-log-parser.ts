@@ -21,9 +21,11 @@ export interface TraefikLogEntry {
   status?: number | null;
   originStatus?: number | null;
   clientIp?: string | null;
+  userAgent?: string | null;
   routerName?: string | null;
   serviceName?: string | null;
   durationMs?: number | null;
+  bytesWritten?: number | null;
   raw: string;
 }
 
@@ -77,12 +79,14 @@ function parseJsonLine(line: string, index: number): TraefikLogEntry | null {
       method: typeof parsed.RequestMethod === "string" ? parsed.RequestMethod : null,
       host: typeof parsed.RequestHost === "string" ? parsed.RequestHost : null,
       path: redactPath(parsed.RequestPath || parsed.RequestURI),
-      status: numberOrNull(parsed.DownstreamStatus || parsed.OriginStatus),
+      status: numberOrNull(parsed.DownstreamStatus ?? parsed.OriginStatus),
       originStatus: numberOrNull(parsed.OriginStatus),
       clientIp: firstIp(parsed.ClientHost || parsed.ClientAddr),
+      userAgent: typeof parsed.RequestUserAgent === "string" ? parsed.RequestUserAgent : null,
       routerName: typeof parsed.RouterName === "string" ? parsed.RouterName : null,
       serviceName: typeof parsed.ServiceName === "string" ? parsed.ServiceName : null,
-      durationMs: durationMs(parsed.Duration || parsed.OriginDuration),
+      durationMs: durationMs(parsed.Duration ?? parsed.OriginDuration),
+      bytesWritten: numberOrNull(parsed.DownstreamContentSize),
       raw: redactSensitiveText(line),
     };
   } catch {
@@ -142,9 +146,11 @@ function parseCommonLine(line: string, index: number): TraefikLogEntry {
     status: numberOrNull(tokens[5]),
     originStatus: numberOrNull(tokens[5]),
     clientIp: tokens[0] || null,
+    userAgent: tokens[8] && tokens[8] !== "-" ? tokens[8] : null,
     routerName: tokens[10] && tokens[10] !== "-" ? tokens[10] : null,
     serviceName: tokens[11] && tokens[11] !== "-" ? tokens[11] : null,
     durationMs: parseDurationToken(tokens[12]),
+    bytesWritten: numberOrNull(tokens[6]),
     raw: redactSensitiveText(line),
   };
 }

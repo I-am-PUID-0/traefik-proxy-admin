@@ -13,6 +13,8 @@ describe("parseTraefikAccessLogLine", () => {
     expect(entry.method).toBe("GET");
     expect(entry.path).toBe("/_phpinfo.php");
     expect(entry.status).toBe(404);
+    expect(entry.bytesWritten).toBe(19);
+    expect(entry.userAgent).toBe("curl/8.7.1");
     expect(entry.routerName).toBeNull();
     expect(entry.serviceName).toBeNull();
     expect(entry.durationMs).toBe(0);
@@ -24,8 +26,33 @@ describe("parseTraefikAccessLogLine", () => {
     );
 
     expect(entry.path).toBe("/api?token=REDACTED&safe=yes");
+    expect(entry.bytesWritten).toBe(19);
+    expect(entry.userAgent).toBe("curl/8.7.1");
     expect(entry.routerName).toBe("router@file");
     expect(entry.serviceName).toBe("service@file");
     expect(entry.durationMs).toBe(12);
+  });
+
+  it("parses useful JSON access log fields", () => {
+    const entry = parseTraefikAccessLogLine(JSON.stringify({
+      StartUTC: "2026-01-01T00:00:00Z",
+      RequestMethod: "POST",
+      RequestHost: "app.example.com",
+      RequestPath: "/login?code=abc123",
+      DownstreamStatus: 502,
+      OriginStatus: 502,
+      ClientHost: "203.0.113.10:49152",
+      RequestUserAgent: "ExampleClient/1.0",
+      RouterName: "app@http",
+      ServiceName: "app@http",
+      Duration: 37_000_000,
+      DownstreamContentSize: 512,
+    }));
+
+    expect(entry.path).toBe("/login?code=REDACTED");
+    expect(entry.clientIp).toBe("203.0.113.10");
+    expect(entry.userAgent).toBe("ExampleClient/1.0");
+    expect(entry.bytesWritten).toBe(512);
+    expect(entry.durationMs).toBe(37);
   });
 });

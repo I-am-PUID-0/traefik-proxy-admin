@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, FileText, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, FileText, RefreshCw, RotateCcw, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,9 +20,11 @@ interface TraefikLogEntry {
   status?: number | null;
   originStatus?: number | null;
   clientIp?: string | null;
+  userAgent?: string | null;
   routerName?: string | null;
   serviceName?: string | null;
   durationMs?: number | null;
+  bytesWritten?: number | null;
   raw: string;
 }
 
@@ -34,6 +36,25 @@ interface LogsResponse {
 }
 
 type StatusFilter = "all" | "2xx" | "3xx" | "4xx" | "5xx" | "errors";
+type LatencyFilter = "all" | "slow";
+type SortOption = "newest" | "oldest" | "slowest" | "status";
+
+const SLOW_REQUEST_MS = 1000;
+const PROBE_PATH_PATTERN = /(?:\/\.env|\/\.git|wp-admin|wp-login|phpinfo|cgi-bin|vendor\/phpunit|actuator|server-status)/i;
+const COMMON_LOG_MONTHS: Record<string, string> = {
+  Jan: "01",
+  Feb: "02",
+  Mar: "03",
+  Apr: "04",
+  May: "05",
+  Jun: "06",
+  Jul: "07",
+  Aug: "08",
+  Sep: "09",
+  Oct: "10",
+  Nov: "11",
+  Dec: "12",
+};
 
 function statusVariant(status?: number | null) {
   if (!status) return "secondary" as const;
@@ -51,11 +72,46 @@ function statusMatches(status: number | null | undefined, filter: StatusFilter) 
   return filter === `${firstDigit}xx`;
 }
 
+function normalizeTimestamp(value?: string | null) {
+  if (!value) return "-";
+  const common = value.match(/^(\d{1,2})\/([A-Z][a-z]{2})\/(\d{4}):(\d{2}:\d{2}:\d{2}) ([+-]\d{2})(\d{2})$/);
+  return common
+    ? `${common[3]}-${COMMON_LOG_MONTHS[common[2]] || "01"}-${common[1].padStart(2, "0")}T${common[4]}${common[5]}:${common[6]}`
+    : value;
+}
+
 function formatTimestamp(value?: string | null) {
   if (!value) return "-";
-  const date = new Date(value);
+  const normalized = normalizeTimestamp(value);
+  if (normalized === "-") return normalized;
+  const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
+}
+
+function timestampValue(value?: string | null) {
+  if (!value) return 0;
+  const normalized = normalizeTimestamp(value);
+  const parsed = new Date(normalized).getTime();
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+function formatDuration(value?: number | null) {
+  return value !== null && value !== undefined ? `${value}ms` : "-";
+}
+
+function formatBytes(value?: number | null) {
+  if (value === null || value === undefined) return "-";
+  if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${value} B`;
+}
+
+function percentile(values: number[], percent: number) {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = Math.min(sorted.length - 1, Math.ceil((percent / 100) * sorted.length) - 1);
+  return sorted[index];
 }
 
 function searchable(entry: TraefikLogEntry) {
@@ -68,10 +124,144 @@ function searchable(entry: TraefikLogEntry) {
     entry.status,
     entry.originStatus,
     entry.clientIp,
+    entry.userAgent,
     entry.routerName,
     entry.serviceName,
     entry.raw,
   ].filter(Boolean).join(" ").toLowerCase();
+}
+
+function topValues(
+  entries: TraefikLogEntry[],
+  getValue: (entry: TraefikLogEntry) => string | number | null | undefined,
+  limit = 3,
+) {
+  const counts = new Map<string, number>();
+  for (const entry of entries) {
+    const value = getValue(entry);
+    if (value === null || value === undefined || value === "") continue;
+    const key = String(value);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    .slice(0, limit);
+}
+
+function summarizeEntries(entries: TraefikLogEntry[]) {
+  const durations = entries
+    .map((entry) => entry.durationMs)
+    .filter((duration): duration is number => typeof duration === "number" && Number.isFinite(duration));
+  const clientErrors = entries.filter((entry) => typeof entry.status === "number" && entry.status >= 400 && entry.status < 500).length;
+  const serverErrors = entries.filter((entry) => typeof entry.status === "number" && entry.status >= 500).length;
+  const bytes = entries.reduce((total, entry) => total + (entry.bytesWritten || 0), 0);
+
+  return {
+    total: entries.length,
+    clientErrors,
+    serverErrors,
+    errors: clientErrors + serverErrors,
+    slowRequests: durations.filter((duration) => duration >= SLOW_REQUEST_MS).length,
+    p95Duration: percentile(durations, 95),
+    maxDuration: durations.length ? Math.max(...durations) : null,
+    bytes,
+    topStatuses: topValues(entries, (entry) => entry.status, 4),
+    topClients: topValues(entries, (entry) => entry.clientIp, 4),
+    topRouters: topValues(entries, (entry) => entry.routerName, 4),
+    topServices: topValues(entries, (entry) => entry.serviceName, 4),
+    topAgents: topValues(entries, (entry) => entry.userAgent, 4),
+    topErrorPaths: topValues(entries.filter((entry) => typeof entry.status === "number" && entry.status >= 400), (entry) => entry.path, 4),
+    topServerErrorServices: topValues(entries.filter((entry) => typeof entry.status === "number" && entry.status >= 500), (entry) => entry.serviceName || entry.routerName, 2),
+    authFailures: entries.filter((entry) => entry.status === 401 || entry.status === 403).length,
+    notFound: entries.filter((entry) => entry.status === 404).length,
+    unmatchedRequests: entries.filter((entry) => entry.status === 404 && !entry.routerName).length,
+    probePaths: topValues(entries.filter((entry) => entry.path && PROBE_PATH_PATTERN.test(entry.path)), (entry) => entry.path, 3),
+  };
+}
+
+function MetricTile({ label, value, detail }: { label: string; value: string | number; detail: string }) {
+  return (
+    <div className="min-w-0 rounded-md bg-background/40 px-3 py-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-xs text-muted-foreground">{label}</span>
+        <span className="truncate text-lg font-semibold">{value}</span>
+      </div>
+      <div className="truncate text-xs text-muted-foreground">{detail}</div>
+    </div>
+  );
+}
+
+function InsightBox({
+  title,
+  items,
+  empty,
+}: {
+  title: string;
+  items: Array<{ label: string; count: number }>;
+  empty: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-md border bg-background/30 px-3 py-2">
+      <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{title}</div>
+      {items.length > 0 ? (
+        <div className="space-y-1.5">
+          {items.map((item) => (
+            <div key={item.label} className="flex min-w-0 items-center justify-between gap-2 text-xs">
+              <span className="truncate font-mono" title={item.label}>{item.label}</span>
+              <Badge variant="outline" className="shrink-0 font-normal">{item.count}</Badge>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">{empty}</p>
+      )}
+    </div>
+  );
+}
+
+function Signals({ stats }: { stats: ReturnType<typeof summarizeEntries> }) {
+  const signals: string[] = [];
+
+  if (stats.serverErrors > 0) {
+    const target = stats.topServerErrorServices[0]?.label;
+    signals.push(target ? `${stats.serverErrors} server errors concentrated around ${target}` : `${stats.serverErrors} server errors`);
+  }
+
+  if (stats.authFailures > 0) {
+    signals.push(`${stats.authFailures} auth denials`);
+  }
+
+  if (stats.unmatchedRequests > 0) {
+    signals.push(`${stats.unmatchedRequests} unmatched 404s`);
+  } else if (stats.notFound > 0) {
+    signals.push(`${stats.notFound} routed 404s`);
+  }
+
+  if (stats.probePaths.length > 0) {
+    signals.push(`probe-looking paths: ${stats.probePaths.map((item) => item.label).join(", ")}`);
+  }
+
+  if (stats.slowRequests > 0) {
+    signals.push(`${stats.slowRequests} slow requests, max ${formatDuration(stats.maxDuration)}`);
+  }
+
+  if (signals.length === 0) {
+    signals.push("No obvious error, probe, auth, or latency hotspots in the current view.");
+  }
+
+  return (
+    <div className="min-w-0 rounded-md border bg-background/30 px-3 py-2">
+      <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Signals</div>
+      <div className="space-y-1.5">
+        {signals.map((signal) => (
+          <div key={signal} className="min-w-0 rounded-sm bg-secondary px-2 py-1 text-xs text-secondary-foreground">
+            <span className="block truncate" title={signal}>{signal}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function TraefikLogsCard() {
@@ -81,13 +271,28 @@ export function TraefikLogsCard() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [methodFilter, setMethodFilter] = useState("all");
+  const [routerFilter, setRouterFilter] = useState("all");
+  const [serviceFilter, setServiceFilter] = useState("all");
+  const [latencyFilter, setLatencyFilter] = useState<LatencyFilter>("all");
+  const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [limit, setLimit] = useState("250");
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/traefik/logs?limit=${encodeURIComponent(limit)}`);
-      const data = await response.json().catch(() => ({ configured: false, entries: [], error: "Invalid response" }));
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message = data && typeof data.error === "string"
+          ? data.error
+          : `Log API returned HTTP ${response.status}`;
+        setPayload({ configured: true, entries: [], error: message });
+        return;
+      }
+      if (!data || typeof data.configured !== "boolean" || !Array.isArray(data.entries)) {
+        setPayload({ configured: true, entries: [], error: "Invalid log API response" });
+        return;
+      }
       setPayload(data);
     } catch (error) {
       setPayload({ configured: true, entries: [], error: error instanceof Error ? error.message : "Failed to load logs" });
@@ -106,43 +311,95 @@ export function TraefikLogsCard() {
     return () => window.clearInterval(timer);
   }, [autoRefresh, fetchLogs]);
 
+  const entries = useMemo(() => payload?.entries || [], [payload]);
+
   const methods = useMemo(() => {
-    const values = new Set((payload?.entries || []).map((entry) => entry.method).filter(Boolean) as string[]);
+    const values = new Set(entries.map((entry) => entry.method).filter(Boolean) as string[]);
     return Array.from(values).sort();
-  }, [payload]);
+  }, [entries]);
+
+  const routers = useMemo(() => {
+    const values = new Set(entries.map((entry) => entry.routerName).filter(Boolean) as string[]);
+    return Array.from(values).sort();
+  }, [entries]);
+
+  const services = useMemo(() => {
+    const values = new Set(entries.map((entry) => entry.serviceName).filter(Boolean) as string[]);
+    return Array.from(values).sort();
+  }, [entries]);
+
+  const loadedStats = useMemo(() => summarizeEntries(entries), [entries]);
 
   const filteredEntries = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return (payload?.entries || []).filter((entry) => {
+    const filtered = entries.filter((entry) => {
       if (query && !searchable(entry).includes(query)) return false;
       if (!statusMatches(entry.status, statusFilter)) return false;
       if (methodFilter !== "all" && entry.method !== methodFilter) return false;
+      if (routerFilter !== "all" && entry.routerName !== routerFilter) return false;
+      if (serviceFilter !== "all" && entry.serviceName !== serviceFilter) return false;
+      if (latencyFilter === "slow" && (!entry.durationMs || entry.durationMs < SLOW_REQUEST_MS)) return false;
       return true;
     });
-  }, [methodFilter, payload, search, statusFilter]);
+
+    return [...filtered].sort((a, b) => {
+      if (sortOption === "oldest") return timestampValue(a.timestamp) - timestampValue(b.timestamp);
+      if (sortOption === "slowest") return (b.durationMs || -1) - (a.durationMs || -1);
+      if (sortOption === "status") return (b.status || -1) - (a.status || -1);
+      return timestampValue(b.timestamp) - timestampValue(a.timestamp);
+    });
+  }, [entries, latencyFilter, methodFilter, routerFilter, search, serviceFilter, sortOption, statusFilter]);
+
+  const visibleStats = useMemo(() => summarizeEntries(filteredEntries), [filteredEntries]);
+
+  const filtersActive = Boolean(
+    search.trim()
+    || statusFilter !== "all"
+    || methodFilter !== "all"
+    || routerFilter !== "all"
+    || serviceFilter !== "all"
+    || latencyFilter !== "all"
+    || sortOption !== "newest",
+  );
+
+  const resetFilters = () => {
+    setSearch("");
+    setStatusFilter("all");
+    setMethodFilter("all");
+    setRouterFilter("all");
+    setServiceFilter("all");
+    setLatencyFilter("all");
+    setSortOption("newest");
+  };
+
+  const selectTriggerClassName = "w-full min-w-0";
+  const selectControlClassName = "min-w-36 flex-[1_1_9rem] xl:flex-none";
+  const logToolsAvailable = payload?.configured === true && !payload.error;
 
   return (
     <Card>
-      <CardHeader className="gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Traefik Access Logs
-          </CardTitle>
-          <CardDescription>Read-only tail of the configured Traefik access log with sensitive query values redacted.</CardDescription>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant={autoRefresh ? "default" : "outline"} size="sm" onClick={() => setAutoRefresh((value) => !value)}>
-            Live refresh
-          </Button>
-          <Button variant="outline" size="sm" onClick={fetchLogs} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+      <CardHeader className="space-y-3 pb-3">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Traefik Access Logs
+            </CardTitle>
+            <CardDescription>Read-only tail of the configured Traefik access log with sensitive query values redacted.</CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant={autoRefresh ? "default" : "outline"} size="sm" onClick={() => setAutoRefresh((value) => !value)}>
+              Live refresh
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchLogs} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!payload?.configured && (
+        {payload && !payload.configured && (
           <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200">
             <div className="flex gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -151,88 +408,171 @@ export function TraefikLogsCard() {
           </div>
         )}
 
-        {payload?.configured && payload.path && (
+        {logToolsAvailable && payload?.path && (
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="outline">{payload.entries.length} loaded</Badge>
+            <Badge variant="outline">{loadedStats.total} loaded</Badge>
+            <Badge variant="outline">{filteredEntries.length} visible</Badge>
             <span className="break-all font-mono">{payload.path}</span>
           </div>
         )}
 
         {payload?.error && <p className="text-sm text-amber-700 dark:text-amber-300">{payload.error}</p>}
 
-        <div className="grid gap-3 lg:grid-cols-[minmax(18rem,1fr)_9rem_9rem_9rem]">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search host, path, IP, router, service, raw line..." value={search} onChange={(event) => setSearch(event.target.value)} />
+        {logToolsAvailable && loadedStats.total > 0 && (
+          <div className="rounded-md border bg-muted/10 p-3">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+              <MetricTile label="Visible" value={visibleStats.total} detail={`of ${loadedStats.total} loaded`} />
+              <MetricTile label="Errors" value={visibleStats.errors} detail={`${visibleStats.serverErrors} server / ${visibleStats.clientErrors} client`} />
+              <MetricTile label="Slow" value={visibleStats.slowRequests} detail={`at ${SLOW_REQUEST_MS}ms or more`} />
+              <MetricTile label="Latency" value={formatDuration(visibleStats.p95Duration)} detail={`p95, max ${formatDuration(visibleStats.maxDuration)}`} />
+              <MetricTile label="Size" value={formatBytes(visibleStats.bytes)} detail="visible responses" />
+            </div>
+            <div className="mt-3 grid gap-2 border-t pt-3 lg:grid-cols-2 2xl:grid-cols-3">
+              <Signals stats={visibleStats} />
+              <InsightBox title="Statuses" items={visibleStats.topStatuses} empty="No statuses in view." />
+              <InsightBox title="Clients" items={visibleStats.topClients} empty="No client IPs in view." />
+              <InsightBox title="Error Paths" items={visibleStats.topErrorPaths} empty="No error paths in view." />
+              <InsightBox title="Routers" items={visibleStats.topRouters} empty="No routers in view." />
+              <InsightBox title="Services" items={visibleStats.topServices} empty="No services in view." />
+              <InsightBox title="Agents" items={visibleStats.topAgents} empty="No user agents in view." />
+            </div>
           </div>
-          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="2xx">2xx</SelectItem>
-              <SelectItem value="3xx">3xx</SelectItem>
-              <SelectItem value="4xx">4xx</SelectItem>
-              <SelectItem value="5xx">5xx</SelectItem>
-              <SelectItem value="errors">Errors</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={methodFilter} onValueChange={setMethodFilter}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All methods</SelectItem>
-              {methods.map((method) => <SelectItem key={method} value={method}>{method}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={limit} onValueChange={setLimit}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="100">Last 100</SelectItem>
-              <SelectItem value="250">Last 250</SelectItem>
-              <SelectItem value="500">Last 500</SelectItem>
-              <SelectItem value="1000">Last 1000</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        )}
 
-        <div className="max-h-[32rem] overflow-auto rounded-md border">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background">
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Request</TableHead>
-                <TableHead>Route</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Latency</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEntries.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatTimestamp(entry.timestamp)}</TableCell>
-                  <TableCell><Badge variant={statusVariant(entry.status)}>{entry.status || "-"}</Badge></TableCell>
-                  <TableCell className="max-w-[28rem] break-words text-xs">
-                    <span className="font-semibold">{entry.method || "-"}</span>{" "}
-                    <span className="font-mono">{entry.host || ""}{entry.path || ""}</span>
-                  </TableCell>
-                  <TableCell className="max-w-[20rem] break-all text-xs text-muted-foreground">
-                    {entry.routerName || "-"}
-                    {entry.serviceName && <span className="block">{entry.serviceName}</span>}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{entry.clientIp || "-"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{entry.durationMs !== null && entry.durationMs !== undefined ? `${entry.durationMs}ms` : "-"}</TableCell>
-                </TableRow>
-              ))}
-              {filteredEntries.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
-                    {payload?.configured ? "No log entries match the current filters." : "Log viewer is not configured."}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        {logToolsAvailable && (
+          <>
+            <div className="rounded-md border bg-muted/10 p-2">
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input className="pl-9" placeholder="Search host, path, IP, router, service, agent, raw line..." value={search} onChange={(event) => setSearch(event.target.value)} />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+                  <div className={selectControlClassName}>
+                  <SelectTrigger className={selectTriggerClassName}><SelectValue /></SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    <SelectItem value="all">All statuses</SelectItem>
+                    <SelectItem value="2xx">2xx</SelectItem>
+                    <SelectItem value="3xx">3xx</SelectItem>
+                    <SelectItem value="4xx">4xx</SelectItem>
+                    <SelectItem value="5xx">5xx</SelectItem>
+                    <SelectItem value="errors">Errors</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={methodFilter} onValueChange={setMethodFilter}>
+                  <div className={selectControlClassName}>
+                  <SelectTrigger className={selectTriggerClassName}><SelectValue /></SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    <SelectItem value="all">All methods</SelectItem>
+                    {methods.map((method) => <SelectItem key={method} value={method}>{method}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={limit} onValueChange={setLimit}>
+                  <div className={selectControlClassName}>
+                  <SelectTrigger className={selectTriggerClassName}><SelectValue /></SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    <SelectItem value="100">Last 100</SelectItem>
+                    <SelectItem value="250">Last 250</SelectItem>
+                    <SelectItem value="500">Last 500</SelectItem>
+                    <SelectItem value="1000">Last 1000</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={routerFilter} onValueChange={setRouterFilter}>
+                  <div className={selectControlClassName}>
+                  <SelectTrigger className={selectTriggerClassName}><SelectValue /></SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    <SelectItem value="all">All routers</SelectItem>
+                    {routers.map((router) => <SelectItem key={router} value={router}>{router}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={serviceFilter} onValueChange={setServiceFilter}>
+                  <div className={selectControlClassName}>
+                  <SelectTrigger className={selectTriggerClassName}><SelectValue /></SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    <SelectItem value="all">All services</SelectItem>
+                    {services.map((service) => <SelectItem key={service} value={service}>{service}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={latencyFilter} onValueChange={(value) => setLatencyFilter(value as LatencyFilter)}>
+                  <div className={selectControlClassName}>
+                  <SelectTrigger className={selectTriggerClassName}><SelectValue /></SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    <SelectItem value="all">All latency</SelectItem>
+                    <SelectItem value="slow">Slow only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={sortOption} onValueChange={(value) => setSortOption(value as SortOption)}>
+                  <div className={selectControlClassName}>
+                  <SelectTrigger className={selectTriggerClassName}><SelectValue /></SelectTrigger>
+                  </div>
+                  <SelectContent>
+                    <SelectItem value="newest">Newest first</SelectItem>
+                    <SelectItem value="oldest">Oldest first</SelectItem>
+                    <SelectItem value="slowest">Slowest first</SelectItem>
+                    <SelectItem value="status">Highest status</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button className="min-w-32 flex-[1_1_8rem] xl:flex-none" variant="outline" size="sm" onClick={resetFilters} disabled={!filtersActive}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Reset
+                </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="max-h-[32rem] overflow-auto rounded-md border">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background">
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Request</TableHead>
+                    <TableHead>Route</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead className="hidden 2xl:table-cell">Agent</TableHead>
+                    <TableHead>Latency</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEntries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatTimestamp(entry.timestamp)}</TableCell>
+                      <TableCell><Badge variant={statusVariant(entry.status)}>{entry.status || "-"}</Badge></TableCell>
+                      <TableCell className="max-w-md wrap-break-word text-xs">
+                        <span className="font-semibold">{entry.method || "-"}</span>{" "}
+                        <span className="font-mono">{entry.host || ""}{entry.path || ""}</span>
+                      </TableCell>
+                      <TableCell className="max-w-xs break-all text-xs text-muted-foreground">
+                        {entry.routerName || "-"}
+                        {entry.serviceName && <span className="block">{entry.serviceName}</span>}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {entry.clientIp || "-"}
+                        {entry.bytesWritten !== null && entry.bytesWritten !== undefined && <span className="block text-muted-foreground">{formatBytes(entry.bytesWritten)}</span>}
+                      </TableCell>
+                      <TableCell className="hidden max-w-xs truncate text-xs text-muted-foreground 2xl:table-cell" title={entry.userAgent || undefined}>{entry.userAgent || "-"}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{formatDuration(entry.durationMs)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {filteredEntries.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">
+                        No log entries match the current filters.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

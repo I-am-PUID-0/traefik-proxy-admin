@@ -119,15 +119,15 @@ services:
       - /var/log/traefik/access.log:/logs/traefik/access.log:ro
 ```
 
-The viewer reads the last portion of the file on demand, supports manual refresh and optional live refresh, and filters by search text, method, status family, and loaded line count. The viewer supports Traefik JSON access logs and Traefik default extended Common Log Format. You can keep `accessLog.format` unset or common for tools such as bouncers that expect non-JSON logs.
+The viewer reads the last portion of the file on demand, supports manual refresh and optional live refresh, and filters by search text, method, status family, router, service, slow requests, and loaded line count. It also shows loaded/visible counts, error totals, p95/max latency, visible response bytes, top status codes, noisy clients, error-heavy paths, user agents, routers, services, and derived signals for likely backend errors, auth denials, unmatched 404s, scanner-style probe paths, and latency hotspots. The viewer supports Traefik JSON access logs and Traefik default extended Common Log Format. You can keep `accessLog.format` unset or common for tools such as bouncers that expect non-JSON logs.
 
-For common-format lines, TPA parses the Traefik extended fields in this order: client IP, timestamp, request method/path, status, user agent, request count, router name, service/server target, and duration. A line like this:
+For common-format lines, TPA parses the Traefik extended fields in this order: client IP, timestamp, request method/path, status, response bytes, user agent, request count, router name, service/server target, and duration. A line like this:
 
 ```text
 127.0.0.1,185.177.72.205 - - [26/May/2026:14:57:38 +0000] "GET /_phpinfo.php HTTP/1.1" 404 19 "-" "curl/8.7.1" 253486 "-" "-" 0ms
 ```
 
-shows as client `127.0.0.1,185.177.72.205`, time `26/May/2026:14:57:38 +0000`, request `GET /_phpinfo.php`, status `404`, and latency `0ms`.
+shows as client `127.0.0.1,185.177.72.205`, time `26/May/2026:14:57:38 +0000`, request `GET /_phpinfo.php`, status `404`, response size `19 B`, user agent `curl/8.7.1`, and latency `0ms`.
 
 The log API redacts common sensitive query values such as `token`, `code`, `apikey`, `api_key`, `password`, and `secret` before returning entries. Avoid logging credentials in paths or query strings; redaction is a safety net, not a replacement for clean upstream logging.
 
