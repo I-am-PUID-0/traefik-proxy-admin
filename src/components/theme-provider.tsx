@@ -1,13 +1,16 @@
 "use client";
 
 import * as React from "react";
+import { DEFAULT_UI_PALETTE, isUiPalette, type UiPalette } from "@/lib/ui-palettes";
 
 type Theme = "light" | "dark" | "system";
 
 type ThemeContextValue = {
   theme: Theme;
   resolvedTheme: "light" | "dark";
+  palette: UiPalette;
   setTheme: (theme: Theme) => void;
+  setPalette: (palette: UiPalette) => void;
 };
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null);
@@ -26,6 +29,10 @@ function applyTheme(theme: Theme) {
   return resolvedTheme;
 }
 
+function applyPalette(palette: UiPalette) {
+  document.documentElement.dataset.palette = palette;
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
@@ -38,12 +45,18 @@ export function ThemeProvider({
 }) {
   const [theme, setThemeState] = React.useState<Theme>(defaultTheme);
   const [resolvedTheme, setResolvedTheme] = React.useState<"light" | "dark">("dark");
+  const [palette, setPaletteState] = React.useState<UiPalette>(DEFAULT_UI_PALETTE);
 
   React.useEffect(() => {
     const storedTheme = window.localStorage.getItem("theme") as Theme | null;
+    const storedPalette = window.localStorage.getItem("ui-palette");
     const initialTheme = storedTheme || defaultTheme;
+    const initialPalette = isUiPalette(storedPalette) ? storedPalette : DEFAULT_UI_PALETTE;
+
     setThemeState(initialTheme);
+    setPaletteState(initialPalette);
     setResolvedTheme(applyTheme(initialTheme));
+    applyPalette(initialPalette);
   }, [defaultTheme]);
 
   React.useEffect(() => {
@@ -64,8 +77,14 @@ export function ThemeProvider({
     setResolvedTheme(applyTheme(nextTheme));
   }, []);
 
+  const setPalette = React.useCallback((nextPalette: UiPalette) => {
+    window.localStorage.setItem("ui-palette", nextPalette);
+    setPaletteState(nextPalette);
+    applyPalette(nextPalette);
+  }, []);
+
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, palette, setTheme, setPalette }}>
       {children}
     </ThemeContext.Provider>
   );

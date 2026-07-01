@@ -15,9 +15,9 @@ export function AppFooter() {
   }, []);
 
   return (
-    <footer className="border-t bg-white dark:bg-gray-800 mt-auto">
+    <footer className="border-t bg-card mt-auto">
       <div className="container mx-auto px-4 py-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <span>Made with</span>
             <Heart className="h-4 w-4 text-red-500 fill-current" />
@@ -29,7 +29,7 @@ export function AppFooter() {
               href="https://github.com/I-am-PUID-0/traefik-proxy-admin"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+              className="flex items-center gap-2 hover:text-foreground transition-colors"
             >
               <Code2 className="h-4 w-4" />
               <span>Source Code</span>
@@ -39,7 +39,7 @@ export function AppFooter() {
               href="https://github.com/I-am-PUID-0/traefik-proxy-admin/blob/main/NOTICE"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+              className="underline hover:text-foreground transition-colors"
             >
               NOTICE
             </a>
@@ -50,14 +50,14 @@ export function AppFooter() {
                 href="https://www.gnu.org/licenses/agpl-3.0.html"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
+                className="underline hover:text-foreground transition-colors"
               >
                 AGPL-v3
               </a>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground/80">
             <span>Version {version}</span>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LogOut, Settings, Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { PalettePicker } from "@/components/palette-picker";
 import { TraefikConfigDialog } from "@/components/traefik-config-dialog";
 import { AppFooter } from "@/components/app-footer";
 
@@ -33,9 +34,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="border-b bg-white dark:bg-gray-800 flex-shrink-0">
+      <div className="border-b bg-card flex-shrink-0">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -43,7 +44,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 {/* Plain img avoids dev hydration churn for this static SVG app mark. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/tpa-icon.svg" alt="" className="h-7 w-7" />
-                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                <h1 className="text-xl font-bold text-foreground">
                   Traefik Admin
                 </h1>
               </div>
@@ -52,8 +53,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                   href="/"
                   className={
                     isActive("/")
-                      ? "text-gray-900 dark:text-gray-100 font-medium"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   }
                 >
                   Services
@@ -62,8 +63,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                   href="/domains"
                   className={
                     isActive("/domains")
-                      ? "text-gray-900 dark:text-gray-100 font-medium"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   }
                 >
                   Domains
@@ -72,8 +73,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                   href="/security"
                   className={
                     isActive("/security")
-                      ? "text-gray-900 dark:text-gray-100 font-medium"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   }
                 >
                   Security
@@ -82,8 +83,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                   href="/sessions"
                   className={
                     isActive("/sessions")
-                      ? "text-gray-900 dark:text-gray-100 font-medium"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   }
                 >
                   Sessions
@@ -92,8 +93,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                   href="/traefik"
                   className={
                     isActive("/traefik")
-                      ? "text-gray-900 dark:text-gray-100 font-medium"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   }
                 >
                   Traefik
@@ -102,8 +103,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                   href="/docs"
                   className={
                     pathname.startsWith("/docs")
-                      ? "text-gray-900 dark:text-gray-100 font-medium"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   }
                 >
                   Docs
@@ -112,8 +113,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                   href="/config"
                   className={
                     isActive("/config")
-                      ? "text-gray-900 dark:text-gray-100 font-medium"
-                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                      ? "text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   }
                 >
                   Config
@@ -130,6 +131,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     </Button>
                   }
                 />
+                <PalettePicker />
                 <ThemeToggle />
                 {adminSession && (
                   <Button variant="outline" size="sm" onClick={logout}>
@@ -153,14 +155,14 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t bg-white dark:bg-gray-800">
+          <div className="lg:hidden border-t bg-card">
             <div className="container mx-auto px-4 py-4 space-y-3">
               <NextLink
                 href="/"
                 className={`block ${
                   isActive("/")
-                    ? "text-gray-900 dark:text-gray-100 font-medium"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -170,8 +172,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 href="/domains"
                 className={`block ${
                   isActive("/domains")
-                    ? "text-gray-900 dark:text-gray-100 font-medium"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -181,8 +183,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 href="/security"
                 className={`block ${
                   isActive("/security")
-                    ? "text-gray-900 dark:text-gray-100 font-medium"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -192,8 +194,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 href="/sessions"
                 className={`block ${
                   isActive("/sessions")
-                    ? "text-gray-900 dark:text-gray-100 font-medium"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -203,8 +205,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 href="/traefik"
                 className={`block ${
                   isActive("/traefik")
-                    ? "text-gray-900 dark:text-gray-100 font-medium"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -214,8 +216,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 href="/docs"
                 className={`block ${
                   pathname.startsWith("/docs")
-                    ? "text-gray-900 dark:text-gray-100 font-medium"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -225,14 +227,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                 href="/config"
                 className={`block ${
                   isActive("/config")
-                    ? "text-gray-900 dark:text-gray-100 font-medium"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                    ? "text-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Config
               </NextLink>
-              <div className="flex items-center gap-2 pt-2 border-t">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
                 <TraefikConfigDialog
                   trigger={
                     <Button variant="outline" size="sm">
@@ -241,6 +243,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     </Button>
                   }
                 />
+                <PalettePicker />
                 <ThemeToggle />
                 {adminSession && (
                   <Button variant="outline" size="sm" onClick={logout}>
