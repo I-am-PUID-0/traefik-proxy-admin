@@ -5,6 +5,7 @@ import type { UpdateServiceData, UpdateServiceRequest } from "@/lib/dto/service.
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
 import { customHostnamesJsonOrNull } from "@/lib/service-hostnames";
 import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
+import { RouteInputValidationError } from "@/lib/validators/route-input.validator";
 
 function jsonFieldOrNull(value: unknown): string | null {
   if (value === undefined || value === null || value === "") return null;
@@ -99,6 +100,9 @@ export async function PUT(
   } catch (error) {
     if (error instanceof RequestBodyError) {
       return bodyErrorResponse(error);
+    }
+    if (error instanceof RouteInputValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     console.error("Error updating service:", error);

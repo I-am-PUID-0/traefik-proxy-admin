@@ -8,6 +8,7 @@ import type {
   UpdateServiceData,
   HostnameMode
 } from "@/lib/dto/service.dto";
+import { validateServiceRoutingInput } from "@/lib/validators/route-input.validator";
 
 export interface ServiceWithDomainAndSecurity extends Service {
   hasSharedLink: boolean;
@@ -18,18 +19,6 @@ export interface ServiceWithDomainAndSecurity extends Service {
 
 export class ServiceService {
   // Helper methods for parsing JSON fields
-  private static parseCustomHostnames(customHostnames: string | null): string[] {
-    if (!customHostnames) return [];
-
-    try {
-      const parsed = JSON.parse(customHostnames);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.warn("Failed to parse custom hostnames:", error);
-      return [];
-    }
-  }
-
   private static parseMiddlewares(middlewares: string | null): string[] {
     if (!middlewares) return [];
 
@@ -52,29 +41,6 @@ export class ServiceService {
     } catch (error) {
       console.warn("Failed to parse request headers:", error);
       return {};
-    }
-  }
-
-  // Validation method for service data
-  private static validateServiceData(data: CreateServiceData | UpdateServiceData): void {
-    const { hostnameMode, subdomain, customHostnames } = data;
-
-    if (hostnameMode === 'subdomain' && (!subdomain || subdomain.trim() === '')) {
-      throw new Error("Subdomain is required when hostname mode is 'subdomain'");
-    }
-
-    if (hostnameMode === 'custom') {
-      const hostnames = this.parseCustomHostnames(customHostnames || null);
-      if (hostnames.length === 0) {
-        throw new Error("At least one hostname is required when hostname mode is 'custom'");
-      }
-
-      // Validate hostname format (basic validation)
-      for (const hostname of hostnames) {
-        if (!hostname.match(/^[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*$/)) {
-          throw new Error(`Invalid hostname format: ${hostname}`);
-        }
-      }
     }
   }
 
@@ -136,7 +102,7 @@ export class ServiceService {
 
   static async createService(serviceData: CreateServiceData) {
     // Validate the service data
-    this.validateServiceData(serviceData);
+    validateServiceRoutingInput(serviceData);
 
     const [service] = await db.insert(services).values(serviceData).returning();
     return service;
@@ -201,7 +167,7 @@ export class ServiceService {
 
   static async updateService(id: string, serviceData: UpdateServiceData) {
     // Validate the service data
-    this.validateServiceData(serviceData);
+    validateServiceRoutingInput(serviceData);
 
     const [service] = await db
       .update(services)

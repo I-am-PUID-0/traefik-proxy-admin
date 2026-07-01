@@ -5,6 +5,7 @@ import type { CreateServiceData, CreateServiceRequest } from "@/lib/dto/service.
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
 import { customHostnamesJsonOrNull } from "@/lib/service-hostnames";
 import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
+import { RouteInputValidationError } from "@/lib/validators/route-input.validator";
 import "@/lib/startup"; // Initialize background services
 
 function jsonFieldOrNull(value: unknown): string | null {
@@ -84,6 +85,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof RequestBodyError) {
       return bodyErrorResponse(error);
+    }
+    if (error instanceof RouteInputValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     console.error("Error creating service:", error);

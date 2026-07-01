@@ -8,6 +8,7 @@ import type {
   CertificateConfig,
 } from "@/lib/dto/domain.dto";
 import type { Domain } from "@/lib/db/schema";
+import { validateDomainRoutingInput } from "@/lib/validators/route-input.validator";
 
 export class DomainService {
   // Helper method to parse certificate configs from JSON string
@@ -71,6 +72,8 @@ export class DomainService {
   }
 
   static async createDomain(data: CreateDomainData): Promise<Domain> {
+    validateDomainRoutingInput(data);
+
     // Check if domain already exists
     const existing = await db
       .select()
@@ -103,6 +106,8 @@ export class DomainService {
   }
 
   static async updateDomain(id: string, data: UpdateDomainData): Promise<Domain> {
+    validateDomainRoutingInput(data);
+
     // Check if domain already exists (excluding current domain)
     const existing = await db
       .select()
