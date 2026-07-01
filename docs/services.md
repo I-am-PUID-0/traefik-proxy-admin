@@ -12,6 +12,7 @@ A standard service defines:
 - Target port
 - HTTP or HTTPS upstream scheme
 - Optional entrypoint override
+- Optional service group for inventory filtering and sorting
 - Optional middleware list
 - Optional request headers
 - Optional auto-disable duration
@@ -23,6 +24,10 @@ GET /api/traefik/config
 ```
 
 Disabled services are excluded from generated Traefik config.
+
+## Service Groups
+
+Service groups are operator-defined labels such as `Media`, `Admin`, `Public`, or `Lab`. They do not affect generated Traefik routing. Use them to filter the service inventory, search related services, and sort the list by group before service name.
 
 ## Domains
 

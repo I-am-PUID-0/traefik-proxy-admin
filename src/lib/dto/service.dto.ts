@@ -6,6 +6,7 @@ export type HostnameMode = 'subdomain' | 'apex' | 'custom';
 // Request DTOs
 export interface CreateServiceRequest {
   name: string;
+  serviceGroup?: string | null;
   subdomain?: string;
   hostnameMode: HostnameMode;
   customHostnames?: string[] | string | null; // Array, JSON string, or text list of hostnames for custom mode
@@ -26,6 +27,7 @@ export interface CreateServiceRequest {
 
 export interface UpdateServiceRequest {
   name: string;
+  serviceGroup?: string | null;
   subdomain?: string;
   hostnameMode: HostnameMode;
   customHostnames?: string[] | string | null; // Array, JSON string, or text list of hostnames for custom mode
@@ -54,6 +56,7 @@ export interface ServiceResponse extends Service {
 // Service DTOs (internal)
 export interface CreateServiceData {
   name: string;
+  serviceGroup?: string | null;
   subdomain?: string | null;
   hostnameMode: HostnameMode;
   customHostnames?: string | null; // JSON string
@@ -74,6 +77,7 @@ export interface CreateServiceData {
 
 export interface UpdateServiceData {
   name: string;
+  serviceGroup?: string | null;
   subdomain?: string | null;
   hostnameMode: HostnameMode;
   customHostnames?: string | null; // JSON string

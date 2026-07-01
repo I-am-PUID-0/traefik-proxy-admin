@@ -179,6 +179,7 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
     alter table services
       add column if not exists enabled_at timestamp default now(),
       add column if not exists enable_duration_minutes integer,
+      add column if not exists service_group varchar(120),
       add column if not exists request_headers text,
       add column if not exists insecure_skip_verify boolean default false not null,
       add column if not exists pass_host_header boolean default true not null,

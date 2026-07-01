@@ -18,6 +18,7 @@ export function useServiceForm({ service, defaultDuration, initialData }: UseSer
       && initialData?.enableDurationMinutes !== undefined;
     const data: ServiceFormData = {
       name: "",
+      serviceGroup: "",
       subdomain: "",
       hostnameMode: "subdomain",
       customHostnames: null,
@@ -53,6 +54,7 @@ export function useServiceForm({ service, defaultDuration, initialData }: UseSer
     if (service) {
       const serviceData: ServiceFormData = {
         name: service.name,
+        serviceGroup: service.serviceGroup || "",
         subdomain: service.subdomain || "",
         hostnameMode: service.hostnameMode,
         customHostnames: service.customHostnames,

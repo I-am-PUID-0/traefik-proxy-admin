@@ -11,6 +11,10 @@ function jsonFieldOrNull(value: unknown): string | null {
   return JSON.stringify(value);
 }
 
+function stringFieldOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -60,6 +64,7 @@ export async function PUT(
 
     const updateData: UpdateServiceData = {
       name: body.name,
+      serviceGroup: stringFieldOrNull(body.serviceGroup),
       subdomain: body.subdomain || null,
       hostnameMode: body.hostnameMode,
       customHostnames: customHostnamesJsonOrNull(body.customHostnames),

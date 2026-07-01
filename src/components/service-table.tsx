@@ -33,6 +33,7 @@ import {
   ArrowDownAZ,
   ArrowUpAZ,
   TimerReset,
+  Folder,
 } from "lucide-react";
 import { ServiceCountdown } from "@/components/service-countdown";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -41,6 +42,7 @@ import { formatMiddlewareNames } from "@/lib/middleware-utils";
 export interface Service {
   id: string;
   name: string;
+  serviceGroup?: string | null;
   subdomain?: string | null; // Optional, only used when hostname_mode is 'subdomain'
   hostnameMode: 'subdomain' | 'apex' | 'custom';
   customHostnames?: string | null; // JSON array of hostnames when hostname_mode is 'custom'
@@ -80,7 +82,8 @@ export interface Service {
 
 type StatusFilter = "all" | "enabled" | "disabled";
 type SecurityFilter = "all" | "protected" | "sso" | "basic" | "shared" | "unprotected";
-type SortOption = "status-name" | "name-asc" | "name-desc" | "domain-asc" | "target-asc" | "updated-desc" | "updated-asc";
+type GroupFilter = "__all" | "__ungrouped" | string;
+type SortOption = "status-name" | "group-name" | "name-asc" | "name-desc" | "domain-asc" | "target-asc" | "updated-desc" | "updated-asc";
 
 const getMiddlewareText = (middlewares: Service["middlewares"]) =>
   formatMiddlewareNames(middlewares);
@@ -117,6 +120,8 @@ const getServiceHostnames = (service: Service): string[] => {
 const getPrimaryHostname = (service: Service) => getServiceHostnames(service)[0] || "No hostname";
 
 const serviceHasSecurity = (service: Service) => Boolean(service.hasSharedLink || service.hasSso || service.hasBasicAuth);
+
+const getServiceGroup = (service: Service) => service.serviceGroup?.trim() || "";
 
 const formatDurationForButton = (durationMinutes: number | null | undefined): string => {
   if (!durationMinutes) return "∞";
@@ -173,11 +178,13 @@ export function ServiceTable({
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [securityFilter, setSecurityFilter] = useState<SecurityFilter>("all");
+  const [groupFilter, setGroupFilter] = useState<GroupFilter>("__all");
   const [sortOption, setSortOption] = useState<SortOption>("status-name");
 
   const serviceStats = useMemo(() => {
     const active = services.filter((service) => service.enabled).length;
     const protectedCount = services.filter(serviceHasSecurity).length;
+    const groupCount = new Set(services.map(getServiceGroup).filter(Boolean)).size;
 
     return {
       total: services.length,
@@ -185,8 +192,14 @@ export function ServiceTable({
       inactive: services.length - active,
       protectedCount,
       unprotected: services.length - protectedCount,
+      groupCount,
     };
   }, [services]);
+
+  const groupOptions = useMemo(
+    () => Array.from(new Set(services.map(getServiceGroup).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [services],
+  );
 
   const filteredServices = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -202,10 +215,15 @@ export function ServiceTable({
         if (securityFilter === "basic" && !service.hasBasicAuth) return false;
         if (securityFilter === "shared" && !service.hasSharedLink) return false;
 
+        const serviceGroup = getServiceGroup(service);
+        if (groupFilter === "__ungrouped" && serviceGroup) return false;
+        if (groupFilter !== "__all" && groupFilter !== "__ungrouped" && serviceGroup !== groupFilter) return false;
+
         if (!normalizedQuery) return true;
 
         const searchable = [
           service.name,
+          serviceGroup,
           service.subdomain,
           service.domain?.name,
           service.domain?.domain,
@@ -229,6 +247,10 @@ export function ServiceTable({
             return nameCompare;
           case "name-desc":
             return b.name.localeCompare(a.name);
+          case "group-name": {
+            const groupCompare = (getServiceGroup(a) || "\uffff").localeCompare(getServiceGroup(b) || "\uffff");
+            return groupCompare || nameCompare;
+          }
           case "domain-asc": {
             const hostCompare = getPrimaryHostname(a).localeCompare(getPrimaryHostname(b));
             return hostCompare || nameCompare;
@@ -248,14 +270,15 @@ export function ServiceTable({
             return nameCompare;
         }
       });
-  }, [services, searchQuery, statusFilter, securityFilter, sortOption]);
+  }, [services, searchQuery, statusFilter, securityFilter, groupFilter, sortOption]);
 
-  const hasActiveViewControls = Boolean(searchQuery.trim()) || statusFilter !== "all" || securityFilter !== "all" || sortOption !== "status-name";
+  const hasActiveViewControls = Boolean(searchQuery.trim()) || statusFilter !== "all" || securityFilter !== "all" || groupFilter !== "__all" || sortOption !== "status-name";
 
   const resetViewControls = () => {
     setSearchQuery("");
     setStatusFilter("all");
     setSecurityFilter("all");
+    setGroupFilter("__all");
     setSortOption("status-name");
   };
 
@@ -267,6 +290,11 @@ export function ServiceTable({
   const handleSecurityFilterChange = (value: string) => {
     if (!value) return;
     setSecurityFilter(value as SecurityFilter);
+  };
+
+  const handleGroupFilterChange = (value: string) => {
+    if (!value) return;
+    setGroupFilter(value);
   };
 
   const handleSortOptionChange = (value: string) => {
@@ -429,7 +457,7 @@ export function ServiceTable({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
               <div className="rounded-md border p-3">
                 <p className="text-xs text-muted-foreground">Total</p>
                 <p className="text-2xl font-semibold">{serviceStats.total}</p>
@@ -446,14 +474,18 @@ export function ServiceTable({
                 <p className="text-xs text-muted-foreground">Protected</p>
                 <p className="text-2xl font-semibold">{serviceStats.protectedCount}</p>
               </div>
-              <div className="rounded-md border p-3 sm:col-span-2 lg:col-span-1">
+              <div className="rounded-md border p-3">
                 <p className="text-xs text-muted-foreground">Unprotected</p>
                 <p className="text-2xl font-semibold">{serviceStats.unprotected}</p>
+              </div>
+              <div className="rounded-md border p-3 sm:col-span-2 lg:col-span-1">
+                <p className="text-xs text-muted-foreground">Groups</p>
+                <p className="text-2xl font-semibold">{serviceStats.groupCount}</p>
               </div>
             </div>
 
             <div className="rounded-md border bg-muted/20 p-3">
-              <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_160px_180px_190px_auto] lg:items-center">
+              <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_160px_180px_180px_190px_auto] lg:items-center">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
@@ -486,12 +518,25 @@ export function ServiceTable({
                     <SelectItem value="shared">Shared link</SelectItem>
                   </SelectContent>
                 </Select>
+                <Select value={groupFilter} onValueChange={handleGroupFilterChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all">All groups</SelectItem>
+                    <SelectItem value="__ungrouped">Ungrouped</SelectItem>
+                    {groupOptions.map((group) => (
+                      <SelectItem key={group} value={group}>{group}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={sortOption} onValueChange={handleSortOptionChange}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Sort" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="status-name">Active, then name</SelectItem>
+                    <SelectItem value="group-name">Group, then name</SelectItem>
                     <SelectItem value="name-asc">Name A-Z</SelectItem>
                     <SelectItem value="name-desc">Name Z-A</SelectItem>
                     <SelectItem value="domain-asc">Hostname A-Z</SelectItem>
@@ -532,6 +577,7 @@ export function ServiceTable({
                 const visibleHostnames = hostnames.slice(0, 2);
                 const extraHostnameCount = Math.max(hostnames.length - visibleHostnames.length, 0);
                 const middlewareText = getMiddlewareText(service.middlewares);
+                const serviceGroup = getServiceGroup(service);
 
                 return (
                   <div
@@ -550,6 +596,12 @@ export function ServiceTable({
                           {service.isHttps && <Badge variant="outline" className="text-green-600">HTTPS</Badge>}
                           {service.hostnameMode !== "subdomain" && (
                             <Badge variant="outline" className="capitalize">{service.hostnameMode}</Badge>
+                          )}
+                          {serviceGroup && (
+                            <Badge variant="secondary" title="Service group">
+                              <Folder className="mr-1 h-3 w-3" />
+                              {serviceGroup}
+                            </Badge>
                           )}
                           {service.hasSharedLink && (
                             <Badge variant="outline" className="text-blue-600" title="Shared Link Authentication">

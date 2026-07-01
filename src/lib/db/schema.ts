@@ -50,6 +50,7 @@ export const domains = pgTable("domains", {
 export const services = pgTable("services", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
+  serviceGroup: varchar("service_group", { length: 120 }),
   subdomain: varchar("subdomain", { length: 255 }), // Now optional, only used when hostname_mode is 'subdomain'
   hostnameMode: varchar("hostname_mode", { length: 20 }).default("subdomain").notNull(), // 'subdomain', 'apex', 'custom'
   customHostnames: text("custom_hostnames"), // JSON array of hostnames when hostname_mode is 'custom'

@@ -12,6 +12,10 @@ function jsonFieldOrNull(value: unknown): string | null {
   return JSON.stringify(value);
 }
 
+function stringFieldOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
 export async function GET() {
   try {
     const servicesWithSecurity = await ServiceService.getAllServices();
@@ -55,6 +59,7 @@ export async function POST(request: NextRequest) {
 
     const newService: CreateServiceData = {
       name: body.name,
+      serviceGroup: stringFieldOrNull(body.serviceGroup),
       subdomain: body.subdomain || null,
       hostnameMode: body.hostnameMode,
       customHostnames: customHostnamesJsonOrNull(body.customHostnames),

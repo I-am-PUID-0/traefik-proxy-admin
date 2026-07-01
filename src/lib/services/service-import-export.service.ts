@@ -25,6 +25,7 @@ export interface ExportedDomainData {
 
 export interface ExportedServiceData {
   name: string;
+  serviceGroup?: string | null;
   subdomain?: string | null;
   hostnameMode: HostnameMode;
   customHostnames?: string[];
@@ -111,6 +112,7 @@ function exportedServiceFromDb(
 
   return {
     name: service.name,
+    serviceGroup: service.serviceGroup || null,
     subdomain: service.subdomain || null,
     hostnameMode: service.hostnameMode,
     customHostnames: Array.isArray(parseJsonField(service.customHostnames))
@@ -233,6 +235,7 @@ function normalizeImportedService(service: ExportedServiceData, domainId: string
 
   return {
     name: normalizeString(service.name),
+    serviceGroup: normalizeString(service.serviceGroup) || null,
     subdomain: normalizeString(service.subdomain) || null,
     hostnameMode,
     customHostnames: Array.isArray(service.customHostnames) && service.customHostnames.length > 0

@@ -70,6 +70,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     const createService = await request.post("/api/services", {
       data: {
         name: `E2E Service ${suffix}`,
+        serviceGroup: "E2E Group",
         subdomain,
         hostnameMode: "subdomain",
         domainId,
@@ -90,6 +91,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     expect(createService.ok()).toBe(true);
     const service = await createService.json();
     serviceId = service.id;
+    expect(service.serviceGroup).toBe("E2E Group");
     expect(service.domainId).toBe(domainId);
     expect(service.subdomain).toBe(subdomain);
 
@@ -100,6 +102,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
 
     const updateData = {
       name: `E2E Service ${suffix} Updated`,
+      serviceGroup: "E2E Group Updated",
       subdomain,
       hostnameMode: "subdomain",
       domainId,
@@ -221,6 +224,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     expect(serviceExport.services).toHaveLength(1);
     expect(serviceExport.services[0]).toMatchObject({
       name: updateData.name,
+      serviceGroup: "E2E Group Updated",
       subdomain,
       targetIp: "127.0.0.1",
       targetPort: 9090,
@@ -263,6 +267,7 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
     expect(importedServiceResponse.ok()).toBe(true);
     const importedService = await importedServiceResponse.json();
     expect(importedService.name).toContain("imported");
+    expect(importedService.serviceGroup).toBe("E2E Group Updated");
     expect(importedService.subdomain).toContain("imported");
 
     const deleteImportedService = await request.delete(`/api/services/${importedServiceId}`);

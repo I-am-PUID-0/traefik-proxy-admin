@@ -243,6 +243,17 @@ export function ServiceForm({
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="serviceGroup">Service Group</Label>
+                <Input
+                  id="serviceGroup"
+                  value={formData.serviceGroup || ""}
+                  onChange={(e) => updateFormData({ serviceGroup: e.target.value })}
+                  placeholder="Media, Admin, Public"
+                  disabled={submitting}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="domain">Domain</Label>
                 <Select
                   value={formData.domainId || ""}
