@@ -5,6 +5,7 @@ const adminAuthMocks = vi.hoisted(() => ({
   adminAuthEnabled: vi.fn(() => true),
   getAdminAuthConfig: vi.fn(),
   authenticateLocalAdminUser: vi.fn(),
+  createInitialLocalAdminUser: vi.fn(),
   createAdminSessionCookie: vi.fn(),
   adminCookieOptions: vi.fn((maxAgeSeconds?: number) => ({
     httpOnly: true,
@@ -23,11 +24,13 @@ vi.mock("@/lib/admin-auth-shared", () => ({
 vi.mock("@/lib/admin-auth", () => ({
   adminCookieOptions: adminAuthMocks.adminCookieOptions,
   authenticateLocalAdminUser: adminAuthMocks.authenticateLocalAdminUser,
+  createInitialLocalAdminUser: adminAuthMocks.createInitialLocalAdminUser,
   createAdminSessionCookie: adminAuthMocks.createAdminSessionCookie,
   getAdminAuthConfig: adminAuthMocks.getAdminAuthConfig,
 }));
 
 import { POST as loginPost } from "@/app/api/auth/admin/local/login/route";
+import { POST as setupPost } from "@/app/api/auth/admin/local/setup/route";
 import { POST as logoutPost } from "@/app/api/auth/admin/logout/route";
 
 type NextRequestInit = ConstructorParameters<typeof NextRequest>[1];
@@ -46,6 +49,26 @@ function jsonLoginRequest(body: unknown) {
 
 function formLoginRequest(body: Record<string, string>) {
   return request("/api/auth/admin/local/login", {
+    method: "POST",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      "x-forwarded-proto": "https",
+      "x-forwarded-host": "admin.example.net",
+    },
+    body: new URLSearchParams(body).toString(),
+  });
+}
+
+function jsonSetupRequest(body: unknown) {
+  return request("/api/auth/admin/local/setup", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+function formSetupRequest(body: Record<string, string>) {
+  return request("/api/auth/admin/local/setup", {
     method: "POST",
     headers: {
       "content-type": "application/x-www-form-urlencoded",
@@ -84,6 +107,12 @@ describe("admin local auth routes", () => {
     adminAuthMocks.authenticateLocalAdminUser.mockResolvedValue({
       username: "admin",
       role: "editor",
+      passwordHash: "hash",
+      disabled: false,
+    });
+    adminAuthMocks.createInitialLocalAdminUser.mockResolvedValue({
+      username: "admin",
+      role: "admin",
       passwordHash: "hash",
       disabled: false,
     });
@@ -152,5 +181,67 @@ describe("admin local auth routes", () => {
     expect(response.headers.get("set-cookie")).toContain("tpa-admin-session=");
     expect(response.headers.get("set-cookie")).toContain("Max-Age=0");
     expect(response.headers.get("set-cookie")).toContain("HttpOnly");
+  });
+
+  it("creates the first local admin and starts a session during JSON setup", async () => {
+    adminAuthMocks.getAdminAuthConfig.mockResolvedValue(localConfig({ sessionDurationHours: 12 }));
+
+    const response = await setupPost(jsonSetupRequest({
+      username: "admin",
+      password: "new-admin-password",
+      confirmPassword: "new-admin-password",
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(responseJson(response)).resolves.toEqual({
+      ok: true,
+      user: { username: "admin", role: "admin" },
+    });
+    expect(adminAuthMocks.createInitialLocalAdminUser).toHaveBeenCalledWith("admin", "new-admin-password");
+    expect(adminAuthMocks.createAdminSessionCookie).toHaveBeenCalledWith(
+      { sub: "admin", name: "admin" },
+      "admin",
+      12,
+    );
+    expect(response.headers.get("set-cookie")).toContain("tpa-admin-session=signed-session-token");
+    expect(response.headers.get("set-cookie")).toContain("Max-Age=43200");
+  });
+
+  it("rejects setup when password confirmation does not match", async () => {
+    const response = await setupPost(jsonSetupRequest({
+      username: "admin",
+      password: "new-admin-password",
+      confirmPassword: "different-password",
+    }));
+
+    expect(response.status).toBe(400);
+    await expect(responseJson(response)).resolves.toEqual({ error: "Passwords do not match" });
+    expect(adminAuthMocks.createInitialLocalAdminUser).not.toHaveBeenCalled();
+  });
+
+  it("returns setup creation errors without creating a session", async () => {
+    adminAuthMocks.createInitialLocalAdminUser.mockRejectedValue(new Error("Local admin user already exists"));
+
+    const response = await setupPost(jsonSetupRequest({
+      username: "admin",
+      password: "new-admin-password",
+    }));
+
+    expect(response.status).toBe(400);
+    await expect(responseJson(response)).resolves.toEqual({ error: "Local admin user already exists" });
+    expect(adminAuthMocks.createAdminSessionCookie).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes form setup return targets before redirecting", async () => {
+    const response = await setupPost(formSetupRequest({
+      username: "admin",
+      password: "new-admin-password",
+      "confirm-password": "new-admin-password",
+      returnTo: "//evil.example/steal",
+    }));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("https://admin.example.net/");
+    expect(response.headers.get("set-cookie")).toContain("tpa-admin-session=signed-session-token");
   });
 });
