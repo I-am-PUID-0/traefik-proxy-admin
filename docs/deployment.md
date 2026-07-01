@@ -75,7 +75,7 @@ That endpoint is intentionally unauthenticated for Traefik. Restrict access with
 
 ## Backups & Restores
 
-Use **Config -> Backup & Restore** to download a full TPA backup before upgrades or risky configuration changes. The backup includes global app config, domains, services, service security rules, reusable Basic Auth and SSO provider configs, shared links, local admin auth config, password hashes, and OAuth client secrets. Store backup files like credentials.
+Use **Config -> Backup & Restore** to download a full TPA backup before upgrades or risky configuration changes. The backup includes global app config, domains, services, service security rules, reusable Basic Auth and SSO provider configs, shared links, local admin auth config, password hashes, and OAuth client secrets. The UI asks for confirmation before export because the file is sensitive; store backup files like credentials.
 
 Restore currently uses replace mode: TPA validates the selected backup, shows a dry-run summary, and then deletes existing domains, services, service security rules, reusable auth providers, shared links, and app config before importing the backup. Active sessions and one-time service auth tickets are intentionally excluded, so users must sign in again after a restore.
 

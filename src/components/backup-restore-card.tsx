@@ -50,6 +50,7 @@ export function BackupRestoreCard() {
   const [isExporting, setIsExporting] = useState(false);
   const [isInspecting, setIsInspecting] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [exportConfirmOpen, setExportConfirmOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -187,7 +188,7 @@ export function BackupRestoreCard() {
                   Active sessions and one-time auth tickets are excluded.
                 </p>
               </div>
-              <Button type="button" variant="outline" onClick={exportBackup} disabled={isExporting} className="shrink-0">
+              <Button type="button" variant="outline" onClick={() => setExportConfirmOpen(true)} disabled={isExporting} className="shrink-0">
                 {isExporting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                 Export Backup
               </Button>
@@ -258,6 +259,23 @@ export function BackupRestoreCard() {
           </div>
         )}
       </CardContent>
+
+      <AlertDialog open={exportConfirmOpen} onOpenChange={setExportConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export sensitive backup data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The exported JSON includes OAuth client secrets, password hashes, shared-link tokens, and admin auth configuration. Store it like a credential and avoid sharing it in logs, tickets, or public repos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isExporting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={exportBackup} disabled={isExporting}>
+              {isExporting ? "Exporting..." : "Export Backup"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
