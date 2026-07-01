@@ -5,6 +5,7 @@ import {
   basicAuthConfigs,
   basicAuthUsers,
   domains,
+  ipJailDecisions,
   serviceSecurityConfigs,
   services,
   sharedLinks,
@@ -13,6 +14,7 @@ import {
   type BasicAuthConfig,
   type BasicAuthUser,
   type Domain,
+  type IpJailDecision,
   type Service,
   type ServiceSecurityConfig,
   type SharedLink,
@@ -30,7 +32,8 @@ type BackupTableName =
   | "sharedLinks"
   | "basicAuthConfigs"
   | "basicAuthUsers"
-  | "ssoConfigs";
+  | "ssoConfigs"
+  | "ipJailDecisions";
 
 export interface BackupPayload {
   format: typeof BACKUP_FORMAT;
@@ -48,6 +51,7 @@ export interface BackupPayload {
     basicAuthConfigs: BasicAuthConfig[];
     basicAuthUsers: BasicAuthUser[];
     ssoConfigs: SsoConfig[];
+    ipJailDecisions: IpJailDecision[];
   };
 }
 
@@ -111,6 +115,7 @@ function assertBackupPayload(payload: unknown): BackupPayload {
       basicAuthConfigs: normalizeRows<BasicAuthConfig>(data.basicAuthConfigs, ["createdAt", "updatedAt"]),
       basicAuthUsers: normalizeRows<BasicAuthUser>(data.basicAuthUsers, ["createdAt", "updatedAt"]),
       ssoConfigs: normalizeRows<SsoConfig>(data.ssoConfigs, ["createdAt", "updatedAt"]),
+      ipJailDecisions: normalizeRows<IpJailDecision>(data.ipJailDecisions, ["expiresAt", "createdAt", "updatedAt"]),
     },
   };
 }
@@ -125,6 +130,7 @@ function countsFor(payload: BackupPayload): Record<BackupTableName, number> {
     basicAuthConfigs: payload.data.basicAuthConfigs.length,
     basicAuthUsers: payload.data.basicAuthUsers.length,
     ssoConfigs: payload.data.ssoConfigs.length,
+    ipJailDecisions: payload.data.ipJailDecisions.length,
   };
 }
 
@@ -151,6 +157,7 @@ export class BackupRestoreService {
       allBasicAuthConfigs,
       allBasicAuthUsers,
       allSsoConfigs,
+      allIpJailDecisions,
     ] = await Promise.all([
       db.select().from(appConfig),
       db.select().from(domains),
@@ -160,6 +167,7 @@ export class BackupRestoreService {
       db.select().from(basicAuthConfigs),
       db.select().from(basicAuthUsers),
       db.select().from(ssoConfigs),
+      db.select().from(ipJailDecisions),
     ]);
 
     return {
@@ -178,6 +186,7 @@ export class BackupRestoreService {
         basicAuthConfigs: allBasicAuthConfigs,
         basicAuthUsers: allBasicAuthUsers,
         ssoConfigs: allSsoConfigs,
+        ipJailDecisions: allIpJailDecisions,
       },
     };
   }
@@ -195,6 +204,7 @@ export class BackupRestoreService {
     const backup = assertBackupPayload(payload);
 
     await db.transaction(async (tx) => {
+      await tx.delete(ipJailDecisions);
       await tx.delete(serviceSecurityConfigs);
       await tx.delete(sharedLinks);
       await tx.delete(services);
@@ -211,6 +221,7 @@ export class BackupRestoreService {
       if (backup.data.ssoConfigs.length > 0) await tx.insert(ssoConfigs).values(backup.data.ssoConfigs);
       if (backup.data.serviceSecurityConfigs.length > 0) await tx.insert(serviceSecurityConfigs).values(backup.data.serviceSecurityConfigs);
       if (backup.data.sharedLinks.length > 0) await tx.insert(sharedLinks).values(backup.data.sharedLinks);
+      if (backup.data.ipJailDecisions.length > 0) await tx.insert(ipJailDecisions).values(backup.data.ipJailDecisions);
       if (backup.data.appConfig.length > 0) await tx.insert(appConfig).values(backup.data.appConfig);
     });
 

@@ -34,6 +34,7 @@ Keep this value stable across restarts. Changing it invalidates existing admin s
 ```env
 TRAEFIK_API_URL=http://traefik:8080
 TRAEFIK_ACCESS_LOG_PATH=/logs/traefik/access.log
+TPA_IP_JAIL_ENFORCEMENT=true
 TARGET_TEST_ALLOW_CIDRS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 ADMIN_COOKIE_DOMAIN=.example.com
 ADMIN_COOKIE_SECURE=true
@@ -42,6 +43,8 @@ ADMIN_COOKIE_SECURE=true
 `TRAEFIK_API_URL` enables live discovery and diagnostics. It is not required for Traefik to poll generated config from `/api/traefik/config`.
 
 `TRAEFIK_ACCESS_LOG_PATH` enables the read-only log viewer on the Traefik Live page. Mount the Traefik access log file into the TPA container at that path, preferably read-only. TPA supports Traefik JSON access logs and the default extended Common Log Format, so existing non-JSON log consumers can keep using the same file.
+
+`TPA_IP_JAIL_ENFORCEMENT=false` is an emergency break-glass switch. IP jail decisions remain visible and editable in TPA, but generated Traefik block routers are omitted until the value is removed or set back to true.
 
 `TARGET_TEST_ALLOW_CIDRS` enables TCP target probes. Keep it limited to private Docker, VPN, or LAN ranges.
 
@@ -75,9 +78,9 @@ That endpoint is intentionally unauthenticated for Traefik. Restrict access with
 
 ## Backups & Restores
 
-Use **Config -> Backup & Restore** to download a full TPA backup before upgrades or risky configuration changes. The backup includes global app config, domains, services, service security rules, reusable Basic Auth and SSO provider configs, shared links, local admin auth config, password hashes, and OAuth client secrets. The UI asks for confirmation before export because the file is sensitive; store backup files like credentials.
+Use **Config -> Backup & Restore** to download a full TPA backup before upgrades or risky configuration changes. The backup includes global app config, domains, services, service security rules, reusable Basic Auth and SSO provider configs, shared links, native IP jail decisions, local admin auth config, password hashes, and OAuth client secrets. The UI asks for confirmation before export because the file is sensitive; store backup files like credentials.
 
-Restore currently uses replace mode: TPA validates the selected backup, shows a dry-run summary, and then deletes existing domains, services, service security rules, reusable auth providers, shared links, and app config before importing the backup. Active sessions and one-time service auth tickets are intentionally excluded, so users must sign in again after a restore.
+Restore currently uses replace mode: TPA validates the selected backup, shows a dry-run summary, and then deletes existing domains, services, service security rules, reusable auth providers, shared links, native IP jail decisions, and app config before importing the backup. Active sessions and one-time service auth tickets are intentionally excluded, so users must sign in again after a restore.
 
 PostgreSQL backups are still recommended for disaster recovery, especially before changing image versions or running migrations. The TPA JSON backup is intended for portable app-level recovery and migration between instances.
 

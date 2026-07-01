@@ -37,6 +37,7 @@ function formatCounts(counts: Record<string, number>) {
     basicAuthConfigs: "basic auth configs",
     basicAuthUsers: "basic auth users",
     ssoConfigs: "SSO providers",
+    ipJailDecisions: "IP jail decisions",
   };
 
   return Object.entries(counts).map(([key, value]) => ({ label: labels[key] || key, value }));
@@ -159,7 +160,7 @@ export function BackupRestoreCard() {
             <div className="space-y-1">
               <p className="font-medium text-amber-200">Backup files contain sensitive auth data.</p>
               <p className="text-muted-foreground">
-                They include SSO client secrets, password hashes, shared-link tokens, and admin auth config. Store exported backups like credentials.
+                They include SSO client secrets, password hashes, shared-link tokens, IP jail decisions, and admin auth config. Store exported backups like credentials.
               </p>
             </div>
           </div>
@@ -182,7 +183,7 @@ export function BackupRestoreCard() {
                   </HelpLabel>
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  Download a portable JSON backup of TPA configuration, services, domains, and service auth settings.
+                  Download a portable JSON backup of TPA configuration, services, domains, service auth settings, and IP jail decisions.
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Active sessions and one-time auth tickets are excluded.
@@ -282,7 +283,7 @@ export function BackupRestoreCard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Replace this TPA configuration?</AlertDialogTitle>
             <AlertDialogDescription>
-              Restore deletes existing domains, services, reusable auth providers, service auth rules, shared links, and app config before importing the selected backup. Active sessions are not restored.
+              Restore deletes existing domains, services, reusable auth providers, service auth rules, shared links, IP jail decisions, and app config before importing the selected backup. Active sessions are not restored.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

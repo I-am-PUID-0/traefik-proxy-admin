@@ -7,6 +7,7 @@ import { BasicAuthService } from "./services/basic-auth.service";
 import { ServiceSecurityService } from "./services/service-security.service";
 import { TRAEFIK_SESSION_COOKIE } from "./constants";
 import { SERVICE_AUTH_TICKET_PATH } from "./service-auth-tickets";
+import { ipJailEnforcementEnabled, listActiveIpJailSubjects } from "./ip-jail";
 import type { Service, Domain } from "@/lib/db/schema";
 import type { CertificateConfig } from "@/lib/dto/domain.dto";
 import { getServiceHostnames } from "@/lib/service-hostnames";
@@ -85,11 +86,47 @@ function getAdminPanelBaseUrl(globalConfig: GlobalTraefikConfig) {
   return baseUrl.replace(/\/+$/, "");
 }
 
+function hostnameFromUrlLike(value: string | undefined | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : `http://${trimmed}`);
+    return parsed.hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function adminHostnames(globalConfig: GlobalTraefikConfig) {
+  return new Set(
+    [
+      hostnameFromUrlLike(globalConfig.adminPanelDomain),
+      hostnameFromUrlLike(globalConfig.adminPanelPublicUrl),
+    ].filter((hostname): hostname is string => Boolean(hostname)),
+  );
+}
+
 function ensureServiceAuthTicketService(config: TraefikConfig, globalConfig: GlobalTraefikConfig) {
   config.http.services["tpa-service-auth-ticket"] = {
     loadBalancer: {
       servers: [{ url: getAdminPanelBaseUrl(globalConfig) }],
       passHostHeader: true,
+    },
+  };
+}
+
+function ensureIpJailBlockService(config: TraefikConfig, globalConfig: GlobalTraefikConfig) {
+  config.http.services["tpa-ip-jail-block"] = {
+    loadBalancer: {
+      servers: [{ url: getAdminPanelBaseUrl(globalConfig) }],
+      passHostHeader: true,
+    },
+  };
+
+  config.http.middlewares!["tpa-ip-jail-block-page"] = {
+    replacePath: {
+      path: "/api/static/blocked",
     },
   };
 }
@@ -389,7 +426,8 @@ async function createTraefikService(
   service: Service,
   domain: Domain,
   globalConfig: GlobalTraefikConfig,
-  config: TraefikConfig
+  config: TraefikConfig,
+  ipJailSubjects: string[] = [],
 ): Promise<void> {
   const serviceIdentifier = generateServiceIdentifier(service, domain);
   const serviceName = `service-${serviceIdentifier}`;
@@ -457,6 +495,22 @@ async function createTraefikService(
     tls: tlsConfig,
   };
   config.http.routers[routerName] = router;
+
+  const jailHostnames = hostnames.filter((hostname) => !adminHostnames(globalConfig).has(hostname.toLowerCase()));
+  if (ipJailSubjects.length > 0 && jailHostnames.length > 0) {
+    ensureIpJailBlockService(config, globalConfig);
+    const jailHostRules = jailHostnames.map(hostname => `Host(\`${hostname}\`)`).join(" || ");
+    for (const [index, subject] of ipJailSubjects.entries()) {
+      config.http.routers[`${routerName}-ip-jail-${index + 1}`] = {
+        rule: `(${jailHostRules}) && ClientIP(\`${subject}\`)`,
+        service: "tpa-ip-jail-block",
+        middlewares: ["tpa-ip-jail-block-page"],
+        ...(entrypoint && { entryPoints: [entrypoint] }),
+        priority: 1_000_000,
+        tls: tlsConfig,
+      };
+    }
+  }
 
   for (const advancedRouter of parseAdvancedRouters(service.advancedRouters)) {
     const advancedMiddlewares = routerMiddlewares(advancedRouter.middlewares, middlewares);
@@ -702,6 +756,7 @@ export async function generateTraefikConfig(): Promise<TraefikConfig> {
   const allDomains = await db.select().from(domains);
 
   const globalConfig = await getGlobalConfig();
+  const ipJailSubjects = ipJailEnforcementEnabled() ? await listActiveIpJailSubjects() : [];
 
   const config: TraefikConfig = {
     http: {
@@ -724,7 +779,7 @@ export async function generateTraefikConfig(): Promise<TraefikConfig> {
       continue;
     }
 
-    await createTraefikService(service, domain, globalConfig, config);
+    await createTraefikService(service, domain, globalConfig, config, ipJailSubjects);
 
     // Track this domain for wildcard certificate generation
     uniqueDomains.set(domain.id, domain);

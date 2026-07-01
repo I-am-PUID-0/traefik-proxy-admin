@@ -120,6 +120,32 @@ services:
 
 The viewer reads the last portion of the file on demand, supports manual refresh and optional live refresh, and filters by search text, method, status family, router, service, slow requests, and loaded line count. It also shows loaded/visible counts, error totals, p95/max latency, visible response bytes, top status codes, noisy clients, error-heavy paths, user agents, routers, services, and derived signals for likely backend errors, auth denials, unmatched 404s, scanner-style probe paths, and latency hotspots. Click a signal or hotspot row to focus the table on those matching entries, then use Reset or Clear focus to return to the full loaded tail. The viewer supports Traefik JSON access logs and Traefik default extended Common Log Format. You can keep `accessLog.format` unset or common for tools such as bouncers that expect non-JSON logs.
 
+The log table can add a visible client IP to the native IP jail for 24 hours. Use this for clear probing or abusive traffic you have reviewed, not as an automatic detector.
+
+Loopback clients such as `127.0.0.1` and `::1` are not offered as one-click log actions because they often represent Traefik or another local proxy instead of one external user. They can still be added manually from Native IP Jail after an explicit confirmation.
+
+## Native IP Jail
+
+The Traefik Live page includes a Native IP Jail panel. Entries are stored in TPA's database with a subject, reason, source, optional evidence, and optional expiry. Subjects can be exact IPv4/IPv6 addresses or CIDR ranges.
+
+Active jail entries are enforced in generated Traefik HTTP-provider config. For each TPA-managed service hostname, TPA emits a high-priority router with a `ClientIP(...)` rule that sends matching clients to a static 403 block page. Releasing or expiring an entry removes that generated block after Traefik refreshes the provider config.
+
+TPA skips configured admin hostnames when generating jail routers so the control plane does not block itself. It compares service hostnames against **Internal TPA URL for Traefik** and **Public TPA URL for Browser/OAuth** from Config. Keep those values accurate when TPA is published through TPA itself.
+
+If a user accidentally blocks themselves, use one of these recovery paths:
+
+1. Set `TPA_IP_JAIL_ENFORCEMENT=false` and restart/redeploy TPA, then let Traefik refresh `/api/traefik/config`.
+2. Access TPA through a direct internal URL that bypasses the blocked Traefik hostname, then release the jail entry.
+3. Disable jail decisions directly in PostgreSQL:
+
+```sql
+update ip_jail_decisions
+set is_enabled = false,
+    updated_at = now();
+```
+
+Phase 1 is intentionally manual/log-assisted. It does not auto-ban clients from thresholds, and it only covers hostnames managed by TPA. Use a dedicated security tool such as CrowdSec when you need shared threat intelligence, automatic scenarios, or protection for non-TPA routers.
+
 For common-format lines, TPA parses the Traefik extended fields in this order: client IP, timestamp, request method/path, status, response bytes, user agent, request count, router name, service/server target, and duration. A line like this:
 
 ```text

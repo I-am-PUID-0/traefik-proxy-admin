@@ -26,7 +26,7 @@ They overlap around Traefik dynamic configuration, service routing, middleware r
 | Plugin/static config management | Does not install Traefik plugins or edit Traefik static config | Plugin Hub can install/manage Traefik plugins and requires access to Traefik static config |
 | mTLS focus | Possible through externally defined Traefik config/middlewares, but not a first-class TPA workflow | First-class mTLS/resource workflow using `mtlswhitelist` according to its docs |
 | Pangolin fit | No native Pangolin API integration | Native Pangolin data-source mode |
-| Backup/restore | Full replace-mode backup/restore for app config, domains, services, auth configs, shared links, secrets, and admin auth config | Persistence through SQLite and mounted config/data; public docs emphasize backups and persistence rather than a comparable full in-app restore workflow |
+| Backup/restore | Full replace-mode backup/restore for app config, domains, services, auth configs, shared links, native IP jail decisions, secrets, and admin auth config | Persistence through SQLite and mounted config/data; public docs emphasize backups and persistence rather than a comparable full in-app restore workflow |
 
 ## Product Shape
 
@@ -77,7 +77,7 @@ Use Middleware Manager when plugin lifecycle is a requirement. Use TPA when you 
 
 ## Operational Model
 
-TPA expects PostgreSQL and treats backup/restore as an application feature. Its backup format includes app config, domains, services, service security configs, shared links, reusable Basic Auth and SSO provider configs, password hashes, OAuth client secrets, and admin auth config. Active sessions and one-time tickets are intentionally excluded.
+TPA expects PostgreSQL and treats backup/restore as an application feature. Its backup format includes app config, domains, services, service security configs, shared links, native IP jail decisions, reusable Basic Auth and SSO provider configs, password hashes, OAuth client secrets, and admin auth config. Active sessions and one-time tickets are intentionally excluded.
 
 Middleware Manager uses SQLite state and mounted configuration/data paths. Its docs emphasize keeping the container running to keep override middleware deployed, mounting the rules/config/static-config directories correctly, and choosing Pangolin or Traefik as the active data source.
 

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { IpJailCard } from "@/components/ip-jail-card";
 import { TraefikApiStatusCard } from "@/components/traefik-api-status-card";
 import { TraefikLogsCard } from "@/components/traefik-logs-card";
 import type { ServiceFormData } from "@/hooks/use-service-form";
@@ -388,6 +389,8 @@ export default function TraefikResourcesPage() {
         <TraefikApiStatusCard />
 
         <TraefikLogsCard />
+
+        <IpJailCard />
 
         {error && <p className="text-sm text-amber-700 dark:text-amber-300">{error}</p>}
 

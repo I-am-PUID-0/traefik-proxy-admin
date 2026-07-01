@@ -62,6 +62,7 @@ function backupPayload(overrides: Record<string, unknown> = {}) {
       basicAuthConfigs: [],
       basicAuthUsers: [],
       ssoConfigs: [],
+      ipJailDecisions: [],
     },
     ...overrides,
   };

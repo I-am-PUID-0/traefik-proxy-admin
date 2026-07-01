@@ -135,6 +135,18 @@ export const serviceAuthTickets = pgTable("service_auth_tickets", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const ipJailDecisions = pgTable("ip_jail_decisions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  reason: text("reason"),
+  source: varchar("source", { length: 80 }).default("manual").notNull(),
+  evidence: text("evidence"),
+  isEnabled: boolean("is_enabled").default(true).notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const appConfig = pgTable("app_config", {
   id: uuid("id").primaryKey().defaultRandom(),
   key: varchar("key", { length: 255 }).notNull().unique(),
@@ -162,5 +174,7 @@ export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type ServiceAuthTicket = typeof serviceAuthTickets.$inferSelect;
 export type NewServiceAuthTicket = typeof serviceAuthTickets.$inferInsert;
+export type IpJailDecision = typeof ipJailDecisions.$inferSelect;
+export type NewIpJailDecision = typeof ipJailDecisions.$inferInsert;
 export type AppConfig = typeof appConfig.$inferSelect;
 export type NewAppConfig = typeof appConfig.$inferInsert;

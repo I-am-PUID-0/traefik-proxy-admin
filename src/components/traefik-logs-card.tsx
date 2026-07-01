@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, FileText, RefreshCw, RotateCcw, Search } from "lucide-react";
+import { AlertTriangle, Ban, FileText, RefreshCw, RotateCcw, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,11 @@ interface LogsResponse {
   path?: string;
   error?: string;
   entries: TraefikLogEntry[];
+}
+
+interface GlobalConfigResponse {
+  adminPanelDomain?: string;
+  adminPanelPublicUrl?: string;
 }
 
 type StatusFilter = "all" | "2xx" | "3xx" | "4xx" | "5xx" | "errors";
@@ -136,6 +141,32 @@ function searchable(entry: TraefikLogEntry) {
     entry.serviceName,
     entry.raw,
   ].filter(Boolean).join(" ").toLowerCase();
+}
+
+function clientForJail(value?: string | null) {
+  const first = value?.split(",")[0]?.trim();
+  return first && first !== "-" ? first : null;
+}
+
+function isLoopbackSubject(value: string) {
+  const address = value.trim().toLowerCase().split("/")[0];
+  return address.startsWith("127.") || address === "::1" || address === "0:0:0:0:0:0:0:1";
+}
+
+function hostnameFromUrlLike(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : `http://${trimmed}`);
+    return parsed.hostname.toLowerCase();
+  } catch {
+    return trimmed.split("/")[0]?.split(":")[0]?.toLowerCase() || null;
+  }
+}
+
+function entryHost(entry: TraefikLogEntry) {
+  return hostnameFromUrlLike(entry.host);
 }
 
 function quickFilterMatches(entry: TraefikLogEntry, filter: QuickFilter | null) {
@@ -332,6 +363,9 @@ export function TraefikLogsCard() {
   const [sortOption, setSortOption] = useState<SortOption>("newest");
   const [quickFilter, setQuickFilter] = useState<QuickFilter | null>(null);
   const [limit, setLimit] = useState("250");
+  const [jailingClient, setJailingClient] = useState<string | null>(null);
+  const [jailMessage, setJailMessage] = useState<string | null>(null);
+  const [adminHosts, setAdminHosts] = useState<Set<string>>(() => new Set());
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
@@ -360,6 +394,32 @@ export function TraefikLogsCard() {
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  useEffect(() => {
+    const hosts = new Set<string>();
+    const currentHost = hostnameFromUrlLike(window.location.host);
+    if (currentHost) hosts.add(currentHost);
+
+    let cancelled = false;
+    fetch("/api/config")
+      .then((response) => response.ok ? response.json() as Promise<GlobalConfigResponse> : null)
+      .then((config) => {
+        if (cancelled) return;
+        const nextHosts = new Set(hosts);
+        const internalHost = hostnameFromUrlLike(config?.adminPanelDomain);
+        const publicHost = hostnameFromUrlLike(config?.adminPanelPublicUrl);
+        if (internalHost) nextHosts.add(internalHost);
+        if (publicHost) nextHosts.add(publicHost);
+        setAdminHosts(nextHosts);
+      })
+      .catch(() => {
+        if (!cancelled) setAdminHosts(hosts);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -442,6 +502,55 @@ export function TraefikLogsCard() {
     setQuickFilter(filter);
   };
 
+  const jailClient = async (entry: TraefikLogEntry) => {
+    const client = clientForJail(entry.clientIp);
+    if (!client) return;
+    if (isLoopbackSubject(client)) {
+      setJailMessage("Loopback clients cannot be jailed from log quick actions. Use Native IP Jail manual entry if you really need to block local proxy traffic.");
+      return;
+    }
+
+    const host = entryHost(entry);
+    if (host && adminHosts.has(host)) {
+      const confirmed = window.confirm(
+        `This log entry is for the TPA admin host (${host}). Jailing ${client} could block your current browser from proxied access if the admin-host exemption is removed or misconfigured. Continue?`,
+      );
+      if (!confirmed) return;
+    }
+
+    setJailingClient(client);
+    setJailMessage(null);
+    try {
+      const response = await fetch("/api/security/ip-jail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: client,
+          reason: "Blocked from Traefik access logs",
+          source: "access_log",
+          evidence: [
+            entry.status ? `status ${entry.status}` : null,
+            entry.method,
+            entry.host,
+            entry.path,
+            entry.userAgent,
+          ].filter(Boolean).join(" "),
+          expiresInMinutes: 1440,
+        }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(data?.error || `HTTP ${response.status}`);
+      }
+      setJailMessage(`${client} jailed for 24 hours. Traefik will enforce it after the provider config refreshes.`);
+      window.dispatchEvent(new Event("tpa-ip-jail-updated"));
+    } catch (error) {
+      setJailMessage(error instanceof Error ? error.message : "Failed to jail client");
+    } finally {
+      setJailingClient(null);
+    }
+  };
+
   const selectTriggerClassName = "w-full min-w-0";
   const selectControlClassName = "min-w-36 flex-[1_1_9rem] xl:flex-none";
   const logToolsAvailable = payload?.configured === true && !payload.error;
@@ -487,6 +596,11 @@ export function TraefikLogsCard() {
         )}
 
         {payload?.error && <p className="text-sm text-amber-700 dark:text-amber-300">{payload.error}</p>}
+        {jailMessage && (
+          <div className="rounded-md border bg-muted/10 px-3 py-2 text-sm text-muted-foreground">
+            {jailMessage}
+          </div>
+        )}
 
         {logToolsAvailable && loadedStats.total > 0 && (
           <div className="rounded-md border bg-muted/10 p-3">
@@ -637,6 +751,24 @@ export function TraefikLogsCard() {
                       <TableCell className="font-mono text-xs">
                         {entry.clientIp || "-"}
                         {entry.bytesWritten !== null && entry.bytesWritten !== undefined && <span className="block text-muted-foreground">{formatBytes(entry.bytesWritten)}</span>}
+                        {clientForJail(entry.clientIp) && !isLoopbackSubject(clientForJail(entry.clientIp) || "") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 h-7 px-2 text-xs"
+                            onClick={() => jailClient(entry)}
+                            disabled={jailingClient === clientForJail(entry.clientIp)}
+                            title="Add this client to the native IP jail for 24 hours"
+                          >
+                            <Ban className="mr-1 h-3 w-3" />
+                            Jail 24h
+                          </Button>
+                        )}
+                        {clientForJail(entry.clientIp) && isLoopbackSubject(clientForJail(entry.clientIp) || "") && (
+                          <Badge variant="outline" className="mt-2 block w-fit font-normal" title="Loopback clients require manual confirmation in Native IP Jail">
+                            Loopback
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="hidden max-w-xs truncate text-xs text-muted-foreground 2xl:table-cell" title={entry.userAgent || undefined}>{entry.userAgent || "-"}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{formatDuration(entry.durationMs)}</TableCell>
