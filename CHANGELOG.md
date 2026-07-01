@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.19.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.18.0...v1.19.0) (2026-07-01)
+
+
+### Features
+
+* add UI palette selection and update theme provider ([7c71a43](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/7c71a431b8e98f401217fe0f5cc688ff2f090979))
+* **backup:** confirm sensitive backup exports ([39ad652](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/39ad6523fc140ac3b33675f56a6e5993d2656a56))
+* **services:** add service group support for inventory filtering and sorting ([1e738af](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/1e738afa480a78723de52eb22a007030e285ee81))
+* **sessions:** improve inventory filtering and hide raw tokens ([84dbb6b](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/84dbb6b292c5fae03dfce62d48ec292d5cc71e20))
+* **traefik:** improve access log insights and layout ([d6736fc](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/d6736fc5d84f9f0c10671f539dd32d8c87597a8f))
+
+
+### Bug Fixes
+
+* **api:** bound JSON body parsing on mutating routes ([4cc6d75](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/4cc6d75ebb651b87c30b0996a637d7ce0e173e4e))
+* **auth:** apply CSRF guard to public admin logout ([617323c](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/617323cce741518a2c77e9c5c1655900a456dc9f))
+* **auth:** enforce one-time shared links and recover expired admin sessions ([ecede8a](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/ecede8abed3f3b2a087c788ec88baaecbf5451ad))
+* **auth:** honor configured service session duration ([98d82d1](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/98d82d1c1e3fa3d1ce2c54ce9962a97ecede3ae4))
+* **auth:** prevent cached admin shell after session expiry ([817283c](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/817283c114b73be660e87fe89b4fb7cd209a69c4))
+* **auth:** remove shared-link session debug logging ([1ce59c1](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/1ce59c18afad594dc232288cc9c8f8fb912319e8))
+* **db:** run pending migrations after legacy schema repair ([1f41b32](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/1f41b321e0c0b582e951b3581732e5be58069a75))
+* **services:** preserve Forever auto-duration in scheduler ([dce84ed](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/dce84ed057fe69b0d0a79d2112da5115364fed47))
+* **shared-links:** generate URLs from service hostname mode ([c921a2c](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/c921a2c590a64771d000a01ba7c2accd887425be))
+* **validation:** validate service and domain routing inputs ([91ab0f8](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/91ab0f83ab4436e3aede3ab97c6f43004c251709))
+
 ## [1.18.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.17.0...v1.18.0) (2026-06-25)
 
 
