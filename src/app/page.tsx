@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
   Copy,
-  Settings,
 } from "lucide-react";
 import { AppLayout } from "@/components/app-layout";
 import { ServiceTable } from "@/components/service-table";
@@ -67,35 +65,6 @@ export default function HomePage() {
     <>
       <AppLayout>
         <div className="space-y-6">
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md">
-            <Card>
-              <CardContent className="p-3">
-                <div className="flex items-center gap-3">
-                  <Settings className="h-6 w-6 text-blue-600" />
-                  <div>
-                    <p className="text-2xl font-bold">{services.length}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Services</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-3">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
-                  <div>
-                    <p className="text-2xl font-bold">
-                      {services.filter(s => s.enabled).length}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Active</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Service Table */}
           <ServiceTable
             services={services}
