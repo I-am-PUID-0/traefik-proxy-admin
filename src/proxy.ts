@@ -28,6 +28,10 @@ const PUBLIC_PATHS = new Set([
   "/favicon.ico",
 ]);
 
+const PUBLIC_CSRF_PROTECTED_PATHS = new Set([
+  "/api/auth/admin/logout",
+]);
+
 const PUBLIC_PREFIXES = ["/api/static/", "/_next/"];
 const NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
@@ -137,7 +141,19 @@ function firstForwardedHeader(value: string | null) {
 }
 
 export async function proxy(request: NextRequest) {
-  if (!adminAuthEnabled() || isPublicPath(request.nextUrl.pathname)) {
+  if (!adminAuthEnabled()) {
+    return NextResponse.next();
+  }
+
+  if (isPublicPath(request.nextUrl.pathname)) {
+    if (
+      PUBLIC_CSRF_PROTECTED_PATHS.has(request.nextUrl.pathname) &&
+      unsafeMethod(request.method) &&
+      !sameOriginRequest(request)
+    ) {
+      return csrfForbidden(request);
+    }
+
     return NextResponse.next();
   }
 

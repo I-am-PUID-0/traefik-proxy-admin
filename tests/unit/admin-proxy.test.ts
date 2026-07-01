@@ -67,6 +67,32 @@ describe("admin proxy authorization", () => {
     expect(authMocks.verifyAdminSessionToken).not.toHaveBeenCalled();
   });
 
+  it("allows same-origin public logout without checking an admin session", async () => {
+    const response = await proxy(request("/api/auth/admin/logout", {
+      method: "POST",
+      headers: {
+        origin: "https://admin.example.com",
+      },
+    }));
+
+    expect(response.status).toBe(200);
+    expect(authMocks.verifyAdminSessionToken).not.toHaveBeenCalled();
+  });
+
+  it("blocks cross-site public logout requests", async () => {
+    const response = await proxy(request("/api/auth/admin/logout", {
+      method: "POST",
+      headers: {
+        "sec-fetch-site": "cross-site",
+      },
+    }));
+
+    expect(response.status).toBe(403);
+    expectNoStore(response);
+    await expect(json(response)).resolves.toEqual({ error: "Cross-site admin request blocked" });
+    expect(authMocks.verifyAdminSessionToken).not.toHaveBeenCalled();
+  });
+
   it("returns 401 for protected API requests without a valid session", async () => {
     authMocks.verifyAdminSessionToken.mockResolvedValue(null);
 
