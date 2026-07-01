@@ -332,8 +332,9 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
 
 async function runMigrations() {
   console.log("Running database migrations");
+  let migrationClient: postgres.Sql | null = null;
   try {
-    const migrationClient = postgres(dbCredentials.url, { max: 1 });
+    migrationClient = postgres(dbCredentials.url, { max: 1 });
     const [{ hasMigrationTable, hasSchema }] = await migrationClient<{
       hasMigrationTable: boolean;
       hasSchema: boolean;
@@ -364,14 +365,24 @@ async function runMigrations() {
 
     if (hasSchema && (!hasMigrationTable || migrationCount === 0)) {
       await repairLegacySchema(migrationClient);
-      await migrationClient.end();
-      return;
+      // The repair stamps the legacy schema through 0011; Drizzle still needs
+      // to apply newer migrations during this same startup.
+      console.log("Legacy database schema repaired; applying pending migrations.");
     }
+
+    await migrationClient.end();
+    migrationClient = null;
 
     const db = drizzle(dbCredentials.url);
     await migrate(db, { migrationsFolder: resolveMigrationsFolder() });
-    await migrationClient.end();
   } catch (error) {
+    if (migrationClient) {
+      try {
+        await migrationClient.end();
+      } catch (closeError) {
+        console.log(`Closing migration client failed - ${closeError}`);
+      }
+    }
     console.log(`Running migrations failed, please do it manually - ${error}`);
   }
 }
