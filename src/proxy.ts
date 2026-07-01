@@ -29,9 +29,22 @@ const PUBLIC_PATHS = new Set([
 ]);
 
 const PUBLIC_PREFIXES = ["/api/static/", "/_next/"];
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+  Pragma: "no-cache",
+  Expires: "0",
+};
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.has(pathname) || PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+function noStore(response: NextResponse) {
+  for (const [header, value] of Object.entries(NO_STORE_HEADERS)) {
+    response.headers.set(header, value);
+  }
+
+  return response;
 }
 
 function requiredRole(request: NextRequest): AdminRole {
@@ -61,20 +74,20 @@ function requiredRole(request: NextRequest): AdminRole {
 
 function unauthorized(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Admin authentication required" }, { status: 401 });
+    return noStore(NextResponse.json({ error: "Admin authentication required" }, { status: 401 }));
   }
 
   const loginUrl = publicUrl(request, "/auth/login");
   loginUrl.searchParams.set("returnTo", request.nextUrl.pathname + request.nextUrl.search);
-  return NextResponse.redirect(loginUrl);
+  return noStore(NextResponse.redirect(loginUrl));
 }
 
 function forbidden(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Insufficient admin role" }, { status: 403 });
+    return noStore(NextResponse.json({ error: "Insufficient admin role" }, { status: 403 }));
   }
 
-  return NextResponse.redirect(publicUrl(request, "/auth/forbidden"));
+  return noStore(NextResponse.redirect(publicUrl(request, "/auth/forbidden")));
 }
 
 function unsafeMethod(method: string) {
@@ -83,10 +96,10 @@ function unsafeMethod(method: string) {
 
 function csrfForbidden(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Cross-site admin request blocked" }, { status: 403 });
+    return noStore(NextResponse.json({ error: "Cross-site admin request blocked" }, { status: 403 }));
   }
 
-  return NextResponse.redirect(publicUrl(request, "/auth/forbidden"));
+  return noStore(NextResponse.redirect(publicUrl(request, "/auth/forbidden")));
 }
 
 function sameOriginRequest(request: NextRequest) {
@@ -141,7 +154,7 @@ export async function proxy(request: NextRequest) {
     return forbidden(request);
   }
 
-  return NextResponse.next();
+  return noStore(NextResponse.next());
 }
 
 export const config = {
