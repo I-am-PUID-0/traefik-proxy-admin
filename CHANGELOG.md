@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.20.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.19.0...v1.20.0) (2026-07-01)
+
+
+### Features
+
+* add read-only CrowdSec decision visibility ([e0874f4](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/e0874f45fbcf0e4a8ed0c1b21f8f83411d9c2d45))
+* **logs:** enhance quick filtering and interaction in logs card ([6e331c7](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/6e331c7dc9abf35ade5fcab087ed1a472368e7e4))
+* **security:** add native IP jail for Traefik clients ([ac5cca5](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/ac5cca552a71de7a7c5e9ec210fdf0b804513def))
+
 ## [1.19.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.18.0...v1.19.0) (2026-07-01)
 
 
