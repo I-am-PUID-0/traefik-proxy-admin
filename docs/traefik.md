@@ -99,7 +99,6 @@ TPA blocks imports from Traefik `@internal` resources. Internal routers and serv
 
 Review the preview warnings before saving. Complex Traefik services, multiple upstream servers, target URLs with paths, or rules that are not simple `Host(...)` matches may require manual cleanup after the draft is created.
 
-
 ## Access Log Viewer
 
 Set `TRAEFIK_ACCESS_LOG_PATH` when TPA should show a read-only Traefik access log tail on the Traefik Live page:
@@ -119,7 +118,7 @@ services:
       - /var/log/traefik/access.log:/logs/traefik/access.log:ro
 ```
 
-The viewer reads the last portion of the file on demand, supports manual refresh and optional live refresh, and filters by search text, method, status family, router, service, slow requests, and loaded line count. It also shows loaded/visible counts, error totals, p95/max latency, visible response bytes, top status codes, noisy clients, error-heavy paths, user agents, routers, services, and derived signals for likely backend errors, auth denials, unmatched 404s, scanner-style probe paths, and latency hotspots. The viewer supports Traefik JSON access logs and Traefik default extended Common Log Format. You can keep `accessLog.format` unset or common for tools such as bouncers that expect non-JSON logs.
+The viewer reads the last portion of the file on demand, supports manual refresh and optional live refresh, and filters by search text, method, status family, router, service, slow requests, and loaded line count. It also shows loaded/visible counts, error totals, p95/max latency, visible response bytes, top status codes, noisy clients, error-heavy paths, user agents, routers, services, and derived signals for likely backend errors, auth denials, unmatched 404s, scanner-style probe paths, and latency hotspots. Click a signal or hotspot row to focus the table on those matching entries, then use Reset or Clear focus to return to the full loaded tail. The viewer supports Traefik JSON access logs and Traefik default extended Common Log Format. You can keep `accessLog.format` unset or common for tools such as bouncers that expect non-JSON logs.
 
 For common-format lines, TPA parses the Traefik extended fields in this order: client IP, timestamp, request method/path, status, response bytes, user agent, request count, router name, service/server target, and duration. A line like this:
 

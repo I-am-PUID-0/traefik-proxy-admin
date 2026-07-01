@@ -38,6 +38,13 @@ interface LogsResponse {
 type StatusFilter = "all" | "2xx" | "3xx" | "4xx" | "5xx" | "errors";
 type LatencyFilter = "all" | "slow";
 type SortOption = "newest" | "oldest" | "slowest" | "status";
+type QuickFilterKind = "agent" | "auth" | "client" | "path" | "probe" | "router" | "serverErrors" | "service" | "slow" | "status" | "unmatched404";
+
+interface QuickFilter {
+  kind: QuickFilterKind;
+  label: string;
+  value?: string;
+}
 
 const SLOW_REQUEST_MS = 1000;
 const PROBE_PATH_PATTERN = /(?:\/\.env|\/\.git|wp-admin|wp-login|phpinfo|cgi-bin|vendor\/phpunit|actuator|server-status)/i;
@@ -131,6 +138,37 @@ function searchable(entry: TraefikLogEntry) {
   ].filter(Boolean).join(" ").toLowerCase();
 }
 
+function quickFilterMatches(entry: TraefikLogEntry, filter: QuickFilter | null) {
+  if (!filter) return true;
+
+  switch (filter.kind) {
+    case "agent":
+      return entry.userAgent === filter.value;
+    case "auth":
+      return entry.status === 401 || entry.status === 403;
+    case "client":
+      return entry.clientIp === filter.value;
+    case "path":
+      return entry.path === filter.value;
+    case "probe":
+      return Boolean(entry.path && PROBE_PATH_PATTERN.test(entry.path));
+    case "router":
+      return entry.routerName === filter.value;
+    case "serverErrors":
+      return typeof entry.status === "number" && entry.status >= 500;
+    case "service":
+      return entry.serviceName === filter.value;
+    case "slow":
+      return Boolean(entry.durationMs && entry.durationMs >= SLOW_REQUEST_MS);
+    case "status":
+      return entry.status === Number(filter.value);
+    case "unmatched404":
+      return entry.status === 404 && !entry.routerName;
+    default:
+      return true;
+  }
+}
+
 function topValues(
   entries: TraefikLogEntry[],
   getValue: (entry: TraefikLogEntry) => string | number | null | undefined,
@@ -196,10 +234,12 @@ function InsightBox({
   title,
   items,
   empty,
+  onSelect,
 }: {
   title: string;
   items: Array<{ label: string; count: number }>;
   empty: string;
+  onSelect: (item: { label: string; count: number }) => void;
 }) {
   return (
     <div className="min-w-0 rounded-md border bg-background/30 px-3 py-2">
@@ -207,10 +247,16 @@ function InsightBox({
       {items.length > 0 ? (
         <div className="space-y-1.5">
           {items.map((item) => (
-            <div key={item.label} className="flex min-w-0 items-center justify-between gap-2 text-xs">
-              <span className="truncate font-mono" title={item.label}>{item.label}</span>
+            <button
+              key={item.label}
+              type="button"
+              className="flex w-full min-w-0 items-center justify-between gap-2 rounded-sm px-1 py-0.5 text-left text-xs hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => onSelect(item)}
+              title={`Show ${item.count} matching log entries for ${item.label}`}
+            >
+              <span className="truncate font-mono">{item.label}</span>
               <Badge variant="outline" className="shrink-0 font-normal">{item.count}</Badge>
-            </div>
+            </button>
           ))}
         </div>
       ) : (
@@ -220,34 +266,37 @@ function InsightBox({
   );
 }
 
-function Signals({ stats }: { stats: ReturnType<typeof summarizeEntries> }) {
-  const signals: string[] = [];
+function Signals({ onSelect, stats }: { onSelect: (filter: QuickFilter) => void; stats: ReturnType<typeof summarizeEntries> }) {
+  const signals: QuickFilter[] = [];
 
   if (stats.serverErrors > 0) {
     const target = stats.topServerErrorServices[0]?.label;
-    signals.push(target ? `${stats.serverErrors} server errors concentrated around ${target}` : `${stats.serverErrors} server errors`);
+    signals.push({
+      kind: "serverErrors",
+      label: target ? `${stats.serverErrors} server errors around ${target}` : `${stats.serverErrors} server errors`,
+    });
   }
 
   if (stats.authFailures > 0) {
-    signals.push(`${stats.authFailures} auth denials`);
+    signals.push({ kind: "auth", label: `${stats.authFailures} auth denials` });
   }
 
   if (stats.unmatchedRequests > 0) {
-    signals.push(`${stats.unmatchedRequests} unmatched 404s`);
+    signals.push({ kind: "unmatched404", label: `${stats.unmatchedRequests} unmatched 404s` });
   } else if (stats.notFound > 0) {
-    signals.push(`${stats.notFound} routed 404s`);
+    signals.push({ kind: "status", label: `${stats.notFound} routed 404s`, value: "404" });
   }
 
   if (stats.probePaths.length > 0) {
-    signals.push(`probe-looking paths: ${stats.probePaths.map((item) => item.label).join(", ")}`);
+    signals.push({ kind: "probe", label: `probe-looking paths: ${stats.probePaths.map((item) => item.label).join(", ")}` });
   }
 
   if (stats.slowRequests > 0) {
-    signals.push(`${stats.slowRequests} slow requests, max ${formatDuration(stats.maxDuration)}`);
+    signals.push({ kind: "slow", label: `${stats.slowRequests} slow requests, max ${formatDuration(stats.maxDuration)}` });
   }
 
   if (signals.length === 0) {
-    signals.push("No obvious error, probe, auth, or latency hotspots in the current view.");
+    signals.push({ kind: "status", label: "No obvious error, probe, auth, or latency hotspots in the current view.", value: "" });
   }
 
   return (
@@ -255,9 +304,15 @@ function Signals({ stats }: { stats: ReturnType<typeof summarizeEntries> }) {
       <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Signals</div>
       <div className="space-y-1.5">
         {signals.map((signal) => (
-          <div key={signal} className="min-w-0 rounded-sm bg-secondary px-2 py-1 text-xs text-secondary-foreground">
-            <span className="block truncate" title={signal}>{signal}</span>
-          </div>
+          <button
+            key={signal.label}
+            type="button"
+            className="block w-full min-w-0 rounded-sm bg-secondary px-2 py-1 text-left text-xs text-secondary-foreground hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-70"
+            disabled={!signal.value && signal.kind === "status"}
+            onClick={() => onSelect(signal)}
+          >
+            <span className="block truncate" title={signal.label}>{signal.label}</span>
+          </button>
         ))}
       </div>
     </div>
@@ -275,6 +330,7 @@ export function TraefikLogsCard() {
   const [serviceFilter, setServiceFilter] = useState("all");
   const [latencyFilter, setLatencyFilter] = useState<LatencyFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("newest");
+  const [quickFilter, setQuickFilter] = useState<QuickFilter | null>(null);
   const [limit, setLimit] = useState("250");
 
   const fetchLogs = useCallback(async () => {
@@ -339,6 +395,7 @@ export function TraefikLogsCard() {
       if (routerFilter !== "all" && entry.routerName !== routerFilter) return false;
       if (serviceFilter !== "all" && entry.serviceName !== serviceFilter) return false;
       if (latencyFilter === "slow" && (!entry.durationMs || entry.durationMs < SLOW_REQUEST_MS)) return false;
+      if (!quickFilterMatches(entry, quickFilter)) return false;
       return true;
     });
 
@@ -348,7 +405,7 @@ export function TraefikLogsCard() {
       if (sortOption === "status") return (b.status || -1) - (a.status || -1);
       return timestampValue(b.timestamp) - timestampValue(a.timestamp);
     });
-  }, [entries, latencyFilter, methodFilter, routerFilter, search, serviceFilter, sortOption, statusFilter]);
+  }, [entries, latencyFilter, methodFilter, quickFilter, routerFilter, search, serviceFilter, sortOption, statusFilter]);
 
   const visibleStats = useMemo(() => summarizeEntries(filteredEntries), [filteredEntries]);
 
@@ -359,7 +416,8 @@ export function TraefikLogsCard() {
     || routerFilter !== "all"
     || serviceFilter !== "all"
     || latencyFilter !== "all"
-    || sortOption !== "newest",
+    || sortOption !== "newest"
+    || quickFilter !== null,
   );
 
   const resetFilters = () => {
@@ -370,6 +428,18 @@ export function TraefikLogsCard() {
     setServiceFilter("all");
     setLatencyFilter("all");
     setSortOption("newest");
+    setQuickFilter(null);
+  };
+
+  const focusQuickFilter = (filter: QuickFilter) => {
+    setSearch("");
+    setStatusFilter("all");
+    setMethodFilter("all");
+    setRouterFilter("all");
+    setServiceFilter("all");
+    setLatencyFilter("all");
+    setSortOption("newest");
+    setQuickFilter(filter);
   };
 
   const selectTriggerClassName = "w-full min-w-0";
@@ -428,13 +498,13 @@ export function TraefikLogsCard() {
               <MetricTile label="Size" value={formatBytes(visibleStats.bytes)} detail="visible responses" />
             </div>
             <div className="mt-3 grid gap-2 border-t pt-3 lg:grid-cols-2 2xl:grid-cols-3">
-              <Signals stats={visibleStats} />
-              <InsightBox title="Statuses" items={visibleStats.topStatuses} empty="No statuses in view." />
-              <InsightBox title="Clients" items={visibleStats.topClients} empty="No client IPs in view." />
-              <InsightBox title="Error Paths" items={visibleStats.topErrorPaths} empty="No error paths in view." />
-              <InsightBox title="Routers" items={visibleStats.topRouters} empty="No routers in view." />
-              <InsightBox title="Services" items={visibleStats.topServices} empty="No services in view." />
-              <InsightBox title="Agents" items={visibleStats.topAgents} empty="No user agents in view." />
+              <Signals stats={visibleStats} onSelect={focusQuickFilter} />
+              <InsightBox title="Statuses" items={visibleStats.topStatuses} empty="No statuses in view." onSelect={(item) => focusQuickFilter({ kind: "status", label: `status ${item.label}`, value: item.label })} />
+              <InsightBox title="Clients" items={visibleStats.topClients} empty="No client IPs in view." onSelect={(item) => focusQuickFilter({ kind: "client", label: `client ${item.label}`, value: item.label })} />
+              <InsightBox title="Error Paths" items={visibleStats.topErrorPaths} empty="No error paths in view." onSelect={(item) => focusQuickFilter({ kind: "path", label: `path ${item.label}`, value: item.label })} />
+              <InsightBox title="Routers" items={visibleStats.topRouters} empty="No routers in view." onSelect={(item) => focusQuickFilter({ kind: "router", label: `router ${item.label}`, value: item.label })} />
+              <InsightBox title="Services" items={visibleStats.topServices} empty="No services in view." onSelect={(item) => focusQuickFilter({ kind: "service", label: `service ${item.label}`, value: item.label })} />
+              <InsightBox title="Agents" items={visibleStats.topAgents} empty="No user agents in view." onSelect={(item) => focusQuickFilter({ kind: "agent", label: `agent ${item.label}`, value: item.label })} />
             </div>
           </div>
         )}
@@ -524,10 +594,21 @@ export function TraefikLogsCard() {
                   Reset
                 </Button>
                 </div>
+                {quickFilter && (
+                  <div className="flex flex-wrap items-center gap-2 border-t pt-2 text-xs text-muted-foreground">
+                    <span>Focused on</span>
+                    <Badge variant="secondary" className="max-w-full font-normal">
+                      <span className="truncate" title={quickFilter.label}>{quickFilter.label}</span>
+                    </Badge>
+                    <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setQuickFilter(null)}>
+                      Clear focus
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="max-h-[32rem] overflow-auto rounded-md border">
+            <div className="max-h-128 overflow-auto rounded-md border">
               <Table>
                 <TableHeader className="sticky top-0 bg-background">
                   <TableRow>
