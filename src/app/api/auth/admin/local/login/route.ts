@@ -6,7 +6,7 @@ import {
   getAdminAuthConfig,
 } from "@/lib/admin-auth";
 import { ADMIN_SESSION_COOKIE, adminAuthEnabled } from "@/lib/admin-auth-shared";
-import { rateLimit } from "@/lib/request-guards";
+import { readJsonBody, rateLimit, RequestBodyError } from "@/lib/request-guards";
 
 export async function POST(request: NextRequest) {
   const limited = rateLimit(request, { key: "admin-local-login", limit: 10, windowMs: 10 * 60 * 1000 });
@@ -22,7 +22,17 @@ export async function POST(request: NextRequest) {
     return authError(request, "Local admin login is disabled while SSO is the selected provider", 403, wantsHtml);
   }
 
-  const { username, password, returnTo } = await readCredentials(request);
+  let credentials: { username?: string; password?: string; returnTo?: string };
+  try {
+    credentials = await readCredentials(request);
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return authError(request, error.message, error.status, wantsHtml);
+    }
+    throw error;
+  }
+
+  const { username, password, returnTo } = credentials;
   if (!username || !password) {
     return authError(request, "Username and password are required", 400, wantsHtml);
   }
@@ -54,7 +64,7 @@ async function readCredentials(request: NextRequest) {
     };
   }
 
-  return (await request.json()) as { username?: string; password?: string; returnTo?: string };
+  return readJsonBody<{ username?: string; password?: string; returnTo?: string }>(request);
 }
 
 function authError(request: NextRequest, error: string, status: number, wantsHtml: boolean) {

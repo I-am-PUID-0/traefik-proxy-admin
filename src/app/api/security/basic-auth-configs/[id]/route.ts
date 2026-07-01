@@ -6,6 +6,7 @@ import {
   type ValidationResult,
 } from "@/lib/validators/basic-auth.validator";
 import type { UpdateBasicAuthConfigRequest } from "@/lib/dto/basic-auth.dto";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -56,7 +57,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const body = await request.json();
+    const body = await readJsonBody<UpdateBasicAuthConfigRequest>(request);
 
     // Validate input
     const validation: ValidationResult = validateUpdateBasicAuthConfig(body);
@@ -77,6 +78,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(config);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error updating basic auth config:", error);
 
     if (error instanceof Error) {

@@ -6,7 +6,7 @@ import {
   getAdminAuthConfig,
 } from "@/lib/admin-auth";
 import { ADMIN_SESSION_COOKIE, adminAuthEnabled } from "@/lib/admin-auth-shared";
-import { rateLimit } from "@/lib/request-guards";
+import { readJsonBody, rateLimit, RequestBodyError } from "@/lib/request-guards";
 
 export async function POST(request: NextRequest) {
   const limited = rateLimit(request, { key: "admin-local-setup", limit: 5, windowMs: 10 * 60 * 1000 });
@@ -35,6 +35,10 @@ export async function POST(request: NextRequest) {
     response.cookies.set(ADMIN_SESSION_COOKIE, sessionToken, adminCookieOptions(config.sessionDurationHours * 60 * 60));
     return response;
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return authError(request, error.message, error.status, wantsHtml);
+    }
+
     return authError(request, error instanceof Error ? error.message : "Unable to create admin user", 400, wantsHtml);
   }
 }
@@ -54,7 +58,7 @@ async function readCredentials(request: NextRequest) {
     };
   }
 
-  return (await request.json()) as { username?: string; password?: string; confirmPassword?: string; returnTo?: string };
+  return readJsonBody<{ username?: string; password?: string; confirmPassword?: string; returnTo?: string }>(request);
 }
 
 function authError(request: NextRequest, error: string, status: number, wantsHtml: boolean) {

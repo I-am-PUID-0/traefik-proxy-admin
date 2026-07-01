@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createLocalAdminUser, getAdminAuthConfig } from "@/lib/admin-auth";
 import type { AdminRole } from "@/lib/admin-auth-shared";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 export async function GET() {
   const config = await getAdminAuthConfig();
@@ -9,10 +10,14 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as { username?: string; password?: string; role?: AdminRole };
+    const body = await readJsonBody<{ username?: string; password?: string; role?: AdminRole }>(request);
     const user = await createLocalAdminUser(body.username || "", body.password || "", sanitizeRole(body.role));
     return NextResponse.json({ user: redactUser(user) }, { status: 201 });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to create local admin user" }, { status: 400 });
   }
 }

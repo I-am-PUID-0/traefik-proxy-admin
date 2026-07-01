@@ -47,6 +47,32 @@ export async function readJsonBody<T = unknown>(request: NextRequest, maxBytes =
   }
 }
 
+export async function readOptionalJsonBody<T = unknown>(
+  request: NextRequest,
+  fallback: T,
+  maxBytes = DEFAULT_JSON_LIMIT_BYTES,
+): Promise<T> {
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && Number(contentLength) > maxBytes) {
+    throw new RequestBodyError("Request body is too large", 413);
+  }
+
+  const text = await request.text();
+  if (new TextEncoder().encode(text).byteLength > maxBytes) {
+    throw new RequestBodyError("Request body is too large", 413);
+  }
+
+  if (!text.trim()) {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new RequestBodyError("Request body must be valid JSON", 400);
+  }
+}
+
 export function bodyErrorResponse(error: unknown, fallback = "Invalid request body") {
   if (error instanceof RequestBodyError) {
     return NextResponse.json({ error: error.message }, { status: error.status });

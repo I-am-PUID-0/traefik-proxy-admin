@@ -6,6 +6,7 @@ import {
   type ValidationResult,
 } from "@/lib/validators/service-security.validator";
 import type { CreateServiceSecurityConfigRequest } from "@/lib/dto/service-security.dto";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const body = await request.json();
+    const body = await readJsonBody<CreateServiceSecurityConfigRequest>(request);
 
     // Add serviceId to the request body
     const requestData = { ...body, serviceId: id };
@@ -69,6 +70,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(securityConfig);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error creating service security configuration:", error);
 
     if (error instanceof Error) {

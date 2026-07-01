@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DomainService } from "@/lib/services/domain.service";
 import type { UpdateDomainRequest, UpdateDomainData } from "@/lib/dto/domain.dto";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 export async function GET(
   request: NextRequest,
@@ -33,7 +34,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const body: UpdateDomainRequest = await request.json();
+    const body = await readJsonBody<UpdateDomainRequest>(request);
 
     const updateData: UpdateDomainData = {
       name: body.name,
@@ -48,6 +49,10 @@ export async function PUT(
     const domain = await DomainService.updateDomain(id, updateData);
     return NextResponse.json(domain);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error updating domain:", error);
 
     if (error instanceof Error) {

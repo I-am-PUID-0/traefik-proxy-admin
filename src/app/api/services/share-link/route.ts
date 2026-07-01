@@ -3,10 +3,18 @@ import { createSharedLink } from "@/lib/shared-links";
 import { db, services, domains } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { getPrimaryServiceHostname } from "@/lib/service-hostnames";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
+
+interface ShareLinkRequestBody {
+  serviceId?: string;
+  expiresInHours?: number;
+  sessionDurationMinutes?: number;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { serviceId, expiresInHours = 24, sessionDurationMinutes = 60 } = await request.json();
+    const { serviceId, expiresInHours = 24, sessionDurationMinutes = 60 } =
+      await readJsonBody<ShareLinkRequestBody>(request);
 
     if (!serviceId) {
       return NextResponse.json(
@@ -69,6 +77,10 @@ export async function POST(request: NextRequest) {
       serviceUrl: serviceUrl.origin,
     });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error creating shared link:", error);
     return NextResponse.json(
       { error: "Failed to create shared link" },

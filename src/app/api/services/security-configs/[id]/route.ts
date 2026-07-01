@@ -6,6 +6,7 @@ import {
   type ValidationResult,
 } from "@/lib/validators/service-security.validator";
 import type { UpdateServiceSecurityConfigRequest } from "@/lib/dto/service-security.dto";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -56,7 +57,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const body = await request.json();
+    const body = await readJsonBody<UpdateServiceSecurityConfigRequest>(request);
 
     // Validate input
     const validation: ValidationResult = validateUpdateServiceSecurityConfig(body);
@@ -74,6 +75,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(securityConfig);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error updating security configuration:", error);
 
     if (error instanceof Error) {

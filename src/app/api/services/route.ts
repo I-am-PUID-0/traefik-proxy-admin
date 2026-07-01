@@ -4,6 +4,7 @@ import { DomainService } from "@/lib/services/domain.service";
 import type { CreateServiceData, CreateServiceRequest } from "@/lib/dto/service.dto";
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
 import { customHostnamesJsonOrNull } from "@/lib/service-hostnames";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 import "@/lib/startup"; // Initialize background services
 
 function jsonFieldOrNull(value: unknown): string | null {
@@ -31,7 +32,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateServiceRequest = await request.json();
+    const body = await readJsonBody<CreateServiceRequest>(request);
 
     // Validate domainId or get default domain
     let domainId = body.domainId;
@@ -81,6 +82,10 @@ export async function POST(request: NextRequest) {
     const service = await ServiceService.createService(newService);
     return NextResponse.json(service);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error creating service:", error);
     return NextResponse.json(
       { error: "Failed to create service" },

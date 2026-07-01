@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DomainService } from "@/lib/services/domain.service";
 import type { CreateDomainRequest, CreateDomainData } from "@/lib/dto/domain.dto";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 export async function GET() {
   try {
@@ -17,7 +18,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateDomainRequest = await request.json();
+    const body = await readJsonBody<CreateDomainRequest>(request);
 
     const newDomainData: CreateDomainData = {
       name: body.name,
@@ -32,6 +33,10 @@ export async function POST(request: NextRequest) {
     const domain = await DomainService.createDomain(newDomainData);
     return NextResponse.json(domain);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error creating domain:", error);
 
     if (error instanceof Error) {

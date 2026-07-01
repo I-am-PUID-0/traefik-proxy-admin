@@ -4,10 +4,15 @@ import { sessionManager } from "@/lib/session-manager";
 import { randomBytes } from "crypto";
 import { TRAEFIK_SESSION_COOKIE, COOKIE_DEFAULTS } from "@/lib/constants";
 import { getSessionRequestContext } from "@/lib/session-request-context";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
+
+interface SharedLinkAuthRequestBody {
+  token?: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json();
+    const { token } = await readJsonBody<SharedLinkAuthRequestBody>(request);
     
     if (!token) {
       return NextResponse.json({ error: "Token required" }, { status: 400 });
@@ -51,6 +56,10 @@ export async function POST(request: NextRequest) {
     return response;
     
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Shared link auth error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

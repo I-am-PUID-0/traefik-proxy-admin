@@ -5,6 +5,7 @@ import {
   type ValidationResult,
 } from "@/lib/validators/basic-auth.validator";
 import type { CreateBasicAuthConfigRequest } from "@/lib/dto/basic-auth.dto";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 export async function GET() {
   try {
@@ -21,7 +22,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await readJsonBody<CreateBasicAuthConfigRequest>(request);
 
     // Validate input
     const validation: ValidationResult = validateCreateBasicAuthConfig(body);
@@ -42,6 +43,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(config);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error creating basic auth config:", error);
 
     if (error instanceof Error) {

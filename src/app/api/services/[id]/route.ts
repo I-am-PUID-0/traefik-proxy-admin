@@ -4,6 +4,7 @@ import { DomainService } from "@/lib/services/domain.service";
 import type { UpdateServiceData, UpdateServiceRequest } from "@/lib/dto/service.dto";
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
 import { customHostnamesJsonOrNull } from "@/lib/service-hostnames";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 function jsonFieldOrNull(value: unknown): string | null {
   if (value === undefined || value === null || value === "") return null;
@@ -46,7 +47,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const body: UpdateServiceRequest = await request.json();
+    const body = await readJsonBody<UpdateServiceRequest>(request);
 
     // Validate domainId if provided
     if (body.domainId) {
@@ -96,6 +97,10 @@ export async function PUT(
 
     return NextResponse.json(service);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error updating service:", error);
     return NextResponse.json(
       { error: "Failed to update service" },

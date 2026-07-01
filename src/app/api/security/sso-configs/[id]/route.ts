@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SsoProviderService } from "@/lib/services/sso-provider.service";
 import type { UpdateSsoConfigRequest, SsoConfigData } from "@/lib/dto/sso-provider.dto";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -64,7 +65,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     if (!UUID_RE.test(id)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
-    const data = normalizeBody(await request.json());
+    const data = normalizeBody(await readJsonBody<UpdateSsoConfigRequest>(request));
     const errors = validate(data);
     if (errors.length > 0) {
       return NextResponse.json({ error: "Validation failed", details: errors }, { status: 400 });
@@ -72,6 +73,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const config = await SsoProviderService.updateConfig(id, data);
     return NextResponse.json(config);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error updating SSO config:", error);
     if (error instanceof Error) {
       if (error.message === "SSO configuration not found") return NextResponse.json({ error: error.message }, { status: 404 });

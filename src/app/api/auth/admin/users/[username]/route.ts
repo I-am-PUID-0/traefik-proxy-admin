@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteLocalAdminUser, updateLocalAdminUser } from "@/lib/admin-auth";
 import type { AdminRole } from "@/lib/admin-auth-shared";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ username: string }> }) {
   try {
     const { username } = await params;
-    const body = (await request.json()) as { password?: string; role?: AdminRole; disabled?: boolean };
+    const body = await readJsonBody<{ password?: string; role?: AdminRole; disabled?: boolean }>(request);
     const user = await updateLocalAdminUser(decodeURIComponent(username), {
       password: body.password || undefined,
       role: sanitizeRole(body.role),
@@ -13,6 +14,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     });
     return NextResponse.json({ user: redactUser(user) });
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to update local admin user" }, { status: 400 });
   }
 }

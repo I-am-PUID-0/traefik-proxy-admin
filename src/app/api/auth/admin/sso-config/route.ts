@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSSOConfig, updateSSOConfig, type SSOConfig } from "@/lib/sso-config";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 function normalizeScopes(scopes: unknown): string[] {
   if (Array.isArray(scopes)) {
@@ -46,25 +47,33 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const current = await getSSOConfig();
-  const body = await request.json();
-  const nextConfig: SSOConfig = {
-    enabled: Boolean(body.enabled),
-    idpUrl: typeof body.idpUrl === "string" ? body.idpUrl.trim() : "",
-    authorizationUrl: typeof body.authorizationUrl === "string" ? body.authorizationUrl.trim() : "",
-    tokenUrl: typeof body.tokenUrl === "string" ? body.tokenUrl.trim() : "",
-    userinfoUrl: typeof body.userinfoUrl === "string" ? body.userinfoUrl.trim() : "",
-    clientId: typeof body.clientId === "string" ? body.clientId.trim() : "",
-    clientSecret: typeof body.clientSecret === "string" && body.clientSecret.trim() ? body.clientSecret.trim() : current.clientSecret,
-    redirectUri: typeof body.redirectUri === "string" ? body.redirectUri.trim() : "",
-    scopes: normalizeScopes(body.scopes),
-  };
+  try {
+    const current = await getSSOConfig();
+    const body = await readJsonBody<Record<string, unknown>>(request);
+    const nextConfig: SSOConfig = {
+      enabled: Boolean(body.enabled),
+      idpUrl: typeof body.idpUrl === "string" ? body.idpUrl.trim() : "",
+      authorizationUrl: typeof body.authorizationUrl === "string" ? body.authorizationUrl.trim() : "",
+      tokenUrl: typeof body.tokenUrl === "string" ? body.tokenUrl.trim() : "",
+      userinfoUrl: typeof body.userinfoUrl === "string" ? body.userinfoUrl.trim() : "",
+      clientId: typeof body.clientId === "string" ? body.clientId.trim() : "",
+      clientSecret: typeof body.clientSecret === "string" && body.clientSecret.trim() ? body.clientSecret.trim() : current.clientSecret,
+      redirectUri: typeof body.redirectUri === "string" ? body.redirectUri.trim() : "",
+      scopes: normalizeScopes(body.scopes),
+    };
 
-  const errors = validate(nextConfig, Boolean(current.clientSecret));
-  if (errors.length > 0) {
-    return NextResponse.json({ error: "Validation failed", details: errors }, { status: 400 });
+    const errors = validate(nextConfig, Boolean(current.clientSecret));
+    if (errors.length > 0) {
+      return NextResponse.json({ error: "Validation failed", details: errors }, { status: 400 });
+    }
+
+    await updateSSOConfig(nextConfig);
+    return NextResponse.json(redact(await getSSOConfig()));
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
+    return NextResponse.json({ error: "Unable to update admin SSO config" }, { status: 500 });
   }
-
-  await updateSSOConfig(nextConfig);
-  return NextResponse.json(redact(await getSSOConfig()));
 }

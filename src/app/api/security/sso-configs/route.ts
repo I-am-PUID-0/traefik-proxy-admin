@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SsoProviderService } from "@/lib/services/sso-provider.service";
 import type { CreateSsoConfigRequest, SsoConfigData } from "@/lib/dto/sso-provider.dto";
+import { bodyErrorResponse, readJsonBody, RequestBodyError } from "@/lib/request-guards";
 
 function normalizeScopes(scopes: unknown): string[] {
   if (Array.isArray(scopes)) {
@@ -53,7 +54,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const data = normalizeBody(await request.json());
+    const data = normalizeBody(await readJsonBody<CreateSsoConfigRequest>(request));
     const errors = validate(data, true);
     if (errors.length > 0) {
       return NextResponse.json({ error: "Validation failed", details: errors }, { status: 400 });
@@ -62,6 +63,10 @@ export async function POST(request: NextRequest) {
     const config = await SsoProviderService.createConfig(data);
     return NextResponse.json(config);
   } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return bodyErrorResponse(error);
+    }
+
     console.error("Error creating SSO config:", error);
     if (error instanceof Error && error.message.includes("already exists")) {
       return NextResponse.json({ error: error.message }, { status: 400 });
