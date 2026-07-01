@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:check-hmr": "node scripts/check-dev-hmr.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

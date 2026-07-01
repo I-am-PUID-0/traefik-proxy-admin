@@ -79,6 +79,31 @@ NEXT_ALLOWED_DEV_ORIGINS=tpa-dev.example.com,tpa-admin.example.test
 
 Restart `pnpm dev` after changing this value. Do not hard-code personal hostnames in `next.config.ts`; keep them in local env only.
 
+To diagnose HMR websocket failures, run:
+
+```bash
+pnpm dev:check-hmr
+```
+
+The check verifies the direct Next dev server, the devcontainer Traefik route, and the public dev route when `NEXT_ALLOWED_DEV_ORIGINS`, `TPA_DEV_HOST`, or `--host` is set. `TPA_DEV_HOST` is only used by the diagnostic command; it does not configure Next.js, so keep `NEXT_ALLOWED_DEV_ORIGINS` set for proxied dev hosts that need to load Next dev resources.
+
+If your proxied host is not in `.env`, pass it at runtime:
+
+```bash
+pnpm dev:check-hmr -- --host tpa-dev.example.com
+```
+
+Use `--next-url`, `--traefik-url`, or `--public-url` when testing non-default dev ports or an external proxy.
+
+The matching environment variables are:
+
+```env
+TPA_DEV_HOST=tpa-dev.example.com
+TPA_NEXT_DEV_URL=http://127.0.0.1:3000
+TPA_DEV_TRAEFIK_URL=https://127.0.0.1:8081
+TPA_DEV_PUBLIC_URL=https://tpa-dev.example.com
+```
+
 ### Turbopack Cache
 
 Next.js 16 enables Turbopack filesystem caching for development by default. This repo disables that cache in `next.config.ts` because the devcontainer bind mount has triggered corrupted `.next/dev/cache/turbopack/*.sst` state during active UI work. If you see a `TurbopackInternalError` mentioning missing `.sst` files, stop `pnpm dev`, remove `.next/dev`, and restart `pnpm dev`.
