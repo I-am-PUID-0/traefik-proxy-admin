@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { BasicAuthService } from "@/lib/services/basic-auth.service";
 import {
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const users = await BasicAuthService.getUsersByConfigId(id);
     return NextResponse.json(users);
   } catch (error) {
-    console.error("Error fetching basic auth users:", error);
+    logger.error("Error fetching basic auth users:", error);
     return NextResponse.json(
       { error: "Failed to fetch basic auth users" },
       { status: 500 }
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error creating basic auth user:", error);
+    logger.error("Error creating basic auth user:", error);
 
     if (error instanceof Error) {
       if (error.message === "Configuration not found") {

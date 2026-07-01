@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { SsoProviderService } from "@/lib/services/sso-provider.service";
 import type { CreateSsoConfigRequest, SsoConfigData } from "@/lib/dto/sso-provider.dto";
@@ -47,7 +48,7 @@ export async function GET() {
     const configs = await SsoProviderService.getAllConfigs();
     return NextResponse.json(configs);
   } catch (error) {
-    console.error("Error fetching SSO configs:", error);
+    logger.error("Error fetching SSO configs:", error);
     return NextResponse.json({ error: "Failed to fetch SSO configurations" }, { status: 500 });
   }
 }
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error creating SSO config:", error);
+    logger.error("Error creating SSO config:", error);
     if (error instanceof Error && error.message.includes("already exists")) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

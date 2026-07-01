@@ -1,4 +1,5 @@
 import "server-only";
+import { logger } from "@/lib/logger";
 
 export interface TraefikApiState {
   configured: boolean;
@@ -65,7 +66,7 @@ export async function fetchTraefikApi<T>(path: string): Promise<{
       data: await response.json() as T,
     };
   } catch (error) {
-    console.error("Error fetching Traefik API:", error);
+    logger.error("Error fetching Traefik API:", error);
     return {
       state,
       error: "Failed to connect to Traefik API",

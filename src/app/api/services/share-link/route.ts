@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { createSharedLink } from "@/lib/shared-links";
 import { db, services, domains } from "@/lib/db";
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error creating shared link:", error);
+    logger.error("Error creating shared link:", error);
     return NextResponse.json(
       { error: "Failed to create shared link" },
       { status: 500 }

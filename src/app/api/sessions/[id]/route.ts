@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { db, sessions } from "@/lib/db";
 import { sessionManager } from "@/lib/session-manager";
@@ -28,7 +29,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Session deleted successfully" });
   } catch (error) {
-    console.error("Error deleting session:", error);
+    logger.error("Error deleting session:", error);
     return NextResponse.json(
       { error: "Failed to delete session" },
       { status: 500 }

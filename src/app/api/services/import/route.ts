@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import {
   ServiceImportExportService,
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error importing services:", error);
+    logger.error("Error importing services:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to import services" },
       { status: 400 },

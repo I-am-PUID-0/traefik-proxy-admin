@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { bodyErrorResponse, rateLimit, readJsonBody } from "@/lib/request-guards";
 import { fetchTraefikApi } from "@/lib/traefik/api-client";
@@ -319,7 +320,7 @@ export async function POST(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error previewing Traefik import:", error);
+    logger.error("Error previewing Traefik import:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to preview Traefik import" },
       { status: 400 },

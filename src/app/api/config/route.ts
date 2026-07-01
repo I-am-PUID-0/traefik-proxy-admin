@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { getGlobalConfig, updateGlobalConfig, GlobalTraefikConfig } from "@/lib/app-config";
 import { bodyErrorResponse, readJsonBody } from "@/lib/request-guards";
@@ -7,7 +8,7 @@ export async function GET() {
     const config = await getGlobalConfig();
     return NextResponse.json(config);
   } catch (error) {
-    console.error("Error fetching global config:", error);
+    logger.error("Error fetching global config:", error);
     return NextResponse.json(
       { error: "Failed to fetch configuration" },
       { status: 500 }
@@ -42,7 +43,7 @@ export async function PUT(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error updating global config:", error);
+    logger.error("Error updating global config:", error);
     return NextResponse.json(
       { error: "Failed to update configuration" },
       { status: 500 }

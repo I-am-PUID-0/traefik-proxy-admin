@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { getSSOConfig, generateSSOAuthUrl } from "@/lib/sso-config";
 import { getAdminAuthConfig } from "@/lib/admin-auth";
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Admin SSO login error:", error);
+    logger.error("Admin SSO login error:", error);
     return NextResponse.json({ error: "Admin SSO login failed" }, { status: 500 });
   }
 }

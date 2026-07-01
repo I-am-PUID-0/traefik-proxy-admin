@@ -1,4 +1,5 @@
 import "server-only";
+import { logger } from "@/lib/logger";
 import { db, appConfig } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { DURATION_PRESETS } from "./duration-presets";
@@ -40,7 +41,7 @@ export async function getGlobalConfig(): Promise<GlobalTraefikConfig> {
       ...savedConfig,
     };
   } catch (error) {
-    console.error("Error fetching global config:", error);
+    logger.error("Error fetching global config:", error);
     return DEFAULT_CONFIG;
   }
 }

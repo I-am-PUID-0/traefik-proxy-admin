@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { db, appConfig } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { SsoProviderService } from "@/lib/services/sso-provider.service";
@@ -206,7 +207,7 @@ export async function exchangeCodeForToken(
   try {
     tokenUrl = await assertSsoEndpointAllowed(endpoint(config, "tokenUrl", "/token"));
   } catch (error) {
-    console.error("SSO token endpoint rejected", { error });
+    logger.error("SSO token endpoint rejected", { error });
     throw new SSOAuthError("provider_config_invalid", "SSO token endpoint is not allowed");
   }
 
@@ -232,7 +233,7 @@ export async function exchangeCodeForToken(
       signal: tokenController.signal,
     });
   } catch (error) {
-    console.error("SSO token exchange request failed", { error });
+    logger.error("SSO token exchange request failed", { error });
     throw new SSOAuthError("token_exchange_failed", "Failed to reach token endpoint");
   } finally {
     clearTimeout(tokenTimeout);
@@ -240,7 +241,7 @@ export async function exchangeCodeForToken(
 
   if (!response.ok) {
     const detail = await safeResponseText(response);
-    console.error("SSO token exchange failed", { status: response.status, detail });
+    logger.error("SSO token exchange failed", { status: response.status, detail });
     throw new SSOAuthError("token_exchange_failed", "Failed to exchange code for token", safeProviderDetail(detail));
   }
 
@@ -255,7 +256,7 @@ export async function getUserInfo(
   try {
     userinfoUrl = await assertSsoEndpointAllowed(endpoint(config, "userinfoUrl", "/userinfo"));
   } catch (error) {
-    console.error("SSO userinfo endpoint rejected", { error });
+    logger.error("SSO userinfo endpoint rejected", { error });
     throw new SSOAuthError("provider_config_invalid", "SSO userinfo endpoint is not allowed");
   }
 
@@ -273,7 +274,7 @@ export async function getUserInfo(
       signal: userinfoController.signal,
     });
   } catch (error) {
-    console.error("SSO userinfo request failed", { error });
+    logger.error("SSO userinfo request failed", { error });
     throw new SSOAuthError("userinfo_fetch_failed", "Failed to reach userinfo endpoint");
   } finally {
     clearTimeout(userinfoTimeout);
@@ -281,7 +282,7 @@ export async function getUserInfo(
 
   if (!response.ok) {
     const detail = await safeResponseText(response);
-    console.error("SSO userinfo fetch failed", { status: response.status, detail });
+    logger.error("SSO userinfo fetch failed", { status: response.status, detail });
     throw new SSOAuthError("userinfo_fetch_failed", "Failed to fetch user info", safeProviderDetail(detail));
   }
 

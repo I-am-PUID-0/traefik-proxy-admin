@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { SsoProviderService } from "@/lib/services/sso-provider.service";
 import type { UpdateSsoConfigRequest, SsoConfigData } from "@/lib/dto/sso-provider.dto";
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     if (!config) return NextResponse.json({ error: "SSO configuration not found" }, { status: 404 });
     return NextResponse.json(config);
   } catch (error) {
-    console.error("Error fetching SSO config:", error);
+    logger.error("Error fetching SSO config:", error);
     return NextResponse.json({ error: "Failed to fetch SSO configuration" }, { status: 500 });
   }
 }
@@ -77,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error updating SSO config:", error);
+    logger.error("Error updating SSO config:", error);
     if (error instanceof Error) {
       if (error.message === "SSO configuration not found") return NextResponse.json({ error: error.message }, { status: 404 });
       if (error.message.includes("already exists")) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -93,7 +94,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await SsoProviderService.deleteConfig(id);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting SSO config:", error);
+    logger.error("Error deleting SSO config:", error);
     if (error instanceof Error && error.message === "SSO configuration not found") {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }

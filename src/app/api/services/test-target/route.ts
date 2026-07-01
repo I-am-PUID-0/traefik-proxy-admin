@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { testTcpConnection } from "@/lib/target-test";
 import { rateLimit, readJsonBody, RequestBodyError } from "@/lib/request-guards";
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ reachable: false, error: error.message }, { status: error.status });
     }
 
-    console.error("Error testing service target:", error);
+    logger.error("Error testing service target:", error);
     return NextResponse.json(
       { reachable: false, error: "Failed to test service target" },
       { status: 500 },

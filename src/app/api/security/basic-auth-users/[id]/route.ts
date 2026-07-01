@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { BasicAuthService } from "@/lib/services/basic-auth.service";
 import {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error("Error fetching basic auth user:", error);
+    logger.error("Error fetching basic auth user:", error);
     return NextResponse.json(
       { error: "Failed to fetch basic auth user" },
       { status: 500 }
@@ -93,7 +94,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error updating basic auth user:", error);
+    logger.error("Error updating basic auth user:", error);
 
     if (error instanceof Error) {
       if (error.message === "User not found") {
@@ -133,7 +134,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting basic auth user:", error);
+    logger.error("Error deleting basic auth user:", error);
 
     if (error instanceof Error && error.message === "User not found") {
       return NextResponse.json(

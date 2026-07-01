@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { ServiceService } from "@/lib/services/service.service";
 import { testTcpConnection } from "@/lib/target-test";
@@ -16,7 +17,7 @@ export async function GET() {
 
     return NextResponse.json({ checks });
   } catch (error) {
-    console.error("Error checking service health:", error);
+    logger.error("Error checking service health:", error);
     return NextResponse.json(
       { error: "Failed to check service health", checks: [] },
       { status: 500 },

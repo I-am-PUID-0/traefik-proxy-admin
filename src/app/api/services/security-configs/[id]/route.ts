@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
 import {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(securityConfig);
   } catch (error) {
-    console.error("Error fetching security configuration:", error);
+    logger.error("Error fetching security configuration:", error);
     return NextResponse.json(
       { error: "Failed to fetch security configuration" },
       { status: 500 }
@@ -79,7 +80,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error updating security configuration:", error);
+    logger.error("Error updating security configuration:", error);
 
     if (error instanceof Error) {
       if (error.message === "Security configuration not found") {
@@ -114,7 +115,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting security configuration:", error);
+    logger.error("Error deleting security configuration:", error);
 
     if (error instanceof Error && error.message === "Security configuration not found") {
       return NextResponse.json(
@@ -148,7 +149,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(securityConfig);
   } catch (error) {
-    console.error("Error toggling security configuration:", error);
+    logger.error("Error toggling security configuration:", error);
 
     if (error instanceof Error && error.message === "Security configuration not found") {
       return NextResponse.json(

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { sessionManager } from "@/lib/session-manager";
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
       user: session.userIdentifier,
     });
   } catch (error) {
-    console.error("Auth verification error:", error);
+    logger.error("Auth verification error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

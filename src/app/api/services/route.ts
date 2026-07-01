@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { ServiceService } from "@/lib/services/service.service";
 import { DomainService } from "@/lib/services/domain.service";
@@ -23,7 +24,7 @@ export async function GET() {
     const servicesWithSecurity = await ServiceService.getAllServices();
     return NextResponse.json(servicesWithSecurity);
   } catch (error) {
-    console.error("Error fetching services:", error);
+    logger.error("Error fetching services:", error);
     return NextResponse.json(
       { error: "Failed to fetch services" },
       { status: 500 }
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    console.error("Error creating service:", error);
+    logger.error("Error creating service:", error);
     return NextResponse.json(
       { error: "Failed to create service" },
       { status: 500 }

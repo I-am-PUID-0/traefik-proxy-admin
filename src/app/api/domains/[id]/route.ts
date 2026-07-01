@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { DomainService } from "@/lib/services/domain.service";
 import type { UpdateDomainRequest, UpdateDomainData } from "@/lib/dto/domain.dto";
@@ -20,7 +21,7 @@ export async function GET(
 
     return NextResponse.json(domain);
   } catch (error) {
-    console.error("Error fetching domain:", error);
+    logger.error("Error fetching domain:", error);
     return NextResponse.json(
       { error: "Failed to fetch domain" },
       { status: 500 }
@@ -53,7 +54,7 @@ export async function PUT(
       return bodyErrorResponse(error);
     }
 
-    console.error("Error updating domain:", error);
+    logger.error("Error updating domain:", error);
 
     if (error instanceof Error) {
       return NextResponse.json(
@@ -79,7 +80,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Domain deleted successfully" });
   } catch (error) {
-    console.error("Error deleting domain:", error);
+    logger.error("Error deleting domain:", error);
 
     if (error instanceof Error) {
       return NextResponse.json(

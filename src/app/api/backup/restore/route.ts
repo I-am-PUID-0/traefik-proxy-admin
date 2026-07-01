@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { BackupRestoreService } from "@/lib/services/backup-restore.service";
 import { bodyErrorResponse, readJsonBody } from "@/lib/request-guards";
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error restoring backup:", error);
+    logger.error("Error restoring backup:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to restore backup" },
       { status: 400 },

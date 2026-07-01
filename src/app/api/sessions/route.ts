@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { db, domains, sessions, services } from "@/lib/db";
 import { sessionManager } from "@/lib/session-manager";
@@ -45,7 +46,7 @@ export async function GET() {
 
     return NextResponse.json(sessionsWithServices);
   } catch (error) {
-    console.error("Error fetching sessions:", error);
+    logger.error("Error fetching sessions:", error);
     return NextResponse.json(
       { error: "Failed to fetch sessions" },
       { status: 500 }
@@ -66,7 +67,7 @@ export async function DELETE() {
 
     return NextResponse.json({ message: "All sessions deleted successfully" });
   } catch (error) {
-    console.error("Error deleting all sessions:", error);
+    logger.error("Error deleting all sessions:", error);
     return NextResponse.json(
       { error: "Failed to delete sessions" },
       { status: 500 }

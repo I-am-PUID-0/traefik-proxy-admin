@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
 import {
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const securityConfigs = await ServiceSecurityService.getServiceSecurityConfigsWithIds(id);
     return NextResponse.json(securityConfigs);
   } catch (error) {
-    console.error("Error fetching service security configurations:", error);
+    logger.error("Error fetching service security configurations:", error);
     return NextResponse.json(
       { error: "Failed to fetch security configurations" },
       { status: 500 }
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error creating service security configuration:", error);
+    logger.error("Error creating service security configuration:", error);
 
     if (error instanceof Error) {
       if (error.message === "Service not found") {

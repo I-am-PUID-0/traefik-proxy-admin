@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { DomainService } from "@/lib/services/domain.service";
 import type { CreateDomainRequest, CreateDomainData } from "@/lib/dto/domain.dto";
@@ -8,7 +9,7 @@ export async function GET() {
     const domains = await DomainService.getAllDomains();
     return NextResponse.json(domains);
   } catch (error) {
-    console.error("Error fetching domains:", error);
+    logger.error("Error fetching domains:", error);
     return NextResponse.json(
       { error: "Failed to fetch domains" },
       { status: 500 }
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error creating domain:", error);
+    logger.error("Error creating domain:", error);
 
     if (error instanceof Error) {
       return NextResponse.json(

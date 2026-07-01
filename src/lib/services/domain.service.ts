@@ -1,4 +1,5 @@
 import "server-only";
+import { logger } from "@/lib/logger";
 import { db, domains, services } from "@/lib/db";
 import { eq, count } from "drizzle-orm";
 import type {
@@ -19,7 +20,7 @@ export class DomainService {
       const parsed = JSON.parse(certificateConfigs);
       return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
-      console.warn("Failed to parse certificate configs:", error);
+      logger.warn("Failed to parse certificate configs:", error);
       return [];
     }
   }

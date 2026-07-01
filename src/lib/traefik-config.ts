@@ -1,4 +1,5 @@
 import "server-only";
+import { logger } from "@/lib/logger";
 import { db, services, domains } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { getGlobalConfig, type GlobalTraefikConfig } from "./app-config";
@@ -122,7 +123,7 @@ function parseCertificateConfigs(certificateConfigs: string | null): Certificate
     const parsed = JSON.parse(certificateConfigs);
     return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
-    console.warn("Failed to parse certificate configs:", error);
+    logger.warn("Failed to parse certificate configs:", error);
     return [];
   }
 }
@@ -136,7 +137,7 @@ function parseCustomHostnames(customHostnames: string | null): string[] {
     const parsed = JSON.parse(customHostnames);
     return Array.isArray(parsed) ? parsed : [];
   } catch (error) {
-    console.warn("Failed to parse custom hostnames:", error);
+    logger.warn("Failed to parse custom hostnames:", error);
     return [];
   }
 }
@@ -180,7 +181,7 @@ function parseManagedMiddlewares(value: string | null): Record<string, TraefikMi
     }
     return middlewares;
   } catch (error) {
-    console.warn("Failed to parse managed middlewares:", error);
+    logger.warn("Failed to parse managed middlewares:", error);
     return {};
   }
 }
@@ -204,7 +205,7 @@ function parseAdvancedRouters(value: string | null): AdvancedRouterConfig[] {
       );
     });
   } catch (error) {
-    console.warn("Failed to parse advanced routers:", error);
+    logger.warn("Failed to parse advanced routers:", error);
     return [];
   }
 }
@@ -270,11 +271,11 @@ function generateServiceHostnames(service: Service, domain: Domain): string[] {
   const hostnames = getServiceHostnames(service, domain);
   if (hostnames.length === 0) {
     if (service.hostnameMode === "subdomain" && !service.subdomain) {
-      console.warn(`Service ${service.id} is in subdomain mode but has no subdomain`);
+      logger.warn(`Service ${service.id} is in subdomain mode but has no subdomain`);
     } else if (service.hostnameMode === "custom") {
-      console.warn(`Service ${service.id} is in custom hostname mode but has no custom hostnames`);
+      logger.warn(`Service ${service.id} is in custom hostname mode but has no custom hostnames`);
     } else {
-      console.warn(`Unknown hostname mode: ${service.hostnameMode}`);
+      logger.warn(`Unknown hostname mode: ${service.hostnameMode}`);
     }
   }
   return hostnames;
@@ -344,7 +345,7 @@ async function buildServiceMiddlewares(
         break;
 
       default:
-        console.warn(`Unknown security type: ${securityConfig.securityType}`);
+        logger.warn(`Unknown security type: ${securityConfig.securityType}`);
     }
   }
 
@@ -368,7 +369,7 @@ async function buildServiceMiddlewares(
         middlewares.push(headersMiddlewareName);
       }
     } catch (error) {
-      console.warn(`Failed to parse request headers for service ${serviceIdentifier}:`, error);
+      logger.warn(`Failed to parse request headers for service ${serviceIdentifier}:`, error);
     }
   }
 
@@ -398,7 +399,7 @@ async function createTraefikService(
   // Get hostnames for this service
   const hostnames = generateServiceHostnames(service, domain);
   if (hostnames.length === 0) {
-    console.warn(`Service ${service.id} has no valid hostnames, skipping`);
+    logger.warn(`Service ${service.id} has no valid hostnames, skipping`);
     return;
   }
 
@@ -719,7 +720,7 @@ export async function generateTraefikConfig(): Promise<TraefikConfig> {
     const domain = item.domain;
 
     if (!domain) {
-      console.error(`Service ${service.name} has no associated domain, skipping`);
+      logger.error(`Service ${service.name} has no associated domain, skipping`);
       continue;
     }
 

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { BasicAuthService } from "@/lib/services/basic-auth.service";
 import {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(config);
   } catch (error) {
-    console.error("Error fetching basic auth config:", error);
+    logger.error("Error fetching basic auth config:", error);
     return NextResponse.json(
       { error: "Failed to fetch basic auth configuration" },
       { status: 500 }
@@ -82,7 +83,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error updating basic auth config:", error);
+    logger.error("Error updating basic auth config:", error);
 
     if (error instanceof Error) {
       if (error.message === "Configuration not found") {
@@ -122,7 +123,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error deleting basic auth config:", error);
+    logger.error("Error deleting basic auth config:", error);
 
     if (error instanceof Error && error.message === "Configuration not found") {
       return NextResponse.json(

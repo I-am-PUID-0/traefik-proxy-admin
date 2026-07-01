@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { ServiceService } from "@/lib/services/service.service";
 import { bodyErrorResponse, readOptionalJsonBody, RequestBodyError } from "@/lib/request-guards";
@@ -23,7 +24,7 @@ export async function POST(
       return bodyErrorResponse(error);
     }
 
-    console.error("Toggle service error:", error);
+    logger.error("Toggle service error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
     });
     return response;
   } catch (error) {
-    console.error("Observed bypass error:", error);
+    logger.error("Observed bypass error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

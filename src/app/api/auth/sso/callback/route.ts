@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { getSSOConfig, getServiceSSOConfig, exchangeCodeForToken, getUserInfo, SSOAuthError, type SSOConfig } from "@/lib/sso-config";
 import { sessionManager } from "@/lib/session-manager";
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
       : ssoProviderConfig;
 
     if (stateData.redirectUri && stateData.redirectUri !== ssoProviderConfig.redirectUri) {
-      console.warn("SSO redirect URI changed between login and callback; using login-time redirect URI for token exchange.");
+      logger.warn("SSO redirect URI changed between login and callback; using login-time redirect URI for token exchange.");
     }
 
     const tokens = await exchangeCodeForToken(tokenExchangeConfig, code);
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
 
     return handleServiceCallback(request, stateData, userInfo, ssoProviderConfig);
   } catch (error) {
-    console.error("SSO callback error:", error);
+    logger.error("SSO callback error:", error);
     if (error instanceof SSOAuthError) {
       return NextResponse.json({ error: "SSO authentication failed", stage: error.code, detail: error.publicDetail }, { status: 400 });
     }

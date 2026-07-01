@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { consumeSharedLink } from "@/lib/shared-links";
 import { sessionManager } from "@/lib/session-manager";
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Shared link auth error:", error);
+    logger.error("Shared link auth error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { previewServiceConfig, type ServicePreviewRequest } from "@/lib/traefik/service-preview";
 import { bodyErrorResponse, readJsonBody } from "@/lib/request-guards";
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error previewing service Traefik config:", error);
+    logger.error("Error previewing service Traefik config:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to preview service config" },
       { status: 400 },

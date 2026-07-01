@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { BasicAuthService } from "@/lib/services/basic-auth.service";
 import {
@@ -12,7 +13,7 @@ export async function GET() {
     const configs = await BasicAuthService.getAllConfigs();
     return NextResponse.json(configs);
   } catch (error) {
-    console.error("Error fetching basic auth configs:", error);
+    logger.error("Error fetching basic auth configs:", error);
     return NextResponse.json(
       { error: "Failed to fetch basic auth configurations" },
       { status: 500 }
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       return bodyErrorResponse(error);
     }
 
-    console.error("Error creating basic auth config:", error);
+    logger.error("Error creating basic auth config:", error);
 
     if (error instanceof Error) {
       if (error.message === "Configuration name already exists") {

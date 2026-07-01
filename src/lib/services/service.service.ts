@@ -40,7 +40,7 @@ export class ServiceService {
       const parsed = JSON.parse(requestHeaders);
       return typeof parsed === 'object' && parsed !== null ? parsed : {};
     } catch (error) {
-      console.warn("Failed to parse request headers:", error);
+      logger.warn("Failed to parse request headers:", error);
       return {};
     }
   }

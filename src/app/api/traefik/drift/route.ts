@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { generateTraefikConfig } from "@/lib/traefik-config";
 import { fetchTraefikApi } from "@/lib/traefik/api-client";
@@ -125,7 +126,7 @@ export async function GET() {
 
     return NextResponse.json({ configured: true, routers, services, summary });
   } catch (error) {
-    console.error("Error checking Traefik drift:", error);
+    logger.error("Error checking Traefik drift:", error);
     return NextResponse.json(
       { error: "Failed to check Traefik drift", routers: [], services: [] },
       { status: 500 },

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { ServiceService } from "@/lib/services/service.service";
 import { DomainService } from "@/lib/services/domain.service";
@@ -34,7 +35,7 @@ export async function GET(
 
     return NextResponse.json(service);
   } catch (error) {
-    console.error("Error fetching service:", error);
+    logger.error("Error fetching service:", error);
     return NextResponse.json(
       { error: "Failed to fetch service" },
       { status: 500 }
@@ -105,7 +106,7 @@ export async function PUT(
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    console.error("Error updating service:", error);
+    logger.error("Error updating service:", error);
     return NextResponse.json(
       { error: "Failed to update service" },
       { status: 500 }
@@ -132,7 +133,7 @@ export async function DELETE(
     await ServiceService.deleteService(id);
     return NextResponse.json({ message: "Service deleted successfully" });
   } catch (error) {
-    console.error("Error deleting service:", error);
+    logger.error("Error deleting service:", error);
     return NextResponse.json(
       { error: "Failed to delete service" },
       { status: 500 }

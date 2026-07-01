@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { BackupRestoreService } from "@/lib/services/backup-restore.service";
 
@@ -10,7 +11,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Error exporting backup:", error);
+    logger.error("Error exporting backup:", error);
     return NextResponse.json({ error: "Failed to export backup" }, { status: 500 });
   }
 }

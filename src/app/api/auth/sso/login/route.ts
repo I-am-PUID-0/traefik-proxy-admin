@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { generateSSOAuthUrl, getServiceSSOConfig } from "@/lib/sso-config";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("SSO login error:", error);
+    logger.error("SSO login error:", error);
     return NextResponse.json({ error: "SSO login failed" }, { status: 500 });
   }
 }
