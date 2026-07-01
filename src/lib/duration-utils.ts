@@ -9,13 +9,9 @@ export function getEffectiveDuration(
   serviceDurationMinutes: number | null | undefined,
   defaultDurationMinutes: number | null | undefined
 ): number | null {
-  console.log("getEffectiveDuration - serviceDurationMinutes:", serviceDurationMinutes, "defaultDurationMinutes:", defaultDurationMinutes);
   if (serviceDurationMinutes === undefined) {
-    const result = defaultDurationMinutes ?? null;
-    console.log("getEffectiveDuration - returning default:", result);
-    return result;
+    return defaultDurationMinutes ?? null;
   }
-  console.log("getEffectiveDuration - returning service:", serviceDurationMinutes);
   return serviceDurationMinutes;
 }
 

@@ -27,7 +27,6 @@ export default function EditServicePage() {
         if (foundService) {
           setService(foundService);
         } else {
-          console.log("Service not found, redirecting to home");
           router.push("/");
         }
       } catch (error) {
