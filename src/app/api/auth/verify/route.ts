@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { sessionManager } from "@/lib/session-manager";
-import { db, domains, services, sharedLinks } from "@/lib/db";
-import { eq, and, gt } from "drizzle-orm";
+import { db, domains, services } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { TRAEFIK_SESSION_COOKIE, COOKIE_DEFAULTS } from "@/lib/constants";
 import { ServiceSecurityService } from "@/lib/services/service-security.service";
 import type { Domain, Service } from "@/lib/db/schema";
@@ -10,6 +10,7 @@ import { getGlobalConfig } from "@/lib/app-config";
 import { consumeServiceAuthTicket, SERVICE_AUTH_TICKET_PARAM } from "@/lib/service-auth-tickets";
 import { getSessionRequestContext } from "@/lib/session-request-context";
 import { isDirectVerifierRequest } from "@/lib/auth-verifier-routing";
+import { consumeSharedLink } from "@/lib/shared-links";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -122,13 +123,6 @@ async function authorizeSharedLink(
   traefikToken: string,
   originalUri: string,
 ) {
-  const [sharedLink] = await db
-    .select()
-    .from(sharedLinks)
-    .where(and(eq(sharedLinks.token, traefikToken), eq(sharedLinks.serviceId, serviceId), gt(sharedLinks.expiresAt, new Date())));
-
-  if (!sharedLink) return null;
-
   const cookieStore = await cookies();
   const existingSessionToken = cookieStore.get(TRAEFIK_SESSION_COOKIE)?.value;
 
@@ -136,16 +130,12 @@ async function authorizeSharedLink(
     const existingSession = await sessionManager.getSession(existingSessionToken, getSessionRequestContext(request, originalUri));
 
     if (existingSession && existingSession.serviceId === serviceId) {
-      const cookieExpiresAt = getServiceSessionExpiry(service);
-      await sessionManager.extendSession(existingSessionToken, cookieExpiresAt);
-      cookieStore.set(TRAEFIK_SESSION_COOKIE, existingSessionToken, {
-        ...COOKIE_DEFAULTS,
-        expires: cookieExpiresAt,
-      });
-
       return NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 });
     }
   }
+
+  const sharedLink = await consumeSharedLink(traefikToken, serviceId);
+  if (!sharedLink) return null;
 
   const newSessionToken = crypto.randomUUID().replace(/-/g, "");
   const { session, cookieExpiresAt } = await sessionManager.createSessionWithOptimalCookieExpiry(
@@ -166,14 +156,6 @@ async function authorizeSharedLink(
   });
 
   return NextResponse.redirect(getCleanOriginalUrl(request, originalUri, service, domain), { status: 302 });
-}
-
-function getServiceSessionExpiry(service: Service) {
-  if (service.enableDurationMinutes === null || service.enableDurationMinutes === undefined || !service.enabledAt) {
-    return new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-  }
-
-  return new Date(service.enabledAt.getTime() + service.enableDurationMinutes * 60 * 1000);
 }
 
 async function ssoRequiredResponse(

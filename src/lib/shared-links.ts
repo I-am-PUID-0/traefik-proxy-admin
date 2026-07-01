@@ -1,5 +1,5 @@
 import { db, sharedLinks, SharedLink } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
 export function generateShareToken(): string {
@@ -42,22 +42,26 @@ export async function getSharedLink(token: string): Promise<SharedLink | null> {
   return sharedLink;
 }
 
-export async function consumeSharedLink(token: string): Promise<SharedLink | null> {
-  const sharedLink = await getSharedLink(token);
-  
-  if (!sharedLink || sharedLink.isUsed) {
-    return null;
+export async function consumeSharedLink(token: string, serviceId?: string): Promise<SharedLink | null> {
+  const now = new Date();
+  const conditions = [
+    eq(sharedLinks.token, token),
+    eq(sharedLinks.isUsed, false),
+    gt(sharedLinks.expiresAt, now),
+  ];
+
+  if (serviceId) {
+    conditions.push(eq(sharedLinks.serviceId, serviceId));
   }
-  
-  // Mark as used
+
   const [updatedLink] = await db
     .update(sharedLinks)
     .set({
       isUsed: true,
-      usedAt: new Date(),
+      usedAt: now,
     })
-    .where(eq(sharedLinks.token, token))
+    .where(and(...conditions))
     .returning();
   
-  return updatedLink;
+  return updatedLink || null;
 }

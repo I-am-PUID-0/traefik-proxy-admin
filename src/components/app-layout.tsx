@@ -21,8 +21,18 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useEffect(() => {
     fetch("/api/auth/admin/me")
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload) => setAdminSession(payload?.session || null))
+      .then(async (response) => {
+        if (response.status === 401) {
+          const returnTo = window.location.pathname + window.location.search;
+          window.location.href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
+          return null;
+        }
+
+        return response.ok ? response.json() : null;
+      })
+      .then((payload) => {
+        if (payload) setAdminSession(payload.session || null);
+      })
       .catch(() => setAdminSession(null));
   }, []);
 

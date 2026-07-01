@@ -11,7 +11,7 @@ test("health endpoint reports an operational app", async ({ request }) => {
   expect(health.uptime).toEqual(expect.any(Number));
 });
 
-test("service lifecycle updates the generated Traefik config", async ({ request }) => {
+test("service lifecycle updates the generated Traefik config", async ({ request, playwright }) => {
   const appPort = Number(new URL(test.info().project.use.baseURL ?? "http://localhost:3100").port);
   const suffix = `e2e-${Date.now().toString(36)}`;
   const domainName = `${suffix}.example.test`;
@@ -213,6 +213,60 @@ test("service lifecycle updates the generated Traefik config", async ({ request 
       },
     });
     expect(config.http.middlewares["redirect-to-admin"]).toEqual(redirectMiddleware);
+
+    const createSharedLinkConfig = await request.post(`/api/services/${serviceId}/security-configs`, {
+      data: {
+        securityType: "shared_link",
+        priority: 0,
+        config: {
+          expiresInHours: 1,
+          sessionDurationMinutes: 30,
+        },
+      },
+    });
+    expect(createSharedLinkConfig.ok()).toBe(true);
+
+    const createShareLink = await request.post("/api/services/share-link", {
+      data: {
+        serviceId,
+        expiresInHours: 1,
+        sessionDurationMinutes: 30,
+      },
+    });
+    expect(createShareLink.ok()).toBe(true);
+    const shareLink = await createShareLink.json();
+    expect(shareLink.token).toEqual(expect.any(String));
+
+    const forwardedUri = `/?traefik-token=${shareLink.token}`;
+    const verifyHeaders = {
+      "X-Forwarded-Uri": forwardedUri,
+      "X-Forwarded-Host": `${subdomain}.${domainName}`,
+      "X-Forwarded-Proto": "https",
+      Accept: "text/html",
+    };
+    const firstSharedLinkUse = await request.get(`/api/auth/verify?serviceId=${serviceId}`, {
+      headers: verifyHeaders,
+      maxRedirects: 0,
+    });
+    expect(firstSharedLinkUse.status()).toBe(302);
+    expect(firstSharedLinkUse.headers()["set-cookie"]).toContain("traefik-session=");
+
+    const freshClient = await playwright.request.newContext({
+      baseURL: test.info().project.use.baseURL,
+    });
+    try {
+      const reusedSharedLink = await freshClient.get(`/api/auth/verify?serviceId=${serviceId}`, {
+        headers: verifyHeaders,
+        maxRedirects: 0,
+      });
+      expect(reusedSharedLink.status()).toBe(401);
+      await expect(async () => {
+        const body = await reusedSharedLink.json();
+        expect(body.error).toBe("Shared link session required");
+      }).toPass();
+    } finally {
+      await freshClient.dispose();
+    }
 
     const exportServiceResponse = await request.get(`/api/services/${serviceId}/export`);
     expect(exportServiceResponse.ok()).toBe(true);

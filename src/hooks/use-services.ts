@@ -5,6 +5,11 @@ import type { Service } from "@/components/service-table";
 import type { ServiceFormData } from "./use-service-form";
 import { parseMiddlewareNames } from "@/lib/middleware-utils";
 
+function redirectToLogin() {
+  const returnTo = window.location.pathname + window.location.search;
+  window.location.href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`;
+}
+
 export function useServices() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,6 +22,8 @@ export function useServices() {
       if (response.ok) {
         const data = await response.json();
         setServices(data);
+      } else if (response.status === 401) {
+        redirectToLogin();
       } else {
         console.error("Failed to fetch services");
       }
@@ -38,6 +45,8 @@ export function useServices() {
         } else {
           setDefaultDuration(720);
         }
+      } else if (response.status === 401) {
+        redirectToLogin();
       } else {
         // If config cannot be loaded, prefer the non-expiring option over an unexpected timeout.
         setDefaultDuration(null);
@@ -72,6 +81,7 @@ export function useServices() {
     });
 
     if (!response.ok) {
+      if (response.status === 401) redirectToLogin();
       const errorText = await response.text();
       throw new Error(`Failed to save service: ${errorText}`);
     }
@@ -85,6 +95,7 @@ export function useServices() {
     });
 
     if (!response.ok) {
+      if (response.status === 401) redirectToLogin();
       throw new Error("Failed to delete service");
     }
 
@@ -97,6 +108,7 @@ export function useServices() {
     });
 
     if (!response.ok) {
+      if (response.status === 401) redirectToLogin();
       throw new Error("Failed to toggle service");
     }
 
@@ -117,6 +129,9 @@ export function useServices() {
         const { shareUrl } = await response.json();
         await navigator.clipboard.writeText(shareUrl);
         return shareUrl;
+      } else if (response.status === 401) {
+        redirectToLogin();
+        throw new Error("Admin authentication required");
       } else {
         throw new Error("Failed to generate share link");
       }
@@ -131,6 +146,9 @@ export function useServices() {
       const response = await fetch(`/api/services/${id}`);
       if (response.ok) {
         return await response.json();
+      } else if (response.status === 401) {
+        redirectToLogin();
+        return null;
       } else if (response.status === 404) {
         return null;
       } else {
