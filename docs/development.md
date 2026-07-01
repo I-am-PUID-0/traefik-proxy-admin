@@ -125,7 +125,6 @@ ADMIN_AUTH_ENABLED=false
 
 Do not use that setting for production-like testing.
 
-
 ## Devcontainer Traefik Access Logs
 
 The devcontainer starts an internal Traefik process from `.devcontainer/start-services.sh`. It writes common-format access logs to:

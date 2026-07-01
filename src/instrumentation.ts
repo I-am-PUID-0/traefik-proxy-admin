@@ -330,7 +330,7 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
   `;
 }
 
-async function runMigrations() {
+export async function runMigrations() {
   console.log("Running database migrations");
   let migrationClient: postgres.Sql | null = null;
   try {
