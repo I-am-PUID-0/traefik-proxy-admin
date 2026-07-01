@@ -9,6 +9,7 @@ import type {
   HostnameMode
 } from "@/lib/dto/service.dto";
 import { validateServiceRoutingInput } from "@/lib/validators/route-input.validator";
+import { logger } from "@/lib/logger";
 
 export interface ServiceWithDomainAndSecurity extends Service {
   hasSharedLink: boolean;
@@ -48,7 +49,7 @@ export class ServiceService {
     // Check and disable any expired services before returning the list
     const disabledCount = await checkAndDisableExpiredServices();
     if (disabledCount > 0) {
-      console.log(`Service: Auto-disabled ${disabledCount} expired service(s)`);
+      logger.info(`Service: Auto-disabled ${disabledCount} expired service(s)`);
     }
 
     // Get services with domain information

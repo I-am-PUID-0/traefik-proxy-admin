@@ -61,7 +61,9 @@ function createMigrationClient(options: {
 describe("legacy migration repair", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(console, "log").mockImplementation(() => undefined);
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
     migrationMocks.migrate.mockResolvedValue(undefined);
   });
 

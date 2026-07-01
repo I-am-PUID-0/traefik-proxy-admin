@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { dbCredentials, migrationsFolder as configuredMigrationsFolder } from "../drizzle.config";
 import postgres from "postgres";
+import { logger } from "@/lib/logger";
 
 const LATEST_MIGRATION_CREATED_AT = 1779414000000;
 
@@ -94,7 +95,7 @@ async function getDefaultDomainConfig(
 }
 
 async function repairLegacySchema(migrationClient: postgres.Sql) {
-  console.log("Repairing legacy database schema before stamping migrations.");
+  logger.info("Repairing legacy database schema before stamping migrations.");
 
   await migrationClient`
     create table if not exists domains (
@@ -331,7 +332,7 @@ async function repairLegacySchema(migrationClient: postgres.Sql) {
 }
 
 export async function runMigrations() {
-  console.log("Running database migrations");
+  logger.info("Running database migrations");
   let migrationClient: postgres.Sql | null = null;
   try {
     migrationClient = postgres(dbCredentials.url, { max: 1 });
@@ -367,7 +368,7 @@ export async function runMigrations() {
       await repairLegacySchema(migrationClient);
       // The repair stamps the legacy schema through 0011; Drizzle still needs
       // to apply newer migrations during this same startup.
-      console.log("Legacy database schema repaired; applying pending migrations.");
+      logger.info("Legacy database schema repaired; applying pending migrations.");
     }
 
     await migrationClient.end();
@@ -380,10 +381,10 @@ export async function runMigrations() {
       try {
         await migrationClient.end();
       } catch (closeError) {
-        console.log(`Closing migration client failed - ${closeError}`);
+        logger.warn("Closing migration client failed", closeError);
       }
     }
-    console.log(`Running migrations failed, please do it manually - ${error}`);
+    logger.error("Running migrations failed, please do it manually", error);
   }
 }
 

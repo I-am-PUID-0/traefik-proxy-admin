@@ -2,6 +2,7 @@ import "server-only";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
+import { logger } from "@/lib/logger";
 
 // Type exports for better TypeScript support
 export type Database = typeof db;
@@ -29,8 +30,8 @@ export * from "./schema";
 export async function closeDatabase() {
   try {
     await pool.end();
-    console.log("Database connection pool closed gracefully");
+    logger.info("Database connection pool closed gracefully");
   } catch (error) {
-    console.error("Error closing database connection pool:", error);
+    logger.error("Error closing database connection pool", error);
   }
 }

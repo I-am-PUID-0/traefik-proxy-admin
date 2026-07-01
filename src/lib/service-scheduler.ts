@@ -1,6 +1,7 @@
 import "server-only";
 import { db, services } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { logger } from "@/lib/logger";
 
 class ServiceScheduler {
   private interval: NodeJS.Timeout | null = null;
@@ -9,11 +10,11 @@ class ServiceScheduler {
 
   async start() {
     if (this.isRunning) {
-      console.log("Service scheduler is already running");
+      logger.info("Service scheduler is already running");
       return;
     }
 
-    console.log("Starting service auto-disable scheduler...");
+    logger.info("Starting service auto-disable scheduler...");
     this.isRunning = true;
 
     // Run initial check
@@ -24,11 +25,11 @@ class ServiceScheduler {
       try {
         await this.checkExpiredServices();
       } catch (error) {
-        console.error("Error in service scheduler:", error);
+        logger.error("Error in service scheduler", error);
       }
     }, this.CHECK_INTERVAL);
 
-    console.log(`Service scheduler started - checking every ${this.CHECK_INTERVAL / 1000} seconds`);
+    logger.info(`Service scheduler started - checking every ${this.CHECK_INTERVAL / 1000} seconds`);
   }
 
   stop() {
@@ -37,17 +38,17 @@ class ServiceScheduler {
       this.interval = null;
     }
     this.isRunning = false;
-    console.log("Service scheduler stopped");
+    logger.info("Service scheduler stopped");
   }
 
   private async checkExpiredServices() {
     try {
       const disabledCount = await checkAndDisableExpiredServices();
       if (disabledCount > 0) {
-        console.log(`Scheduler: Auto-disabled ${disabledCount} expired service(s)`);
+        logger.info(`Scheduler: Auto-disabled ${disabledCount} expired service(s)`);
       }
     } catch (error) {
-      console.error("Error in scheduler checking expired services:", error);
+      logger.error("Error in scheduler checking expired services", error);
     }
   }
 
@@ -74,7 +75,7 @@ export async function checkAndDisableExpiredServices(): Promise<number> {
       const expiryTime = getServiceAutoDisableAt(service.enabledAt, service.enableDurationMinutes);
 
       if (expiryTime && new Date() >= expiryTime) {
-        console.log(`Auto-disabling expired service: ${service.name} (${service.subdomain})`);
+        logger.info(`Auto-disabling expired service: ${service.name} (${service.subdomain})`);
 
         await db
           .update(services)
@@ -90,7 +91,7 @@ export async function checkAndDisableExpiredServices(): Promise<number> {
 
     return disabledCount;
   } catch (error) {
-    console.error("Error checking expired services:", error);
+    logger.error("Error checking expired services", error);
     return 0;
   }
 }
