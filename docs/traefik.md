@@ -124,6 +124,16 @@ The log table can add a visible client IP to the native IP jail for 24 hours. Us
 
 Loopback clients such as `127.0.0.1` and `::1` are not offered as one-click log actions because they often represent Traefik or another local proxy instead of one external user. They can still be added manually from Native IP Jail after an explicit confirmation.
 
+For common-format lines, TPA parses the Traefik extended fields in this order: client IP, timestamp, request method/path, status, response bytes, user agent, request count, router name, service/server target, and duration. A line like this:
+
+```text
+127.0.0.1,185.177.72.205 - - [26/May/2026:14:57:38 +0000] "GET /_phpinfo.php HTTP/1.1" 404 19 "-" "curl/8.7.1" 253486 "-" "-" 0ms
+```
+
+shows as client `127.0.0.1,185.177.72.205`, time `26/May/2026:14:57:38 +0000`, request `GET /_phpinfo.php`, status `404`, response size `19 B`, user agent `curl/8.7.1`, and latency `0ms`.
+
+The log API redacts common sensitive query values such as `token`, `code`, `apikey`, `api_key`, `password`, and `secret` before returning entries. Avoid logging credentials in paths or query strings; redaction is a safety net, not a replacement for clean upstream logging.
+
 ## Native IP Jail
 
 The Traefik Live page includes a Native IP Jail panel. Entries are stored in TPA's database with a subject, reason, source, optional evidence, and optional expiry. Subjects can be exact IPv4/IPv6 addresses or CIDR ranges.
@@ -146,15 +156,26 @@ set is_enabled = false,
 
 Phase 1 is intentionally manual/log-assisted. It does not auto-ban clients from thresholds, and it only covers hostnames managed by TPA. Use a dedicated security tool such as CrowdSec when you need shared threat intelligence, automatic scenarios, or protection for non-TPA routers.
 
-For common-format lines, TPA parses the Traefik extended fields in this order: client IP, timestamp, request method/path, status, response bytes, user agent, request count, router name, service/server target, and duration. A line like this:
+## CrowdSec Visibility
 
-```text
-127.0.0.1,185.177.72.205 - - [26/May/2026:14:57:38 +0000] "GET /_phpinfo.php HTTP/1.1" 404 19 "-" "curl/8.7.1" 253486 "-" "-" 0ms
+TPA can show active CrowdSec Local API decisions on the Traefik Live page. This is read-only visibility intended to sit beside Native IP Jail; it does not replace your CrowdSec remediation component, WAF/AppSec setup, Traefik plugin, or firewall bouncer.
+
+Configure TPA with a CrowdSec bouncer API key:
+
+```env
+CROWDSEC_LAPI_URL=http://crowdsec:8080
+CROWDSEC_BOUNCER_API_KEY=<generated-bouncer-key>
+# Optional request timeout, default 2500ms
+CROWDSEC_LAPI_TIMEOUT_MS=2500
 ```
 
-shows as client `127.0.0.1,185.177.72.205`, time `26/May/2026:14:57:38 +0000`, request `GET /_phpinfo.php`, status `404`, response size `19 B`, user agent `curl/8.7.1`, and latency `0ms`.
+Generate the token on the CrowdSec LAPI host:
 
-The log API redacts common sensitive query values such as `token`, `code`, `apikey`, `api_key`, `password`, and `secret` before returning entries. Avoid logging credentials in paths or query strings; redaction is a safety net, not a replacement for clean upstream logging.
+```bash
+sudo cscli bouncers add traefik-proxy-admin
+```
+
+TPA calls the CrowdSec decision stream endpoint with the bouncer key, shows the active decision count, ban count, top origins, top scenarios, and the current targets. The bouncer key is never returned to the browser. Machine credentials are intentionally not supported in this phase, so TPA cannot add, delete, or expire CrowdSec decisions yet.
 
 ## Target Probes
 

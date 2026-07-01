@@ -35,6 +35,8 @@ Keep this value stable across restarts. Changing it invalidates existing admin s
 TRAEFIK_API_URL=http://traefik:8080
 TRAEFIK_ACCESS_LOG_PATH=/logs/traefik/access.log
 TPA_IP_JAIL_ENFORCEMENT=true
+CROWDSEC_LAPI_URL=http://crowdsec:8080
+CROWDSEC_BOUNCER_API_KEY=<crowdsec-bouncer-api-key>
 TARGET_TEST_ALLOW_CIDRS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 ADMIN_COOKIE_DOMAIN=.example.com
 ADMIN_COOKIE_SECURE=true
@@ -45,6 +47,8 @@ ADMIN_COOKIE_SECURE=true
 `TRAEFIK_ACCESS_LOG_PATH` enables the read-only log viewer on the Traefik Live page. Mount the Traefik access log file into the TPA container at that path, preferably read-only. TPA supports Traefik JSON access logs and the default extended Common Log Format, so existing non-JSON log consumers can keep using the same file.
 
 `TPA_IP_JAIL_ENFORCEMENT=false` is an emergency break-glass switch. IP jail decisions remain visible and editable in TPA, but generated Traefik block routers are omitted until the value is removed or set back to true.
+
+`CROWDSEC_LAPI_URL` and `CROWDSEC_BOUNCER_API_KEY` enable read-only CrowdSec decision visibility on the Traefik Live page. Generate the key with `sudo cscli bouncers add traefik-proxy-admin` on the CrowdSec LAPI host. TPA uses bouncer credentials only and does not create or delete CrowdSec decisions in this mode.
 
 `TARGET_TEST_ALLOW_CIDRS` enables TCP target probes. Keep it limited to private Docker, VPN, or LAN ranges.
 

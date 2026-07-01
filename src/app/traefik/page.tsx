@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CrowdSecCard } from "@/components/crowdsec-card";
 import { IpJailCard } from "@/components/ip-jail-card";
 import { TraefikApiStatusCard } from "@/components/traefik-api-status-card";
 import { TraefikLogsCard } from "@/components/traefik-logs-card";
@@ -390,6 +391,8 @@ export default function TraefikResourcesPage() {
 
         <TraefikLogsCard />
 
+        <CrowdSecCard />
+
         <IpJailCard />
 
         {error && <p className="text-sm text-amber-700 dark:text-amber-300">{error}</p>}
@@ -531,7 +534,7 @@ export default function TraefikResourcesPage() {
               ))}
             </div>
 
-            <div className="max-h-[38rem] overflow-auto rounded-md border">
+            <div className="max-h-152 overflow-auto rounded-md border">
               <Table>
                 <TableHeader className="sticky top-0 bg-background">
                   <TableRow>
@@ -553,7 +556,7 @@ export default function TraefikResourcesPage() {
                           {item.type && <Badge variant="secondary">{item.type}</Badge>}
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-[40rem] break-words text-xs text-muted-foreground">{resourceDetails(item)}</TableCell>
+                      <TableCell className="max-w-160 wrap-break-word text-xs text-muted-foreground">{resourceDetails(item)}</TableCell>
                       <TableCell className="text-right">
                         {activeType === "routers" && sourceLabel(activeType, item, activeTpaNames) !== "TPA" && resourceProvider(item) !== "internal" && (
                           <Button
