@@ -8,6 +8,7 @@ import { TRAEFIK_SESSION_COOKIE } from "./constants";
 import { SERVICE_AUTH_TICKET_PATH } from "./service-auth-tickets";
 import type { Service, Domain } from "@/lib/db/schema";
 import type { CertificateConfig } from "@/lib/dto/domain.dto";
+import { getServiceHostnames } from "@/lib/service-hostnames";
 
 export interface TraefikService {
   loadBalancer: {
@@ -266,21 +267,17 @@ function generateServiceIdentifier(service: Service, domain: Domain): string {
  * Generate hostnames for a service based on hostname mode
  */
 function generateServiceHostnames(service: Service, domain: Domain): string[] {
-  switch (service.hostnameMode) {
-    case 'subdomain':
-      if (!service.subdomain) {
-        console.warn(`Service ${service.id} is in subdomain mode but has no subdomain`);
-        return [];
-      }
-      return [`${service.subdomain}.${domain.domain}`];
-    case 'apex':
-      return [domain.domain];
-    case 'custom':
-      return parseCustomHostnames(service.customHostnames);
-    default:
+  const hostnames = getServiceHostnames(service, domain);
+  if (hostnames.length === 0) {
+    if (service.hostnameMode === "subdomain" && !service.subdomain) {
+      console.warn(`Service ${service.id} is in subdomain mode but has no subdomain`);
+    } else if (service.hostnameMode === "custom") {
+      console.warn(`Service ${service.id} is in custom hostname mode but has no custom hostnames`);
+    } else {
       console.warn(`Unknown hostname mode: ${service.hostnameMode}`);
-      return [];
+    }
   }
+  return hostnames;
 }
 
 /**

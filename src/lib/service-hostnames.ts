@@ -1,3 +1,8 @@
+import type { Domain, Service } from "@/lib/db/schema";
+
+type ServiceHostnameFields = Pick<Service, "hostnameMode" | "subdomain" | "customHostnames">;
+type DomainHostnameFields = Pick<Domain, "domain">;
+
 export function parseCustomHostnamesInput(value: unknown): string[] {
   if (!value) return [];
 
@@ -31,4 +36,27 @@ export function parseCustomHostnamesInput(value: unknown): string[] {
 export function customHostnamesJsonOrNull(value: unknown): string | null {
   const hostnames = parseCustomHostnamesInput(value);
   return hostnames.length > 0 ? JSON.stringify(hostnames) : null;
+}
+
+export function getServiceHostnames(
+  service: ServiceHostnameFields,
+  domain: DomainHostnameFields,
+): string[] {
+  switch (service.hostnameMode) {
+    case "subdomain":
+      return service.subdomain ? [`${service.subdomain}.${domain.domain}`] : [];
+    case "apex":
+      return [domain.domain];
+    case "custom":
+      return parseCustomHostnamesInput(service.customHostnames);
+    default:
+      return [];
+  }
+}
+
+export function getPrimaryServiceHostname(
+  service: ServiceHostnameFields,
+  domain: DomainHostnameFields,
+): string | null {
+  return getServiceHostnames(service, domain)[0] ?? null;
 }

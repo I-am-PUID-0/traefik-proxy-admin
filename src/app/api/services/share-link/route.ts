@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSharedLink } from "@/lib/shared-links";
 import { db, services, domains } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { getPrimaryServiceHostname } from "@/lib/service-hostnames";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +41,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const serviceHostname = getPrimaryServiceHostname(service, domain);
+    if (!serviceHostname) {
+      return NextResponse.json(
+        { error: "Service has no routable hostname" },
+        { status: 400 }
+      );
+    }
+
     const expiresAt = new Date(Date.now() + expiresInHours * 60 * 60 * 1000);
 
     const sharedLink = await createSharedLink(
@@ -48,15 +57,16 @@ export async function POST(request: NextRequest) {
       sessionDurationMinutes
     );
 
-    // Create URL pointing to the actual service domain with traefik-token
-    const serviceUrl = `https://${service.subdomain}.${domain.domain}`;
-    const shareUrl = `${serviceUrl}?traefik-token=${sharedLink.token}`;
+    // Create URL pointing to the actual service hostname with traefik-token
+    const serviceUrl = new URL("/", `https://${serviceHostname}`);
+    serviceUrl.searchParams.set("traefik-token", sharedLink.token);
+    const shareUrl = serviceUrl.toString();
 
     return NextResponse.json({
       shareUrl,
       token: sharedLink.token,
       expiresAt: sharedLink.expiresAt,
-      serviceUrl,
+      serviceUrl: serviceUrl.origin,
     });
   } catch (error) {
     console.error("Error creating shared link:", error);

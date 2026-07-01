@@ -46,7 +46,7 @@ Playwright uses `ADMIN_AUTH_ENABLED=false`. The project has `output: "standalone
 - `AUTH_COOKIE_DOMAIN` is optional and should only be used when intentionally sharing service sessions across sibling subdomains.
 - `adminPanelDomain` is the internal TPA URL Traefik can reach for forwardAuth.
 - `adminPanelPublicUrl` is the browser-facing TPA URL used for OAuth redirects and callbacks.
-- Next 16 dev mode behind Traefik requires `allowedDevOrigins`; `NEXT_ALLOWED_DEV_ORIGINS` is documented and `tpa-dev.jberts.world` is currently allowlisted in `next.config.ts`.
+- Next 16 dev mode behind Traefik requires `allowedDevOrigins`; configure `NEXT_ALLOWED_DEV_ORIGINS` with the routed development hostname when needed.
 - Next 16 Turbopack dev filesystem cache is disabled in `next.config.ts` because bind-mounted `.next/dev/cache/turbopack/*.sst` state can corrupt in the devcontainer and crash dev with `TurbopackInternalError`.
 
 ## Core Files

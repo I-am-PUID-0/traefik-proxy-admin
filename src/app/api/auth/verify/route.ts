@@ -11,6 +11,7 @@ import { consumeServiceAuthTicket, SERVICE_AUTH_TICKET_PARAM } from "@/lib/servi
 import { getSessionRequestContext } from "@/lib/session-request-context";
 import { isDirectVerifierRequest } from "@/lib/auth-verifier-routing";
 import { consumeSharedLink } from "@/lib/shared-links";
+import { getPrimaryServiceHostname } from "@/lib/service-hostnames";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -269,30 +270,8 @@ function getServicePublicUrl(
   domain: Domain,
 ) {
   const protocol = firstForwardedHeader(request.headers.get("X-Forwarded-Proto")) || "https";
-  const host = getServiceHost(service, domain) || firstForwardedHeader(request.headers.get("X-Forwarded-Host")) || request.headers.get("Host") || request.nextUrl.host;
+  const host = getPrimaryServiceHostname(service, domain) || firstForwardedHeader(request.headers.get("X-Forwarded-Host")) || request.headers.get("Host") || request.nextUrl.host;
   return new URL("/", `${protocol}://${host}`);
-}
-
-function getServiceHost(service: Service, domain: Domain) {
-  if (service.hostnameMode === "apex") return domain.domain;
-
-  if (service.hostnameMode === "custom") {
-    const hostnames = parseCustomHostnames(service.customHostnames);
-    if (hostnames.length > 0) return hostnames[0];
-  }
-
-  return service.subdomain ? `${service.subdomain}.${domain.domain}` : domain.domain;
-}
-
-function parseCustomHostnames(value: string | null) {
-  if (!value) return [];
-
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
-  } catch {
-    return [];
-  }
 }
 
 function firstForwardedHeader(value: string | null) {

@@ -12,9 +12,9 @@ describe("admin SSO role mapping", () => {
   it("denies admin SSO when no explicit role mappings exist", () => {
     expect(hasAdminRoleMappings({ roles: emptyRoles })).toBe(false);
     expect(resolveAdminRole({ roles: emptyRoles }, {
-      sub: "116776960392898565802",
-      name: "Kristina Bertelsen",
-      email: "kbert@33w.io",
+      sub: "example-subject",
+      name: "Example User",
+      email: "user@example.com",
       groups: [],
     })).toBeNull();
   });
