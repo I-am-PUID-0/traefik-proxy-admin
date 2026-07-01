@@ -117,7 +117,7 @@ export class ServiceService {
           ...service,
           hostnameMode: service.hostnameMode as HostnameMode,
           enabledAt: service.enabledAt?.toISOString() || undefined,
-          enableDurationMinutes: service.enableDurationMinutes || undefined,
+          enableDurationMinutes: service.enableDurationMinutes ?? null,
           middlewares: service.middlewares || undefined,
           requestHeaders: service.requestHeaders || undefined,
           createdAt: service.createdAt.toISOString(),
@@ -186,7 +186,7 @@ export class ServiceService {
       ...service,
       hostnameMode: service.hostnameMode as HostnameMode,
       enabledAt: service.enabledAt?.toISOString() || undefined,
-      enableDurationMinutes: service.enableDurationMinutes || undefined,
+      enableDurationMinutes: service.enableDurationMinutes ?? null,
       middlewares: service.middlewares || undefined,
       requestHeaders: service.requestHeaders || undefined,
       createdAt: service.createdAt.toISOString(),
@@ -219,7 +219,7 @@ export class ServiceService {
     await db.delete(services).where(eq(services.id, id));
   }
 
-  static async toggleService(id: string, enabled?: boolean, durationMinutes?: number) {
+  static async toggleService(id: string, enabled?: boolean, durationMinutes?: number | null) {
     // Get current service state if enabled is not specified
     const currentService = await this.getServiceById(id);
     if (!currentService) {
