@@ -20,15 +20,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid or expired link" }, { status: 400 });
     }
 
-    console.log("🔧 [DEBUG] Shared link consumed:", {
-      serviceId: sharedLink.serviceId,
-      sessionDurationMinutes: sharedLink.sessionDurationMinutes,
-      sharedLinkId: sharedLink.id
-    });
-
     // Create a new session with optimal cookie expiry
     const sessionToken = randomBytes(32).toString("hex");
-    console.log("🔧 [DEBUG] Generated session token (first 8 chars):", sessionToken.substring(0, 8) + "...");
     
     const { session, cookieExpiresAt } = await sessionManager.createSessionWithOptimalCookieExpiry(
       sharedLink.serviceId,
@@ -42,10 +35,6 @@ export async function POST(request: NextRequest) {
       },
     );
 
-    console.log("🔧 [DEBUG] Cookie being set with expiration:", cookieExpiresAt.toISOString());
-    console.log("🔧 [DEBUG] Current time:", new Date().toISOString());
-    console.log("🔧 [DEBUG] Cookie duration from now (hours):", (cookieExpiresAt.getTime() - Date.now()) / (1000 * 60 * 60));
-
     // Set session cookie
     const response = NextResponse.json({ 
       success: true,
@@ -58,8 +47,6 @@ export async function POST(request: NextRequest) {
       ...COOKIE_DEFAULTS,
       expires: cookieExpiresAt,
     });
-
-    console.log("🔧 [DEBUG] Cookie set successfully with expires:", cookieExpiresAt.toISOString());
 
     return response;
     

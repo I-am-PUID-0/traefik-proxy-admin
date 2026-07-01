@@ -272,13 +272,6 @@ class SessionManager {
     userIdentifier?: string,
     metadata: CreateSessionMetadata = {},
   ): Promise<{ session: Session; cookieExpiresAt: Date }> {
-    console.log("🔧 [DEBUG] createSessionWithOptimalCookieExpiry called with:", {
-      serviceId,
-      sessionDurationMinutes,
-      sharedLinkId,
-      userIdentifier
-    });
-
     // Get service details to determine auto duration
     const [service] = await db
       .select()
@@ -286,16 +279,8 @@ class SessionManager {
       .where(eq(services.id, serviceId));
     
     if (!service) {
-      console.error("🔧 [DEBUG] Service not found for ID:", serviceId);
       throw new Error("Service not found");
     }
-
-    console.log("🔧 [DEBUG] Service details:", {
-      id: service.id,
-      name: service.name,
-      enableDurationMinutes: service.enableDurationMinutes,
-      enabledAt: service.enabledAt?.toISOString()
-    });
 
     const sessionExpiresAt = getBoundedServiceSessionExpiry(
       new Date(),
@@ -315,8 +300,6 @@ class SessionManager {
       metadata,
     );
 
-    console.log("🔧 [DEBUG] Final session expiration:", session.expiresAt.toISOString());
-    console.log("🔧 [DEBUG] Final cookie expiration:", cookieExpiresAt.toISOString());
     return { session, cookieExpiresAt };
   }
 
@@ -324,11 +307,6 @@ class SessionManager {
     serviceId: string,
     sessionExpiresAt: Date
   ): Promise<Date> {
-    console.log("🔧 [DEBUG] calculateOptimalCookieExpiry called with:", {
-      serviceId,
-      sessionExpiresAt: sessionExpiresAt.toISOString()
-    });
-
     // Get service details to determine auto duration
     const [service] = await db
       .select()
@@ -336,16 +314,8 @@ class SessionManager {
       .where(eq(services.id, serviceId));
     
     if (!service) {
-      console.error("🔧 [DEBUG] Service not found for ID:", serviceId);
       return sessionExpiresAt; // Fallback to session expiration
     }
-
-    console.log("🔧 [DEBUG] Service details:", {
-      id: service.id,
-      name: service.name,
-      enableDurationMinutes: service.enableDurationMinutes,
-      enabledAt: service.enabledAt?.toISOString()
-    });
 
     const cookieExpiresAt = getBoundedServiceSessionExpiryAt(
       sessionExpiresAt,
@@ -353,7 +323,6 @@ class SessionManager {
       service.enableDurationMinutes,
     );
 
-    console.log("🔧 [DEBUG] Final optimal cookie expiration:", cookieExpiresAt.toISOString());
     return cookieExpiresAt;
   }
 }
