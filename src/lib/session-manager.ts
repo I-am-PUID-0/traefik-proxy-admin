@@ -25,6 +25,37 @@ function addFlag(flags: string[], flag: string) {
   return flags.includes(flag) ? flags : [...flags, flag];
 }
 
+export function getBoundedServiceSessionExpiry(
+  now: Date,
+  sessionDurationMinutes: number,
+  enabledAt: Date | string | null | undefined,
+  enableDurationMinutes: number | null | undefined,
+): Date {
+  const sessionDurationMs = Number.isFinite(sessionDurationMinutes) && sessionDurationMinutes > 0
+    ? sessionDurationMinutes * 60 * 1000
+    : 90 * 24 * 60 * 60 * 1000;
+  const requestedSessionExpiry = new Date(now.getTime() + sessionDurationMs);
+
+  return getBoundedServiceSessionExpiryAt(requestedSessionExpiry, enabledAt, enableDurationMinutes);
+}
+
+export function getBoundedServiceSessionExpiryAt(
+  requestedSessionExpiry: Date,
+  enabledAt: Date | string | null | undefined,
+  enableDurationMinutes: number | null | undefined,
+): Date {
+  if (!enabledAt || enableDurationMinutes === null || enableDurationMinutes === undefined) {
+    return requestedSessionExpiry;
+  }
+
+  const serviceAutoDisableAt = new Date(new Date(enabledAt).getTime() + enableDurationMinutes * 60 * 1000);
+  if (Number.isNaN(serviceAutoDisableAt.getTime())) {
+    return requestedSessionExpiry;
+  }
+
+  return serviceAutoDisableAt < requestedSessionExpiry ? serviceAutoDisableAt : requestedSessionExpiry;
+}
+
 class SessionManager {
   private memoryCache = new Map<string, Session>();
   private initialized = false;
@@ -266,25 +297,13 @@ class SessionManager {
       enabledAt: service.enabledAt?.toISOString()
     });
 
-    // Calculate session expiration based on service auto-disable time
-    let sessionExpiresAt: Date;
-    let cookieExpiresAt: Date;
-    
-    if (service.enableDurationMinutes === null || service.enableDurationMinutes === undefined) {
-      // Infinite auto duration - session and cookie last 90 days
-      sessionExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-      cookieExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-      console.log("🔧 [DEBUG] Infinite auto duration - session and cookie expire in 90 days:", sessionExpiresAt.toISOString());
-    } else {
-      // Finite auto duration - session and cookie expire when service auto-disables
-      const serviceAutoDisableAt = new Date(
-        service.enabledAt!.getTime() + service.enableDurationMinutes * 60 * 1000
-      );
-      sessionExpiresAt = serviceAutoDisableAt;
-      cookieExpiresAt = serviceAutoDisableAt;
-      console.log("🔧 [DEBUG] Service auto-disable at:", serviceAutoDisableAt.toISOString());
-      console.log("🔧 [DEBUG] Session and cookie expire when service disables:", sessionExpiresAt.toISOString());
-    }
+    const sessionExpiresAt = getBoundedServiceSessionExpiry(
+      new Date(),
+      sessionDurationMinutes,
+      service.enabledAt,
+      service.enableDurationMinutes,
+    );
+    const cookieExpiresAt = sessionExpiresAt;
 
     // Create the session with the calculated expiration
     const session = await this.createSession(
@@ -328,22 +347,11 @@ class SessionManager {
       enabledAt: service.enabledAt?.toISOString()
     });
 
-    let cookieExpiresAt: Date;
-    if (service.enableDurationMinutes === null || service.enableDurationMinutes === undefined) {
-      // Infinite auto duration - set cookie to 90 days for security
-      cookieExpiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-      console.log("🔧 [DEBUG] Infinite auto duration - cookie expires in 90 days:", cookieExpiresAt.toISOString());
-    } else {
-      // Finite auto duration - set cookie to when service will be auto-disabled
-      const serviceAutoDisableAt = new Date(
-        service.enabledAt!.getTime() + service.enableDurationMinutes * 60 * 1000
-      );
-      console.log("🔧 [DEBUG] Service auto-disable at:", serviceAutoDisableAt.toISOString());
-      
-      // Use service auto-disable time - cookie should last until service is disabled
-      cookieExpiresAt = serviceAutoDisableAt;
-      console.log("🔧 [DEBUG] Using service auto-disable time - cookie expires at:", cookieExpiresAt.toISOString());
-    }
+    const cookieExpiresAt = getBoundedServiceSessionExpiryAt(
+      sessionExpiresAt,
+      service.enabledAt,
+      service.enableDurationMinutes,
+    );
 
     console.log("🔧 [DEBUG] Final optimal cookie expiration:", cookieExpiresAt.toISOString());
     return cookieExpiresAt;
