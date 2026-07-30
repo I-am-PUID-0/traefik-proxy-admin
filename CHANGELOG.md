@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.21.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.21.0...v1.21.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **ci:** include pnpm workspace config in Docker builds ([7444034](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/744403424919d64498aabbeefb24641108952d67))
+
 ## [1.21.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.20.0...v1.21.0) (2026-07-30)
 
 
