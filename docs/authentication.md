@@ -61,6 +61,32 @@ Local auth endpoints:
 
 SSO admin auth uses the global OIDC provider configuration in app config. Service SSO can use separate reusable provider configs per service, but admin login currently uses the global provider so there is one predictable control point for TPA operator access.
 
+#### DUMB-managed Authelia
+
+When TPA runs as a DUMB-managed service, DUMB can configure Authelia from the
+Authelia service-page wizard. DUMB creates a TPA-specific OIDC client and calls:
+
+```text
+POST /api/integrations/dumb/authelia/link
+Authorization: Bearer <DUMB_INTEGRATION_TOKEN>
+```
+
+The endpoint is outside normal cookie-auth middleware so DUMB can call it over
+container loopback, but it rejects requests unless the environment token exists,
+is at least 32 characters, and matches in constant time. DUMB generates and
+injects this secret automatically. Standalone TPA deployments should leave
+`DUMB_INTEGRATION_TOKEN` unset.
+
+Linking idempotently creates or updates the reusable **DUMB-managed Authelia**
+service provider. At the operator's choice it also configures global admin SSO,
+selects the `sso` admin provider, maps the selected Authelia group to TPA admin,
+and retains local fallback. Keep local fallback until a mapped account has
+completed a real login.
+
+Re-link from DUMB after changing the TPA public URL or rotating the managed OIDC
+client. Generated client secrets are sent only over the authenticated loopback
+request and are not returned to the DUMB browser.
+
 Set:
 
 ```env

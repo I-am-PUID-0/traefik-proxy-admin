@@ -22,6 +22,7 @@ const PUBLIC_PATHS = new Set([
   "/tpa/auth/ticket",
   "/api/health",
   "/api/traefik/config",
+  "/api/integrations/dumb/authelia/link",
   "/auth/forbidden",
   "/auth/login",
   "/auth/success",

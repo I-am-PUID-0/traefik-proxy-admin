@@ -19,6 +19,11 @@ ADMIN_AUTH_SECRET=<long-random-secret>
 ADMIN_AUTH_PROVIDER=local
 ```
 
+When TPA is managed by DUMB, DUMB also injects a private
+`DUMB_INTEGRATION_TOKEN` for its Authelia linking wizard. Standalone deployments
+do not need this variable and should leave it unset. Do not expose or reuse it
+as an admin session secret.
+
 Generate `ADMIN_AUTH_SECRET` with a cryptographically random value:
 
 ```bash
