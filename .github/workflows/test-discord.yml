@@ -27,8 +27,7 @@ jobs:
 
           This is a manual test from the GitHub Actions workflow.
 
-          - Repository: https://github.com/I-am-PUID-0/traefik-proxy-admin
-          - Community: https://discord.gg/gZMPaWB9xK"
+          Repository: https://github.com/I-am-PUID-0/traefik-proxy-admin"
 
           jq -n \
             --arg content "${TEST_MESSAGE}" \

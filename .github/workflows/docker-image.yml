@@ -100,7 +100,6 @@ jobs:
           **Links**
           - GitHub release: {os.environ["RELEASE_URL"]}
           - Docker Hub: https://hub.docker.com/r/iampuid0/traefik-proxy-admin
-          - Community: https://discord.gg/gZMPaWB9xK
 
           ```shell
           docker pull iampuid0/traefik-proxy-admin:{image_tag}
