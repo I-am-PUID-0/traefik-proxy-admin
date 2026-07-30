@@ -38,6 +38,7 @@
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
     "geist": "^1.7.2",
+    "ipaddr.js": "^2.4.0",
     "lucide-react": "^1.28.0",
     "next": "16.2.12",
     "next-themes": "^0.4.6",
@@ -47,7 +48,8 @@
     "react-dom": "19.2.7",
     "server-only": "^0.0.1",
     "tailwind-merge": "^3.6.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "undici": "^8.9.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

@@ -87,6 +87,8 @@ pnpm dev:check-hmr
 
 The check verifies the direct Next dev server, the devcontainer Traefik route, and the public dev route when `NEXT_ALLOWED_DEV_ORIGINS`, `TPA_DEV_HOST`, or `--host` is set. `TPA_DEV_HOST` is only used by the diagnostic command; it does not configure Next.js, so keep `NEXT_ALLOWED_DEV_ORIGINS` set for proxied dev hosts that need to load Next dev resources.
 
+The loopback-only Traefik probe accepts the devcontainer's local default certificate. Certificate validation remains required for non-loopback Traefik URLs and the public dev route.
+
 If your proxied host is not in `.env`, pass it at runtime:
 
 ```bash

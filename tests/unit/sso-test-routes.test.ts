@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ssoMocks = vi.hoisted(() => ({
-  assertSsoEndpointAllowed: vi.fn(async (url: string) => url),
+  requestSsoEndpoint: vi.fn(async () => new Response(null, { status: 204 })),
   generateSSOAuthUrl: vi.fn(() => "https://idp.example.com/auth?state=generated-state"),
   resolveSSOEndpoints: vi.fn(() => ({
     authorizationUrl: "https://idp.example.com/auth",
@@ -19,7 +19,7 @@ vi.mock("@/lib/sso-config", () => ({
 }));
 
 vi.mock("@/lib/sso-endpoint-guard", () => ({
-  assertSsoEndpointAllowed: ssoMocks.assertSsoEndpointAllowed,
+  requestSsoEndpoint: ssoMocks.requestSsoEndpoint,
 }));
 
 import { POST as checkPost } from "@/app/api/auth/sso/test/check/route";
@@ -68,7 +68,7 @@ async function json(response: Response) {
 describe("SSO provider test routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    ssoMocks.assertSsoEndpointAllowed.mockImplementation(async (url: string) => url);
+    ssoMocks.requestSsoEndpoint.mockImplementation(async () => new Response(null, { status: 204 }));
     ssoMocks.generateSSOAuthUrl.mockReturnValue("https://idp.example.com/auth?state=generated-state");
     ssoMocks.resolveSSOEndpoints.mockReturnValue({
       authorizationUrl: "https://idp.example.com/auth",
@@ -76,11 +76,6 @@ describe("SSO provider test routes", () => {
       userinfoUrl: "https://idp.example.com/userinfo",
     });
     ssoMocks.validateSSOConfigForUse.mockReturnValue([]);
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 204 })));
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
   });
 
   it("returns validation errors without probing endpoints", async () => {
@@ -95,7 +90,7 @@ describe("SSO provider test routes", () => {
       probes: [],
     });
     expect(ssoMocks.resolveSSOEndpoints).not.toHaveBeenCalled();
-    expect(fetch).not.toHaveBeenCalled();
+    expect(ssoMocks.requestSsoEndpoint).not.toHaveBeenCalled();
   });
 
   it("probes configured endpoints and reports success", async () => {
@@ -116,15 +111,14 @@ describe("SSO provider test routes", () => {
         expect.objectContaining({ label: "userinfo", reachable: true, status: 204 }),
       ],
     });
-    expect(ssoMocks.assertSsoEndpointAllowed).toHaveBeenCalledTimes(3);
-    expect(fetch).toHaveBeenCalledTimes(3);
-    expect(fetch).toHaveBeenCalledWith("https://idp.example.com/auth", expect.objectContaining({ method: "HEAD" }));
+    expect(ssoMocks.requestSsoEndpoint).toHaveBeenCalledTimes(3);
+    expect(ssoMocks.requestSsoEndpoint).toHaveBeenCalledWith("https://idp.example.com/auth", expect.objectContaining({ method: "HEAD" }));
   });
 
   it("reports endpoint guard failures as unreachable probes", async () => {
-    ssoMocks.assertSsoEndpointAllowed.mockImplementation(async (url: string) => {
+    ssoMocks.requestSsoEndpoint.mockImplementation(async (url: string) => {
       if (url.includes("/token")) throw new Error("SSO endpoint resolves to a private address");
-      return url;
+      return new Response(null, { status: 204 });
     });
 
     const response = await checkPost(checkRequest(validConfig()));

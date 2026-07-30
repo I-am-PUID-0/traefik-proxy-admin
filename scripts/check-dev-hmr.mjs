@@ -52,6 +52,13 @@ function normalizeUrl(value) {
   return new URL(value.includes("://") ? value : `https://${value}`);
 }
 
+function isLoopbackHost(hostname) {
+  const normalized = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (normalized === "localhost" || normalized === "::1") return true;
+  if (net.isIP(normalized) !== 4) return false;
+  return normalized.split(".")[0] === "127";
+}
+
 function websocketHandshake({ label, url, hostHeader, originHost }) {
   return new Promise((resolve) => {
     const secure = url.protocol === "https:" || url.protocol === "wss:";
@@ -60,7 +67,14 @@ function websocketHandshake({ label, url, hostHeader, originHost }) {
     const connect = secure ? tls.connect : net.createConnection;
     const socket = connect(
       secure
-        ? { host, port, servername: hostHeader || host, rejectUnauthorized: false }
+        ? {
+          host,
+          port,
+          servername: hostHeader || host,
+          // The devcontainer Traefik endpoint uses its local default certificate.
+          // Non-loopback and public TLS endpoints always retain certificate validation.
+          rejectUnauthorized: !isLoopbackHost(host),
+        }
         : { host, port },
       () => {
         const key = crypto.randomBytes(16).toString("base64");

@@ -2,7 +2,7 @@ import { logger } from "@/lib/logger";
 import { db, appConfig } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { SsoProviderService } from "@/lib/services/sso-provider.service";
-import { assertSsoEndpointAllowed } from "@/lib/sso-endpoint-guard";
+import { requestSsoEndpoint, SsoEndpointRejectedError } from "@/lib/sso-endpoint-guard";
 
 export interface SSOConfig {
   enabled: boolean;
@@ -203,22 +203,12 @@ export async function exchangeCodeForToken(
   config: SSOConfig,
   code: string
 ): Promise<{ access_token: string; id_token?: string }> {
-  let tokenUrl: string;
-  try {
-    tokenUrl = await assertSsoEndpointAllowed(endpoint(config, "tokenUrl", "/token"));
-  } catch (error) {
-    logger.error("SSO token endpoint rejected", { error });
-    throw new SSOAuthError("provider_config_invalid", "SSO token endpoint is not allowed");
-  }
-
   const tokenController = new AbortController();
   const tokenTimeout = setTimeout(() => tokenController.abort(), 10000);
 
   let response: Response;
   try {
-    // tokenUrl has been parsed, DNS-resolved, and rejected unless private/local results are explicitly allowlisted.
-    // codeql[js/request-forgery]
-    response = await fetch(tokenUrl, {
+    response = await requestSsoEndpoint(endpoint(config, "tokenUrl", "/token"), {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -229,10 +219,14 @@ export async function exchangeCodeForToken(
         client_secret: config.clientSecret,
         code,
         redirect_uri: config.redirectUri,
-      }),
+      }).toString(),
       signal: tokenController.signal,
     });
   } catch (error) {
+    if (error instanceof SsoEndpointRejectedError) {
+      logger.error("SSO token endpoint rejected", { error });
+      throw new SSOAuthError("provider_config_invalid", "SSO token endpoint is not allowed");
+    }
     logger.error("SSO token exchange request failed", { error });
     throw new SSOAuthError("token_exchange_failed", "Failed to reach token endpoint");
   } finally {
@@ -252,28 +246,22 @@ export async function getUserInfo(
   config: SSOConfig,
   accessToken: string
 ): Promise<{ sub: string; name?: string; email?: string; groups?: string[] }> {
-  let userinfoUrl: string;
-  try {
-    userinfoUrl = await assertSsoEndpointAllowed(endpoint(config, "userinfoUrl", "/userinfo"));
-  } catch (error) {
-    logger.error("SSO userinfo endpoint rejected", { error });
-    throw new SSOAuthError("provider_config_invalid", "SSO userinfo endpoint is not allowed");
-  }
-
   const userinfoController = new AbortController();
   const userinfoTimeout = setTimeout(() => userinfoController.abort(), 10000);
 
   let response: Response;
   try {
-    // userinfoUrl has been parsed, DNS-resolved, and rejected unless private/local results are explicitly allowlisted.
-    // codeql[js/request-forgery]
-    response = await fetch(userinfoUrl, {
+    response = await requestSsoEndpoint(endpoint(config, "userinfoUrl", "/userinfo"), {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
       signal: userinfoController.signal,
     });
   } catch (error) {
+    if (error instanceof SsoEndpointRejectedError) {
+      logger.error("SSO userinfo endpoint rejected", { error });
+      throw new SSOAuthError("provider_config_invalid", "SSO userinfo endpoint is not allowed");
+    }
     logger.error("SSO userinfo request failed", { error });
     throw new SSOAuthError("userinfo_fetch_failed", "Failed to reach userinfo endpoint");
   } finally {
