@@ -29,7 +29,7 @@ Thanks for contributing to Traefik Proxy Admin.
 ## Dependabot and CI
 
 - Dependabot version updates target `dev`.
-- CI runs for pull requests into `dev` and `main`, and can be started manually.
+- CI runs for pull requests into and pushes to `dev` and `main`, and can be started manually.
 - Direct work against `main` is reserved for coordinated releases and exceptional hotfixes.
 - Release Please remains pinned to `main`.
 

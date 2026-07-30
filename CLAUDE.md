@@ -159,7 +159,7 @@ shadcn/Radix Selects have caused repeated state bugs. Follow these rules:
 - GitHub Actions use Node 22.
 - ESLint must stay on supported 9.x while `eslint-config-next`/plugins are not compatible with ESLint 10.
 - Lucide 1.x no longer exports `Github`; use `Code2` for the source-code footer link.
-- CI is intentionally PR/manual-only with concurrency cancellation.
+- CI runs for pull requests into and pushes to `dev` and `main`, with concurrency cancellation.
 - Pushes to `main` run Release Please and CodeQL/default code scanning.
 - Docker images build only on published GitHub Releases created by Release Please.
 - Release Please config and manifest live under `.github/`.
