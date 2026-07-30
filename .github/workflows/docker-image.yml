@@ -51,3 +51,77 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  announce:
+    if: >-
+      github.repository == 'I-am-PUID-0/traefik-proxy-admin' &&
+      github.event_name == 'release'
+    needs: docker
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      RELEASE_NOTES: ${{ github.event.release.body }}
+      RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      RELEASE_URL: ${{ github.event.release.html_url }}
+    steps:
+      - name: Announce release on Discord
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if [[ -z "${DISCORD_WEBHOOK_URL}" ]]; then
+            echo "::error::DISCORD_WEBHOOK_URL is not configured"
+            exit 1
+          fi
+
+          ANNOUNCEMENT_BODY="$(
+            python3 <<'PY'
+          import os
+
+          release_tag = os.environ["RELEASE_TAG"]
+          image_tag = release_tag.removeprefix("v")
+          release_kind = (
+              "prerelease"
+              if os.environ.get("RELEASE_PRERELEASE", "").lower() == "true"
+              else "release"
+          )
+          release_notes = os.environ.get("RELEASE_NOTES", "").strip()
+          if not release_notes:
+              release_notes = "See the GitHub release for details."
+
+          message = f"""🚀 **Traefik Proxy Admin {release_tag} is now available**
+
+          A new {release_kind} has been published and its multi-architecture Docker image is ready.
+
+          **Release notes**
+          {release_notes}
+
+          **Links**
+          - GitHub release: {os.environ["RELEASE_URL"]}
+          - Docker Hub: https://hub.docker.com/r/iampuid0/traefik-proxy-admin
+          - Community: https://discord.gg/gZMPaWB9xK
+
+          ```shell
+          docker pull iampuid0/traefik-proxy-admin:{image_tag}
+          ```"""
+
+          limit = 1900
+          if len(message) > limit:
+              message = message[: limit - 3].rstrip() + "..."
+          print(message)
+          PY
+          )"
+
+          jq -n \
+            --arg content "${ANNOUNCEMENT_BODY}" \
+            '{content: $content, flags: 4, allowed_mentions: {parse: []}}' \
+            > "${RUNNER_TEMP}/discord-payload.json"
+
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --header "Content-Type: application/json" \
+            --data-binary "@${RUNNER_TEMP}/discord-payload.json" \
+            "${DISCORD_WEBHOOK_URL}"

@@ -33,6 +33,14 @@ Thanks for contributing to Traefik Proxy Admin.
 - Direct work against `main` is reserved for coordinated releases and exceptional hotfixes.
 - Release Please remains pinned to `main`.
 
+## Maintainer Release Automation
+
+Store the Discord announcement webhook as the GitHub Actions repository secret
+`DISCORD_WEBHOOK_URL`; never place the webhook value in tracked files. After adding or
+rotating the secret, run the **Test Discord Webhook** workflow manually. Published
+releases are announced only after the multi-architecture Docker image publishes
+successfully.
+
 ## Verification
 
 Run the full suite inside the devcontainer before pushing:

@@ -1,0 +1,44 @@
+name: Test Discord Webhook
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-discord:
+    if: github.repository == 'I-am-PUID-0/traefik-proxy-admin'
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+    steps:
+      - name: Send test announcement
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          if [[ -z "${DISCORD_WEBHOOK_URL}" ]]; then
+            echo "::error::DISCORD_WEBHOOK_URL is not configured"
+            exit 1
+          fi
+
+          TEST_MESSAGE="✅ **Traefik Proxy Admin release announcements are connected**
+
+          This is a manual test from the GitHub Actions workflow.
+
+          - Repository: https://github.com/I-am-PUID-0/traefik-proxy-admin
+          - Community: https://discord.gg/gZMPaWB9xK"
+
+          jq -n \
+            --arg content "${TEST_MESSAGE}" \
+            '{content: $content, flags: 4, allowed_mentions: {parse: []}}' \
+            > "${RUNNER_TEMP}/discord-payload.json"
+
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --header "Content-Type: application/json" \
+            --data-binary "@${RUNNER_TEMP}/discord-payload.json" \
+            "${DISCORD_WEBHOOK_URL}"

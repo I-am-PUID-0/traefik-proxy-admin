@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Discord community
+    url: https://discord.gg/gZMPaWB9xK
+    about: Join the community for real-time discussion and troubleshooting.
   - name: Questions or ideas
     url: https://github.com/I-am-PUID-0/traefik-proxy-admin/discussions
     about: Please use Discussions for general questions and ideas.

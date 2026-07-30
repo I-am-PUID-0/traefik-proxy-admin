@@ -30,6 +30,9 @@
   <a href="https://github.com/I-am-PUID-0/traefik-proxy-admin/actions/workflows/docker-image.yml">
     <img alt="Build Status" src="https://img.shields.io/github/actions/workflow/status/I-am-PUID-0/traefik-proxy-admin/docker-image.yml?style=for-the-badge">
   </a>
+  <a href="https://discord.gg/gZMPaWB9xK">
+    <img alt="Join Discord" src="https://img.shields.io/badge/Join%20us%20on%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white">
+  </a>
 </div>
 
 Traefik Proxy Admin is a production-focused web UI for managing Traefik dynamic HTTP configuration. It runs as a standalone Next.js container backed by PostgreSQL and generates Traefik routers, services, middlewares, service authentication, shared links, and live diagnostics.
@@ -159,3 +162,9 @@ Contributor docs:
 - [Contributing](CONTRIBUTING.md): branch model, pull requests, conventional commits, and checks.
 - [Development](docs/development.md): devcontainer usage, local Traefik files, reverse-proxied Next dev origins, and verification.
 - [Security Policy](SECURITY.md): supported branches and private vulnerability reporting.
+
+## Community
+
+- [Join the Discord community](https://discord.gg/gZMPaWB9xK) for real-time discussion and troubleshooting.
+- Use [GitHub Discussions](https://github.com/I-am-PUID-0/traefik-proxy-admin/discussions) for questions and ideas that benefit from a searchable answer.
+- Use [GitHub Issues](https://github.com/I-am-PUID-0/traefik-proxy-admin/issues) for reproducible bugs and actionable feature requests.
