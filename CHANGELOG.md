@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.22.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.21.1...v1.22.0) (2026-07-30)
+
+
+### Features
+
+* **release:** add Discord announcements and community links ([39f37a6](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/39f37a660d38ea720573af12e2dceb7c3435a5e3))
+
 ## [1.21.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.21.0...v1.21.1) (2026-07-30)
 
 
