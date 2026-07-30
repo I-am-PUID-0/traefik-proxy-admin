@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.23.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.22.1...v1.23.0) (2026-07-30)
+
+
+### Features
+
+* **integrations:** add DUMB-managed Authelia route provisioning ([6a4f988](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/6a4f98859f3a63101805373f86984fb813ed9d52))
+
+
+### Bug Fixes
+
+* **integrations:** accept optional service hostname fields ([fbf93ba](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/fbf93ba271e54e043b9715487f18b31b4eae6ec3))
+
 ## [1.22.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.22.0...v1.22.1) (2026-07-30)
 
 
