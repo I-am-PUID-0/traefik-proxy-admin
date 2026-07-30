@@ -44,7 +44,8 @@ Use it when you want a managed UI/API for exposing private HTTP services through
 - Create, edit, disable, import, and export proxied services
 - Generate Traefik routers, services, TLS settings, middlewares, and advanced router rules
 - Protect the admin UI/API with local accounts or OIDC/SSO
-- Link a DUMB-managed Authelia provider while retaining optional local
+- Link an Authelia provider managed by
+  [DUMB](https://github.com/I-am-PUID-0/DUMB) while retaining optional local
   break-glass login
 - Protect proxied services with shared links, Basic Auth, or SSO forwardAuth
 - Add service-level Bypass Rules for webhooks, companion apps, health checks, and automations, with optional observed bypass session tracking

@@ -23,6 +23,7 @@ const PUBLIC_PATHS = new Set([
   "/api/health",
   "/api/traefik/config",
   "/api/integrations/dumb/authelia/link",
+  "/api/integrations/dumb/authelia/route",
   "/auth/forbidden",
   "/auth/login",
   "/auth/success",

@@ -1,6 +1,6 @@
 "use client";
 
-import { Code2, Heart } from "lucide-react";
+import { Code2, ExternalLink, Heart } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export function AppFooter() {
@@ -33,6 +33,16 @@ export function AppFooter() {
             >
               <Code2 className="h-4 w-4" />
               <span>Source Code</span>
+            </a>
+
+            <a
+              href="https://github.com/I-am-PUID-0/DUMB"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 hover:text-foreground transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span>DUMB Project</span>
             </a>
 
             <a

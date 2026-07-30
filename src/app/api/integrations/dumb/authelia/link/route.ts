@@ -1,4 +1,3 @@
-import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
   getAdminAuthConfig,
@@ -12,6 +11,7 @@ import {
   RequestBodyError,
 } from "@/lib/request-guards";
 import { SsoProviderService } from "@/lib/services/sso-provider.service";
+import { isDumbIntegrationAuthorized } from "@/lib/dumb-integration-auth";
 
 export const runtime = "nodejs";
 
@@ -28,14 +28,6 @@ interface LinkRequest {
   configureAdminSso?: boolean;
   allowLocalFallback?: boolean;
   adminGroups?: string[];
-}
-
-function authorized(request: NextRequest) {
-  const expected = process.env.DUMB_INTEGRATION_TOKEN?.trim() || "";
-  const supplied =
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
-  if (expected.length < 32 || expected.length !== supplied.length) return false;
-  return timingSafeEqual(Buffer.from(expected), Buffer.from(supplied));
 }
 
 function cleanUrl(value: unknown, label: string) {
@@ -62,7 +54,7 @@ export async function POST(request: NextRequest) {
     windowMs: 60_000,
   });
   if (limited) return limited;
-  if (!authorized(request)) {
+  if (!isDumbIntegrationAuthorized(request)) {
     return NextResponse.json({ error: "Invalid DUMB integration token" }, { status: 401 });
   }
 

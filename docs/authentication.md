@@ -63,18 +63,34 @@ SSO admin auth uses the global OIDC provider configuration in app config. Servic
 
 #### DUMB-managed Authelia
 
-When TPA runs as a DUMB-managed service, DUMB can configure Authelia from the
-Authelia service-page wizard. DUMB creates a TPA-specific OIDC client and calls:
+When TPA runs as a [DUMB](https://github.com/I-am-PUID-0/DUMB)-managed service,
+DUMB can configure Authelia from the Authelia service-page wizard. The wizard
+first discovers TPA's existing domain configurations and can create the
+matching unprotected Authelia route:
+
+```text
+GET  /api/integrations/dumb/authelia/route
+POST /api/integrations/dumb/authelia/route
+Authorization: Bearer <DUMB_INTEGRATION_TOKEN>
+```
+
+The route integration returns only non-secret domain/routing metadata. Creating
+a route never edits the selected domain, certificate resolver, entry points, or
+other TLS settings. It targets the DUMB-managed loopback Authelia listener,
+creates no authentication middleware, reuses an already compatible route, and
+rejects a conflicting hostname rather than changing an existing service.
+
+DUMB creates a TPA-specific OIDC client and calls:
 
 ```text
 POST /api/integrations/dumb/authelia/link
 Authorization: Bearer <DUMB_INTEGRATION_TOKEN>
 ```
 
-The endpoint is outside normal cookie-auth middleware so DUMB can call it over
-container loopback, but it rejects requests unless the environment token exists,
-is at least 32 characters, and matches in constant time. DUMB generates and
-injects this secret automatically. Standalone TPA deployments should leave
+These endpoints are outside normal cookie-auth middleware so DUMB can call them
+over container loopback, but they reject requests unless the environment token
+exists, is at least 32 characters, and matches in constant time. DUMB generates
+and injects this secret automatically. Standalone TPA deployments should leave
 `DUMB_INTEGRATION_TOKEN` unset.
 
 Linking idempotently creates or updates the reusable **DUMB-managed Authelia**
