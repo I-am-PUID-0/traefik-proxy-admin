@@ -1,6 +1,8 @@
 import type { Domain, Service } from "@/lib/db/schema";
 
-type ServiceHostnameFields = Pick<Service, "hostnameMode" | "subdomain" | "customHostnames">;
+type ServiceHostnameFields =
+  & Pick<Service, "hostnameMode">
+  & Partial<Pick<Service, "subdomain" | "customHostnames">>;
 type DomainHostnameFields = Pick<Domain, "domain">;
 
 export function parseCustomHostnamesInput(value: unknown): string[] {
