@@ -1,3 +1,5 @@
+<!-- Normal feature, bugfix, documentation, and dependency PRs target dev. Use main only for coordinated releases or exceptional hotfixes. -->
+
 ## Summary
 
 ## Testing

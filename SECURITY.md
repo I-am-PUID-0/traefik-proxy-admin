@@ -5,6 +5,7 @@
 | Version/Branch | Supported |
 | --- | --- |
 | `main` | Yes |
+| `dev` | Best effort |
 | Older branches/tags | No |
 
 ## Reporting a Vulnerability

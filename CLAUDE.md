@@ -150,6 +150,9 @@ shadcn/Radix Selects have caused repeated state bugs. Follow these rules:
 
 ## Release And CI Notes
 
+- `dev` is the default collaboration and pull request branch.
+- `main` is the production and release branch; normal feature, bugfix, documentation, and dependency pull requests target `dev`.
+- Dependabot targets `dev`.
 - Runtime baseline is Node 22 LTS.
 - Production Dockerfile uses `node:22-alpine`.
 - Devcontainer uses `node:22-bookworm`.

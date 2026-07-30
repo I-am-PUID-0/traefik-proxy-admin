@@ -4,18 +4,19 @@ Thanks for contributing to Traefik Proxy Admin.
 
 ## Branch Model
 
+- `dev` is the default collaboration branch.
 - `main` is the production and release branch.
-- Open normal feature and bugfix pull requests against `main` unless a maintainer directs otherwise.
-- Release Please uses conventional commits on `main` to prepare releases.
+- Open normal feature, bugfix, documentation, and dependency pull requests against `dev`.
+- Maintainers promote tested changes from `dev` to `main`; Release Please uses conventional commits on `main` to prepare releases.
 
 ## Basic Workflow
 
 1. Fork the repository.
-2. Create a focused feature or bugfix branch.
+2. Create a focused feature or bugfix branch from `dev`.
 3. Make the smallest coherent change that solves the issue.
 4. Update relevant docs when behavior, setup, security, or operations change.
 5. Run verification before opening a pull request.
-6. Open the pull request with a conventional title.
+6. Open the pull request against `dev` with a conventional title.
 
 ## Pull Request Expectations
 
@@ -24,6 +25,13 @@ Thanks for contributing to Traefik Proxy Admin.
 - Link related issues when applicable.
 - Update docs or explicitly explain why docs were not needed.
 - Keep unrelated refactors out of feature and bugfix PRs.
+
+## Dependabot and CI
+
+- Dependabot version updates target `dev`.
+- CI runs for pull requests into `dev` and `main`, and can be started manually.
+- Direct work against `main` is reserved for coordinated releases and exceptional hotfixes.
+- Release Please remains pinned to `main`.
 
 ## Verification
 
