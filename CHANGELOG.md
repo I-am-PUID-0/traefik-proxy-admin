@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.22.1](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.22.0...v1.22.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **release:** remove Discord invite from webhook messages ([fa38bb6](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/fa38bb63207076d0ce93c482fe83fc85fdf7264e))
+
 ## [1.22.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.21.1...v1.22.0) (2026-07-30)
 
 
