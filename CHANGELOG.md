@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.21.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.20.0...v1.21.0) (2026-07-30)
+
+
+### Features
+
+* **auth:** add DUMB-managed Authelia linking support ([4260400](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/4260400d781cda4fa7f35962528ebf18a0f5a1bf))
+
+
+### Bug Fixes
+
+* **security:** harden SSO requests and development TLS checks ([eebd20d](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/eebd20da3eeac463217b5277cb7ad94eb2ae43b3))
+
 ## [1.20.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.19.0...v1.20.0) (2026-07-01)
 
 
