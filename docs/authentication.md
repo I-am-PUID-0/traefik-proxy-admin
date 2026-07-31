@@ -110,6 +110,15 @@ selects the `sso` admin provider, maps the selected Authelia group to TPA admin,
 and retains local fallback. Keep local fallback until a mapped account has
 completed a real login.
 
+DUMB declares the managed client's token-endpoint authentication method as
+`client_secret_basic`. TPA stores that method and sends the client credentials
+in the HTTP Basic authorization header during the authorization-code exchange.
+Existing external and manually configured providers continue to use
+`client_secret_post` unless their integration explicitly declares otherwise.
+If Authelia accepts 2FA but the callback reports `token_exchange_failed` with
+`invalid_request`, update TPA and re-link it from DUMB so the existing managed
+provider record is updated.
+
 Re-link from DUMB after changing the TPA public URL or rotating the managed OIDC
 client. Generated client secrets are sent only over the authenticated loopback
 request and are not returned to the DUMB browser.

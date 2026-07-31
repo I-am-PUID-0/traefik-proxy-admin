@@ -43,6 +43,7 @@ const emptyForm: SsoProviderFormData = {
   userinfoUrl: "",
   clientId: "",
   clientSecret: "",
+  tokenEndpointAuthMethod: "client_secret_post",
   redirectUri: "",
   scopes: "openid profile email",
 };
@@ -71,6 +72,10 @@ export function SsoConfigDialog({ open, onOpenChange, editingConfig, onSubmit }:
         userinfoUrl: editingConfig.userinfoUrl || "",
         clientId: editingConfig.clientId,
         clientSecret: "",
+        tokenEndpointAuthMethod:
+          editingConfig.tokenEndpointAuthMethod === "client_secret_basic"
+            ? "client_secret_basic"
+            : "client_secret_post",
         redirectUri: editingConfig.redirectUri,
         scopes: editingConfig.scopes.join(" "),
       });
@@ -95,6 +100,8 @@ export function SsoConfigDialog({ open, onOpenChange, editingConfig, onSubmit }:
       tokenUrl: preset.values.tokenUrl ?? current.tokenUrl,
       userinfoUrl: preset.values.userinfoUrl ?? current.userinfoUrl,
       scopes: preset.values.scopes ?? current.scopes,
+      tokenEndpointAuthMethod:
+        preset.values.tokenEndpointAuthMethod ?? current.tokenEndpointAuthMethod,
     }));
     setFormErrors({});
     setCheckResult(null);
@@ -282,6 +289,25 @@ export function SsoConfigDialog({ open, onOpenChange, editingConfig, onSubmit }:
               <Input id="sso-scopes" value={formData.scopes} onChange={(event) => setFormData({ ...formData, scopes: event.target.value })} placeholder="openid profile email groups" disabled={submitting} />
               <p className="text-xs text-muted-foreground">Space-separated scopes. Start with <code>openid profile email</code>; add group scopes only if your provider returns group claims.</p>
               {formErrors.scopes && <p className="text-sm text-red-600">{formErrors.scopes}</p>}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="sso-token-auth-method">Token endpoint authentication</Label>
+              <Select
+                value={formData.tokenEndpointAuthMethod}
+                onValueChange={(value) => setFormData({
+                  ...formData,
+                  tokenEndpointAuthMethod: value as "client_secret_post" | "client_secret_basic",
+                })}
+                disabled={submitting}
+              >
+                <SelectTrigger id="sso-token-auth-method"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="client_secret_post">Client secret in POST body</SelectItem>
+                  <SelectItem value="client_secret_basic">HTTP Basic authentication</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Must match the provider&apos;s client registration. Authelia normally uses HTTP Basic authentication.</p>
             </div>
 
             <div className="grid gap-2">

@@ -26,6 +26,9 @@ function normalizeConfig(body: Record<string, unknown>): SSOConfig {
     userinfoUrl: typeof body.userinfoUrl === "string" ? body.userinfoUrl.trim() : "",
     clientId: typeof body.clientId === "string" ? body.clientId.trim() : "",
     clientSecret: typeof body.clientSecret === "string" ? body.clientSecret.trim() : "",
+    tokenEndpointAuthMethod: body.tokenEndpointAuthMethod === "client_secret_basic"
+      ? "client_secret_basic"
+      : "client_secret_post",
     redirectUri: typeof body.redirectUri === "string" ? body.redirectUri.trim() : "",
     scopes: normalizeScopes(body.scopes),
   };

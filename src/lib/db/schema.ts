@@ -28,6 +28,9 @@ export const ssoConfigs = pgTable("sso_configs", {
   userinfoUrl: text("userinfo_url"),
   clientId: varchar("client_id", { length: 255 }).notNull(),
   clientSecret: text("client_secret").notNull(),
+  tokenEndpointAuthMethod: varchar("token_endpoint_auth_method", { length: 32 })
+    .default("client_secret_post")
+    .notNull(),
   redirectUri: text("redirect_uri").notNull(),
   scopes: text("scopes").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

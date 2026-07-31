@@ -13,6 +13,7 @@ export interface SsoProviderFormData {
   userinfoUrl: string;
   clientId: string;
   clientSecret: string;
+  tokenEndpointAuthMethod: "client_secret_post" | "client_secret_basic";
   redirectUri: string;
   scopes: string;
 }

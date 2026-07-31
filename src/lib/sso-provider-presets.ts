@@ -16,6 +16,7 @@ export type SsoProviderPresetValues = {
   tokenUrl?: string;
   userinfoUrl?: string;
   scopes?: string;
+  tokenEndpointAuthMethod?: "client_secret_post" | "client_secret_basic";
 };
 
 export const SSO_PROVIDER_PRESETS: Array<{
@@ -52,6 +53,7 @@ export const SSO_PROVIDER_PRESETS: Array<{
       tokenUrl: "https://auth.example.com/api/oidc/token",
       userinfoUrl: "https://auth.example.com/api/oidc/userinfo",
       scopes: "openid profile email groups",
+      tokenEndpointAuthMethod: "client_secret_basic",
     },
   },
   {

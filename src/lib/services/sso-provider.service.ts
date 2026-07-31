@@ -26,6 +26,12 @@ function trimNullable(value: string | null | undefined): string | null {
   return next ? next : null;
 }
 
+function normalizeTokenEndpointAuthMethod(
+  value: string | null | undefined,
+): "client_secret_post" | "client_secret_basic" {
+  return value === "client_secret_basic" ? "client_secret_basic" : "client_secret_post";
+}
+
 function toResponse(config: SsoConfig, includeSecret = false): SsoConfigResponse {
   const { clientSecret: _clientSecret, scopes, ...rest } = config;
   return {
@@ -74,6 +80,9 @@ export class SsoProviderService {
         userinfoUrl: trimNullable(data.userinfoUrl),
         clientId: data.clientId.trim(),
         clientSecret: data.clientSecret.trim(),
+        tokenEndpointAuthMethod: normalizeTokenEndpointAuthMethod(
+          data.tokenEndpointAuthMethod,
+        ),
         redirectUri: data.redirectUri.trim(),
         scopes: JSON.stringify(normalizeScopes(data.scopes)),
       })
@@ -105,6 +114,9 @@ export class SsoProviderService {
         userinfoUrl: trimNullable(data.userinfoUrl),
         clientId: data.clientId.trim(),
         clientSecret: data.clientSecret?.trim() || current.clientSecret,
+        tokenEndpointAuthMethod: data.tokenEndpointAuthMethod
+          ? normalizeTokenEndpointAuthMethod(data.tokenEndpointAuthMethod)
+          : current.tokenEndpointAuthMethod,
         redirectUri: data.redirectUri.trim(),
         scopes: JSON.stringify(normalizeScopes(data.scopes)),
         updatedAt: new Date(),

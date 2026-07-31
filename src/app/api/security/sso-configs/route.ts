@@ -25,6 +25,7 @@ function normalizeBody(body: CreateSsoConfigRequest): SsoConfigData {
     userinfoUrl: body.userinfoUrl?.trim() || null,
     clientId: body.clientId?.trim(),
     clientSecret: body.clientSecret?.trim(),
+    tokenEndpointAuthMethod: body.tokenEndpointAuthMethod,
     redirectUri: body.redirectUri?.trim(),
     scopes: normalizeScopes(body.scopes),
   };

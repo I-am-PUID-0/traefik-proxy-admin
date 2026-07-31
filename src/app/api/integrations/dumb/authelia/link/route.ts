@@ -23,6 +23,7 @@ interface LinkRequest {
   userinfoUrl?: string;
   clientId?: string;
   clientSecret?: string;
+  tokenEndpointAuthMethod?: "client_secret_post" | "client_secret_basic";
   redirectUri?: string;
   scopes?: string[];
   configureAdminSso?: boolean;
@@ -67,6 +68,9 @@ export async function POST(request: NextRequest) {
     const userinfoUrl = cleanUrl(body.userinfoUrl, "Userinfo URL");
     const clientId = body.clientId?.trim() || "";
     const clientSecret = body.clientSecret?.trim() || "";
+    const tokenEndpointAuthMethod: "client_secret_post" | "client_secret_basic" = body.tokenEndpointAuthMethod === "client_secret_post"
+      ? "client_secret_post"
+      : "client_secret_basic";
     const redirectUri = cleanUrl(body.redirectUri, "Redirect URI");
     const scopes = cleanStrings(body.scopes, ["openid", "profile", "email", "groups"]);
     if (!clientId || !clientSecret) {
@@ -83,6 +87,7 @@ export async function POST(request: NextRequest) {
       userinfoUrl,
       clientId,
       clientSecret,
+      tokenEndpointAuthMethod,
       redirectUri,
       scopes,
     };
@@ -105,6 +110,7 @@ export async function POST(request: NextRequest) {
         userinfoUrl,
         clientId,
         clientSecret,
+        tokenEndpointAuthMethod,
         redirectUri,
         scopes,
       });

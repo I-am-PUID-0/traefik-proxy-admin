@@ -20,6 +20,7 @@ function redact(config: SSOConfig, includeSecret = false) {
     tokenUrl: config.tokenUrl || "",
     userinfoUrl: config.userinfoUrl || "",
     clientId: config.clientId || "",
+    tokenEndpointAuthMethod: config.tokenEndpointAuthMethod,
     redirectUri: config.redirectUri || "",
     scopes: config.scopes || ["openid", "profile", "email"],
     ...(includeSecret ? { clientSecret: config.clientSecret || "" } : {}),
@@ -58,6 +59,7 @@ export async function PUT(request: NextRequest) {
       userinfoUrl: typeof body.userinfoUrl === "string" ? body.userinfoUrl.trim() : "",
       clientId: typeof body.clientId === "string" ? body.clientId.trim() : "",
       clientSecret: typeof body.clientSecret === "string" && body.clientSecret.trim() ? body.clientSecret.trim() : current.clientSecret,
+      tokenEndpointAuthMethod: current.tokenEndpointAuthMethod,
       redirectUri: typeof body.redirectUri === "string" ? body.redirectUri.trim() : "",
       scopes: normalizeScopes(body.scopes),
     };

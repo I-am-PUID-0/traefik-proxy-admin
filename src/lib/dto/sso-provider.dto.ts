@@ -10,6 +10,7 @@ export interface CreateSsoConfigRequest {
   userinfoUrl?: string | null;
   clientId: string;
   clientSecret: string;
+  tokenEndpointAuthMethod?: "client_secret_post" | "client_secret_basic";
   redirectUri: string;
   scopes?: string[];
 }
@@ -36,6 +37,7 @@ export interface SsoConfigData {
   userinfoUrl?: string | null;
   clientId: string;
   clientSecret?: string;
+  tokenEndpointAuthMethod?: "client_secret_post" | "client_secret_basic";
   redirectUri: string;
   scopes: string[];
 }

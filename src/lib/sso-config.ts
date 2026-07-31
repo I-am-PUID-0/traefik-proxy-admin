@@ -12,6 +12,7 @@ export interface SSOConfig {
   userinfoUrl?: string | null;
   clientId: string;
   clientSecret: string;
+  tokenEndpointAuthMethod: "client_secret_post" | "client_secret_basic";
   redirectUri: string;
   scopes: string[];
 }
@@ -36,6 +37,7 @@ const DEFAULT_SSO_CONFIG: SSOConfig = {
   userinfoUrl: "",
   clientId: "",
   clientSecret: "",
+  tokenEndpointAuthMethod: "client_secret_post",
   redirectUri: "",
   scopes: ["openid", "profile", "email"],
 };
@@ -78,6 +80,10 @@ function normalizeConfig(value: unknown): SSOConfig {
     userinfoUrl: typeof config.userinfoUrl === "string" ? config.userinfoUrl : "",
     clientId: typeof config.clientId === "string" ? config.clientId : "",
     clientSecret: typeof config.clientSecret === "string" ? config.clientSecret : "",
+    tokenEndpointAuthMethod:
+      config.tokenEndpointAuthMethod === "client_secret_basic"
+        ? "client_secret_basic"
+        : "client_secret_post",
     redirectUri: typeof config.redirectUri === "string" ? config.redirectUri : "",
     scopes: Array.isArray(config.scopes) ? config.scopes.filter((scope): scope is string => typeof scope === "string") : DEFAULT_SSO_CONFIG.scopes,
   };
@@ -111,6 +117,10 @@ export async function getServiceSSOConfig(ssoConfigId?: string | null): Promise<
       userinfoUrl: config.userinfoUrl,
       clientId: config.clientId,
       clientSecret: config.clientSecret,
+      tokenEndpointAuthMethod:
+        config.tokenEndpointAuthMethod === "client_secret_basic"
+          ? "client_secret_basic"
+          : "client_secret_post",
       redirectUri: config.redirectUri,
       scopes: JSON.parse(config.scopes) as string[],
     };
@@ -208,18 +218,24 @@ export async function exchangeCodeForToken(
 
   let response: Response;
   try {
+    const tokenParams = new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: config.redirectUri,
+    });
+    const headers: Record<string, string> = {
+      "Content-Type": "application/x-www-form-urlencoded",
+    };
+    if (config.tokenEndpointAuthMethod === "client_secret_basic") {
+      headers.Authorization = `Basic ${Buffer.from(`${config.clientId}:${config.clientSecret}`, "utf8").toString("base64")}`;
+    } else {
+      tokenParams.set("client_id", config.clientId);
+      tokenParams.set("client_secret", config.clientSecret);
+    }
     response = await requestSsoEndpoint(endpoint(config, "tokenUrl", "/token"), {
       method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-        code,
-        redirect_uri: config.redirectUri,
-      }).toString(),
+      headers,
+      body: tokenParams.toString(),
       signal: tokenController.signal,
     });
   } catch (error) {

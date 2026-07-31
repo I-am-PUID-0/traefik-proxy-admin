@@ -42,6 +42,7 @@ type GlobalSsoConfigResponse = {
   userinfoUrl: string;
   clientId: string;
   clientSecret?: string;
+  tokenEndpointAuthMethod: "client_secret_post" | "client_secret_basic";
   redirectUri: string;
   scopes: string[];
   hasClientSecret: boolean;
@@ -165,6 +166,8 @@ export function AdminAuthPanel() {
       tokenUrl: preset.values.tokenUrl ?? globalSso.tokenUrl,
       userinfoUrl: preset.values.userinfoUrl ?? globalSso.userinfoUrl,
       scopes: preset.values.scopes ?? globalSso.scopes,
+      tokenEndpointAuthMethod:
+        preset.values.tokenEndpointAuthMethod ?? globalSso.tokenEndpointAuthMethod,
     });
     setGlobalSsoCheckResult(null);
     setError(null);
@@ -534,6 +537,23 @@ export function AdminAuthPanel() {
                     <p className="text-xs text-muted-foreground">Blank keeps the current stored secret. Reveal loads the saved value for inspection or rotation.</p>
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label>Token endpoint authentication</Label>
+                  <Select
+                    value={globalSso.tokenEndpointAuthMethod}
+                    onValueChange={(value) => setGlobalSso({
+                      ...globalSso,
+                      tokenEndpointAuthMethod: value as "client_secret_post" | "client_secret_basic",
+                    })}
+                  >
+                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="client_secret_post">Client secret in POST body</SelectItem>
+                      <SelectItem value="client_secret_basic">HTTP Basic authentication</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Must match the provider&apos;s client registration. DUMB-managed Authelia uses HTTP Basic authentication.</p>
+                </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Redirect URI</Label>
@@ -660,6 +680,10 @@ function normalizeGlobalSso(value: GlobalSsoConfigResponse): GlobalSsoForm {
     userinfoUrl: value.userinfoUrl || "",
     clientId: value.clientId || "",
     clientSecret: value.clientSecret || "",
+    tokenEndpointAuthMethod:
+      value.tokenEndpointAuthMethod === "client_secret_basic"
+        ? "client_secret_basic"
+        : "client_secret_post",
     redirectUri: value.redirectUri || "",
     scopes: (value.scopes || ["openid", "profile", "email"]).join(" "),
     hasClientSecret: Boolean(value.hasClientSecret),

@@ -56,6 +56,7 @@ function body(overrides: Record<string, unknown> = {}) {
     userinfoUrl: "https://auth.example.com/api/oidc/userinfo",
     clientId: "tpa",
     clientSecret: "generated-secret",
+    tokenEndpointAuthMethod: "client_secret_basic",
     redirectUri: "https://tpa.example.com/api/auth/sso/callback",
     scopes: ["openid", "profile", "email", "groups"],
     configureAdminSso: true,
@@ -115,6 +116,13 @@ describe("DUMB-managed Authelia link route", () => {
       expect.objectContaining({
         name: "DUMB-managed Authelia",
         clientSecret: "generated-secret",
+        tokenEndpointAuthMethod: "client_secret_basic",
+      }),
+    );
+    expect(mocks.updateSSOConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clientId: "tpa",
+        tokenEndpointAuthMethod: "client_secret_basic",
       }),
     );
     expect(mocks.updateAdminAuthConfig).toHaveBeenCalledWith(
@@ -124,6 +132,20 @@ describe("DUMB-managed Authelia link route", () => {
         roles: expect.objectContaining({
           admin: expect.objectContaining({ groups: ["admins"] }),
         }),
+      }),
+    );
+  });
+
+  it("defaults older managed-link requests to Authelia client_secret_basic", async () => {
+    const legacyBody: Record<string, unknown> = body();
+    delete legacyBody.tokenEndpointAuthMethod;
+
+    const response = await POST(request(legacyBody));
+
+    expect(response.status).toBe(200);
+    expect(mocks.createConfig).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tokenEndpointAuthMethod: "client_secret_basic",
       }),
     );
   });
