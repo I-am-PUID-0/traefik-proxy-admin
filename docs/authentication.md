@@ -65,8 +65,8 @@ SSO admin auth uses the global OIDC provider configuration in app config. Servic
 
 When TPA runs as a [DUMB](https://github.com/I-am-PUID-0/DUMB)-managed service,
 DUMB can configure Authelia from the Authelia service-page wizard. The wizard
-first discovers TPA's existing domain configurations and can create the
-matching unprotected Authelia route:
+first discovers TPA's existing domain configurations and can create matching
+routes for the Authelia portal, DUMB frontend, and TPA admin UI:
 
 ```text
 GET  /api/integrations/dumb/authelia/route
@@ -74,11 +74,18 @@ POST /api/integrations/dumb/authelia/route
 Authorization: Bearer <DUMB_INTEGRATION_TOKEN>
 ```
 
-The route integration returns only non-secret domain/routing metadata. Creating
+The route integration returns only non-secret domain/routing metadata and a
+supported-application list so older TPA releases are capability-gated. Creating
 a route never edits the selected domain, certificate resolver, entry points, or
-other TLS settings. It targets the DUMB-managed loopback Authelia listener,
-creates no authentication middleware, reuses an already compatible route, and
+other TLS settings. It targets the matching DUMB-managed loopback listener,
+creates no TPA service-auth middleware, reuses an already compatible route, and
 rejects a conflicting hostname rather than changing an existing service.
+
+The Authelia portal must remain unprotected because it is the login service.
+The DUMB and TPA routes also omit TPA service authentication because DUMB and
+TPA enforce their own application login policies; attaching ForwardAuth or TPA
+Service SSO to those same routers would create redundant or recursive login
+flows.
 
 DUMB creates a TPA-specific OIDC client and calls:
 

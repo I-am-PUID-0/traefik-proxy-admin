@@ -17,7 +17,14 @@ interface RouteRequest {
   domainId?: string;
   publicUrl?: string;
   targetPort?: number;
+  application?: "authelia" | "dumb" | "tpa";
 }
+
+const ROUTE_APPLICATIONS = {
+  authelia: { name: "Authelia", label: "Authelia" },
+  dumb: { name: "DUMB", label: "DUMB" },
+  tpa: { name: "Traefik Proxy Admin", label: "TPA" },
+} as const;
 
 function unauthorized() {
   return NextResponse.json(
@@ -26,7 +33,7 @@ function unauthorized() {
   );
 }
 
-function cleanPublicUrl(value: unknown) {
+function cleanPublicUrl(value: unknown, label: string) {
   const raw = typeof value === "string" ? value.trim() : "";
   try {
     const parsed = new URL(raw);
@@ -45,12 +52,12 @@ function cleanPublicUrl(value: unknown) {
     return parsed;
   } catch {
     throw new RequestBodyError(
-      "Authelia public URL must be an HTTPS origin without a path, port, query, or fragment",
+      `${label} public URL must be an HTTPS origin without a path, port, query, or fragment`,
     );
   }
 }
 
-function routeFields(hostname: string, rootDomain: string) {
+function routeFields(hostname: string, rootDomain: string, label: string) {
   const host = hostname.toLowerCase();
   const domain = rootDomain.toLowerCase();
   if (host === domain) {
@@ -62,7 +69,7 @@ function routeFields(hostname: string, rootDomain: string) {
   }
   if (!host.endsWith(`.${domain}`)) {
     throw new RequestBodyError(
-      "Authelia hostname must equal or be a subdomain of the selected TPA domain",
+      `${label} hostname must equal or be a subdomain of the selected TPA domain`,
     );
   }
   const prefix = host.slice(0, -(domain.length + 1));
@@ -103,7 +110,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const domains = await DomainService.getAllDomains();
-    return NextResponse.json({ domains: domains.map(safeDomain) });
+    return NextResponse.json({
+      domains: domains.map(safeDomain),
+      routeApplications: Object.keys(ROUTE_APPLICATIONS),
+    });
   } catch {
     return NextResponse.json(
       { error: "Unable to discover TPA domains" },
@@ -124,7 +134,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await readJsonBody<RouteRequest>(request, 16 * 1024);
     const domainId = body.domainId?.trim() || "";
-    const publicUrl = cleanPublicUrl(body.publicUrl);
+    const application = body.application || "authelia";
+    const routeApplication = ROUTE_APPLICATIONS[application];
+    if (!routeApplication) {
+      throw new RequestBodyError("Unsupported DUMB-managed route application");
+    }
+    const publicUrl = cleanPublicUrl(body.publicUrl, routeApplication.label);
     const targetPort = body.targetPort;
     if (!domainId) throw new RequestBodyError("TPA domain is required");
     if (
@@ -133,12 +148,18 @@ export async function POST(request: NextRequest) {
       targetPort < 1 ||
       targetPort > 65535
     ) {
-      throw new RequestBodyError("Authelia target port must be from 1 to 65535");
+      throw new RequestBodyError(
+        `${routeApplication.label} target port must be from 1 to 65535`,
+      );
     }
 
     const domain = await DomainService.getDomainById(domainId);
     if (!domain) throw new RequestBodyError("Selected TPA domain was not found");
-    const fields = routeFields(publicUrl.hostname, domain.domain);
+    const fields = routeFields(
+      publicUrl.hostname,
+      domain.domain,
+      routeApplication.label,
+    );
     const services = await ServiceService.getAllServices();
     const conflict = services.find((service) =>
       getServiceHostnames(service, service.domain || domain)
@@ -147,7 +168,7 @@ export async function POST(request: NextRequest) {
 
     if (conflict) {
       const reusable =
-        conflict.name === "Authelia" &&
+        conflict.name === routeApplication.name &&
         conflict.targetIp === "127.0.0.1" &&
         conflict.targetPort === targetPort &&
         conflict.isHttps === false &&
@@ -161,7 +182,7 @@ export async function POST(request: NextRequest) {
       if (!reusable) {
         return NextResponse.json(
           {
-            error: "The Authelia hostname is already assigned to another or incompatible TPA service",
+            error: `The ${routeApplication.label} hostname is already assigned to another or incompatible TPA service`,
             conflictServiceId: conflict.id,
             conflictServiceName: conflict.name,
           },
@@ -169,6 +190,7 @@ export async function POST(request: NextRequest) {
         );
       }
       return NextResponse.json({
+        application,
         configured: true,
         created: false,
         reused: true,
@@ -183,7 +205,7 @@ export async function POST(request: NextRequest) {
     }
 
     const serviceData: CreateServiceData = {
-      name: "Authelia",
+      name: routeApplication.name,
       serviceGroup: "DUMB",
       ...fields,
       domainId: domain.id,
@@ -202,6 +224,7 @@ export async function POST(request: NextRequest) {
     };
     const service = await ServiceService.createService(serviceData);
     return NextResponse.json({
+      application,
       configured: true,
       created: true,
       reused: false,
@@ -216,7 +239,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof RequestBodyError) return bodyErrorResponse(error);
     return NextResponse.json(
-      { error: "Unable to configure the Authelia route in TPA" },
+      { error: "Unable to configure the DUMB-managed route in TPA" },
       { status: 500 },
     );
   }

@@ -84,6 +84,7 @@ describe("DUMB-managed Authelia route integration", () => {
         certResolver: "",
         serviceCount: 2,
       }],
+      routeApplications: ["authelia", "dumb", "tpa"],
     });
   });
 
@@ -114,6 +115,40 @@ describe("DUMB-managed Authelia route integration", () => {
       middlewares: null,
     }));
   });
+
+  it.each([
+    ["dumb", "DUMB", "https://dumb.example.com", "dumb", 3005],
+    ["tpa", "Traefik Proxy Admin", "https://proxy.example.com", "proxy", 3004],
+  ] as const)(
+    "creates an unprotected %s application route",
+    async (application, name, publicUrl, subdomain, targetPort) => {
+      const response = await POST(request("POST", {
+        application,
+        domainId: domain.id,
+        publicUrl,
+        targetPort,
+      }));
+
+      expect(response.status).toBe(200);
+      await expect(response.json()).resolves.toEqual(expect.objectContaining({
+        application,
+        configured: true,
+        created: true,
+        authentication: "none",
+      }));
+      expect(mocks.createService).toHaveBeenCalledWith(expect.objectContaining({
+        name,
+        serviceGroup: "DUMB",
+        hostnameMode: "subdomain",
+        subdomain,
+        domainId: domain.id,
+        targetIp: "127.0.0.1",
+        targetPort,
+        isHttps: false,
+        middlewares: null,
+      }));
+    },
+  );
 
   it("reuses an exact compatible route", async () => {
     mocks.getAllServices.mockResolvedValue([{
