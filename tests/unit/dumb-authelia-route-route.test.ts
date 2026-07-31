@@ -85,7 +85,35 @@ describe("DUMB-managed Authelia route integration", () => {
         serviceCount: 2,
       }],
       routeApplications: ["authelia", "dumb", "tpa"],
+      publicRoutes: [],
     });
+  });
+
+  it("returns only safe public route discovery fields", async () => {
+    mocks.getAllServices.mockResolvedValue([{
+      name: "Example Service",
+      enabled: true,
+      targetIp: "127.0.0.1",
+      targetPort: 8080,
+      hostnameMode: "subdomain",
+      subdomain: "service",
+      customHostnames: null,
+      domain,
+      secretInternalField: "not returned",
+    }]);
+
+    const response = await GET(request("GET"));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(expect.objectContaining({
+      publicRoutes: [{
+        name: "Example Service",
+        enabled: true,
+        targetPort: 8080,
+        targetLoopback: true,
+        publicUrls: ["https://service.example.com"],
+      }],
+    }));
   });
 
   it("rejects domain discovery without the integration token", async () => {

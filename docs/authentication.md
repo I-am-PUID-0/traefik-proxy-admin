@@ -74,8 +74,13 @@ POST /api/integrations/dumb/authelia/route
 Authorization: Bearer <DUMB_INTEGRATION_TOKEN>
 ```
 
-The route integration returns only non-secret domain/routing metadata and a
-supported-application list so older TPA releases are capability-gated. Creating
+The route integration returns only non-secret domain/routing metadata, a
+supported-application list, and sanitized public service routes. Public route
+discovery includes the service name, enabled state, target port, a loopback
+boolean, and public HTTPS origins; it never returns integration tokens,
+middleware configuration, internal target hostnames, or authentication
+secrets. DUMB uses this data to offer **Open Public URL** on matching service
+pages. Creating
 a route never edits the selected domain, certificate resolver, entry points, or
 other TLS settings. It normally targets the matching DUMB-managed loopback
 listener, creates no TPA service-auth middleware, reuses an already compatible

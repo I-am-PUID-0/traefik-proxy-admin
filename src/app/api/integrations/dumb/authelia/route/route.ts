@@ -117,6 +117,26 @@ function safeDomain(domain: Awaited<ReturnType<typeof DomainService.getAllDomain
   };
 }
 
+function safePublicRoute(
+  service: Awaited<ReturnType<typeof ServiceService.getAllServices>>[number],
+) {
+  if (!service.domain) return null;
+  const publicUrls = getServiceHostnames(service, service.domain)
+    .map((hostname) => hostname.trim().toLowerCase())
+    .filter(Boolean)
+    .map((hostname) => `https://${hostname}`);
+  if (publicUrls.length === 0) return null;
+
+  const target = service.targetIp.trim().toLowerCase();
+  return {
+    name: service.name,
+    enabled: service.enabled,
+    targetPort: service.targetPort,
+    targetLoopback: target === "127.0.0.1" || target === "localhost" || target === "::1",
+    publicUrls,
+  };
+}
+
 export async function GET(request: NextRequest) {
   const limited = rateLimit(request, {
     key: "dumb-authelia-route-domains",
@@ -127,10 +147,14 @@ export async function GET(request: NextRequest) {
   if (!isDumbIntegrationAuthorized(request)) return unauthorized();
 
   try {
-    const domains = await DomainService.getAllDomains();
+    const [domains, services] = await Promise.all([
+      DomainService.getAllDomains(),
+      ServiceService.getAllServices(),
+    ]);
     return NextResponse.json({
       domains: domains.map(safeDomain),
       routeApplications: Object.keys(ROUTE_APPLICATIONS),
+      publicRoutes: services.map(safePublicRoute).filter((route) => route !== null),
     });
   } catch {
     return NextResponse.json(
