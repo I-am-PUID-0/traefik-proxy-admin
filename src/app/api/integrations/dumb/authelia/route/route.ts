@@ -60,7 +60,7 @@ function cleanPublicUrl(value: unknown, label: string) {
 
 function cleanTargetHost(value: unknown, application: keyof typeof ROUTE_APPLICATIONS) {
   const targetHost = typeof value === "string" ? value.trim() : "";
-  if (!targetHost) return "127.0.0.1";
+  if (!targetHost || targetHost === "127.0.0.1") return "127.0.0.1";
   if (application !== "dumb") {
     throw new RequestBodyError("Only the DUMB frontend route supports a custom target host");
   }

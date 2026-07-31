@@ -190,6 +190,30 @@ describe("DUMB-managed Authelia route integration", () => {
     expect(mocks.createService).not.toHaveBeenCalled();
   });
 
+  it("accepts the explicit fixed loopback target for Authelia", async () => {
+    const response = await POST(request("POST", {
+      application: "authelia",
+      domainId: domain.id,
+      publicUrl: "https://auth.example.com",
+      targetHost: "127.0.0.1",
+      targetPort: 9091,
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(expect.objectContaining({
+      application: "authelia",
+      configured: true,
+      created: true,
+      targetHost: "127.0.0.1",
+      targetPort: 9091,
+    }));
+    expect(mocks.createService).toHaveBeenCalledWith(expect.objectContaining({
+      name: "Authelia",
+      targetIp: "127.0.0.1",
+      targetPort: 9091,
+    }));
+  });
+
   it("reuses an exact compatible route", async () => {
     mocks.getAllServices.mockResolvedValue([{
       id: "existing-service",
