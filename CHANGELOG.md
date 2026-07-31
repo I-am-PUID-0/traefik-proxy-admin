@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 This project follows [Conventional Commits](https://www.conventionalcommits.org/) and uses [Release Please](https://github.com/googleapis/release-please) to manage release pull requests and changelog updates.
 
+## [1.24.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.23.0...v1.24.0) (2026-07-31)
+
+
+### Features
+
+* **integrations:** expose sanitized public routes to DUMB ([e911c9d](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/e911c9debc76ce50fa130ee6aa67c87ead55ab6c))
+* **integrations:** provision DUMB application routes through TPA ([5b30510](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/5b3051006c2a3608b864e5ff3eb41dcad50cece6))
+* **integrations:** provision DUMB-managed application routes ([d229b99](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/d229b991bdaabb0770e738b32ab5f1cb140ae158))
+
+
+### Bug Fixes
+
+* **auth:** support configurable OIDC token endpoint authentication ([245f35a](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/245f35ac143770ea7448912e48a98ae4f956cd3b))
+* **integrations:** accept fixed loopback targets for managed routes ([53fff79](https://github.com/I-am-PUID-0/traefik-proxy-admin/commit/53fff79fb645eea8117c64d4992688247ebd6c6e))
+
 ## [1.23.0](https://github.com/I-am-PUID-0/traefik-proxy-admin/compare/v1.22.1...v1.23.0) (2026-07-30)
 
 
