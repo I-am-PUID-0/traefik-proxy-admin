@@ -77,9 +77,13 @@ Authorization: Bearer <DUMB_INTEGRATION_TOKEN>
 The route integration returns only non-secret domain/routing metadata and a
 supported-application list so older TPA releases are capability-gated. Creating
 a route never edits the selected domain, certificate resolver, entry points, or
-other TLS settings. It targets the matching DUMB-managed loopback listener,
-creates no TPA service-auth middleware, reuses an already compatible route, and
-rejects a conflicting hostname rather than changing an existing service.
+other TLS settings. It normally targets the matching DUMB-managed loopback
+listener, creates no TPA service-auth middleware, reuses an already compatible
+route, and rejects a conflicting hostname rather than changing an existing
+service. When DUMB is connected to a separately running development frontend,
+the DUMB application route may instead specify a validated hostname, container
+name, or IP address that Traefik can reach; custom targets are not accepted for
+the Authelia or TPA routes.
 
 The Authelia portal must remain unprotected because it is the login service.
 The DUMB and TPA routes also omit TPA service authentication because DUMB and

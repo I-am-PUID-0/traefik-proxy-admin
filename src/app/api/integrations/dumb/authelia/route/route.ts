@@ -16,6 +16,7 @@ export const runtime = "nodejs";
 interface RouteRequest {
   domainId?: string;
   publicUrl?: string;
+  targetHost?: string;
   targetPort?: number;
   application?: "authelia" | "dumb" | "tpa";
 }
@@ -55,6 +56,23 @@ function cleanPublicUrl(value: unknown, label: string) {
       `${label} public URL must be an HTTPS origin without a path, port, query, or fragment`,
     );
   }
+}
+
+function cleanTargetHost(value: unknown, application: keyof typeof ROUTE_APPLICATIONS) {
+  const targetHost = typeof value === "string" ? value.trim() : "";
+  if (!targetHost) return "127.0.0.1";
+  if (application !== "dumb") {
+    throw new RequestBodyError("Only the DUMB frontend route supports a custom target host");
+  }
+  if (
+    targetHost.length > 253 ||
+    !/^[a-zA-Z0-9](?:[a-zA-Z0-9._:-]*[a-zA-Z0-9])?$/.test(targetHost)
+  ) {
+    throw new RequestBodyError(
+      "DUMB target host must be a hostname, container name, or IP address without a scheme or path",
+    );
+  }
+  return targetHost;
 }
 
 function routeFields(hostname: string, rootDomain: string, label: string) {
@@ -140,6 +158,7 @@ export async function POST(request: NextRequest) {
       throw new RequestBodyError("Unsupported DUMB-managed route application");
     }
     const publicUrl = cleanPublicUrl(body.publicUrl, routeApplication.label);
+    const targetHost = cleanTargetHost(body.targetHost, application);
     const targetPort = body.targetPort;
     if (!domainId) throw new RequestBodyError("TPA domain is required");
     if (
@@ -169,7 +188,7 @@ export async function POST(request: NextRequest) {
     if (conflict) {
       const reusable =
         conflict.name === routeApplication.name &&
-        conflict.targetIp === "127.0.0.1" &&
+        conflict.targetIp === targetHost &&
         conflict.targetPort === targetPort &&
         conflict.isHttps === false &&
         conflict.passHostHeader === true &&
@@ -197,7 +216,7 @@ export async function POST(request: NextRequest) {
         serviceId: conflict.id,
         hostname: publicUrl.hostname,
         domain: safeDomain(domain),
-        targetHost: "127.0.0.1",
+        targetHost,
         targetPort,
         targetHttps: false,
         authentication: "none",
@@ -209,7 +228,7 @@ export async function POST(request: NextRequest) {
       serviceGroup: "DUMB",
       ...fields,
       domainId: domain.id,
-      targetIp: "127.0.0.1",
+      targetIp: targetHost,
       targetPort,
       entrypoint: null,
       isHttps: false,
@@ -231,7 +250,7 @@ export async function POST(request: NextRequest) {
       serviceId: service.id,
       hostname: publicUrl.hostname,
       domain: safeDomain(domain),
-      targetHost: "127.0.0.1",
+      targetHost,
       targetPort,
       targetHttps: false,
       authentication: "none",

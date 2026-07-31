@@ -150,6 +150,46 @@ describe("DUMB-managed Authelia route integration", () => {
     },
   );
 
+  it("allows a custom reachable target for an external DUMB frontend", async () => {
+    const response = await POST(request("POST", {
+      application: "dumb",
+      domainId: domain.id,
+      publicUrl: "https://dumb.example.com",
+      targetHost: "dmbdb_dev",
+      targetPort: 3005,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mocks.createService).toHaveBeenCalledWith(expect.objectContaining({
+      name: "DUMB",
+      targetIp: "dmbdb_dev",
+      targetPort: 3005,
+    }));
+  });
+
+  it("rejects unsafe or non-DUMB custom route targets", async () => {
+    for (const body of [
+      {
+        application: "dumb",
+        domainId: domain.id,
+        publicUrl: "https://dumb.example.com",
+        targetHost: "http://dmbdb_dev/path",
+        targetPort: 3005,
+      },
+      {
+        application: "tpa",
+        domainId: domain.id,
+        publicUrl: "https://proxy.example.com",
+        targetHost: "other-container",
+        targetPort: 3004,
+      },
+    ]) {
+      const response = await POST(request("POST", body));
+      expect(response.status).toBe(400);
+    }
+    expect(mocks.createService).not.toHaveBeenCalled();
+  });
+
   it("reuses an exact compatible route", async () => {
     mocks.getAllServices.mockResolvedValue([{
       id: "existing-service",
